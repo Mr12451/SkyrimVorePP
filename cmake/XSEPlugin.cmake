@@ -3,7 +3,7 @@ option(BUILD_FALLOUT4 "Build for Fallout 4" OFF)
 
 if(BUILD_SKYRIM)
 	add_compile_definitions(SKYRIM)
-	set(CommonLibPath "extern/CommonLibSSE")
+	set(CommonLibPath "extern/CommonLibSSE-NG")
 	set(CommonLibName "CommonLibSSE")
 	set(GameVersion "Skyrim")
 elseif(BUILD_FALLOUT4)
