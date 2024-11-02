@@ -5,6 +5,7 @@
 #include "headers/plugins.h"
 #include "headers/racemenu.h"
 #include "headers/settings.h"
+#include "headers/ui.h"
 
 const SKSE::MessagingInterface* g_messaging;
 
@@ -30,10 +31,9 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 		{
 			flog::trace("Post Post load");
 			//get racemenu body morph interface
-			InterfaceExchangeMessage* r_inter = new InterfaceExchangeMessage();
-			g_messaging->Dispatch(InterfaceExchangeMessage::kMessage_ExchangeInterface, r_inter, sizeof(r_inter), nullptr);
-			IInterfaceMap* racemenuInterface = r_inter->interfaceMap;
-			delete r_inter;
+			InterfaceExchangeMessage r_inter;
+			g_messaging->Dispatch(InterfaceExchangeMessage::kMessage_ExchangeInterface, &r_inter, sizeof(r_inter), nullptr);
+			IInterfaceMap* racemenuInterface = r_inter.interfaceMap;
 			flog::info("Racemenu (skee64) interfaces: {}", racemenuInterface != nullptr);
 			Vore::VoreGlobals::body_morphs = (IBodyMorphInterface*)(racemenuInterface->QueryInterface("BodyMorph"));
 			flog::info("IBodyMorphInterface: {}", Vore::VoreGlobals::body_morphs != nullptr);
@@ -66,6 +66,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 	case SKSE::MessagingInterface::kDataLoaded:
 		flog::trace("Data loaded");
 		InitializeEvents();
+		Vore::UI::VoreMenu::Register();
 		break;
 	}
 }

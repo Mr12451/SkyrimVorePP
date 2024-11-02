@@ -13,6 +13,7 @@ namespace Vore
 		static inline uint32_t heal_key = 61;
 		static inline uint32_t regurg_key = 62;
 		static inline uint32_t check_time_key = 64;
+		static inline uint32_t test_key = 65;
 
 		static inline double slow_update = 5;
 		static inline double fast_update = 0.2;

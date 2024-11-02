@@ -5,6 +5,7 @@
 #include "headers/times.h"
 #include "headers/vutils.h"
 #include "headers/settings.h"
+#include "headers/ui.h"
 
 namespace Vore
 {
@@ -68,6 +69,9 @@ namespace Vore
 				} else if (keyCode == VoreSettings::check_time_key) {
 					//Prints vore data;
 					Log::PrintVoreData();
+				} else if (keyCode == VoreSettings::test_key) {
+					//Prints vore data;
+					UI::VoreMenu::MakePreyBar();
 				}
 
 				break;
