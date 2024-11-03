@@ -56,9 +56,7 @@
 			"name": "ALL",
 			"cacheVariables": {
 				"BUILD_SKYRIM": true,
-				"ENABLE_SKYRIM_AE": "ON",
-				"ENABLE_SKYRIM_SE": "ON",
-				"ENABLE_SKYRIM_VR": "ON"
+				"SKYRIM_SUPPORT_AE": "ON"
 			},
 			"inherits": [
 				"common",

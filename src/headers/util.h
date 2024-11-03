@@ -348,11 +348,11 @@ namespace AnimUtil
 	{
 		static bool Play(RE::TESIdleForm* idle, RE::Actor* actor, RE::DEFAULT_OBJECT action, RE::Actor* target)
 		{
-			if (actor && actor->GetActorRuntimeData().currentProcess)
+			if (actor && actor->currentProcess)
 			{
 				typedef bool (*func_t)(RE::AIProcess*, RE::Actor*, RE::DEFAULT_OBJECT, RE::TESIdleForm*, bool, bool, RE::Actor*);
 				REL::Relocation<func_t> func{ RELOCATION_ID(38290, 39256) };
-				return func(actor->GetActorRuntimeData().currentProcess, actor, action, idle, true, true, target);
+				return func(actor->currentProcess, actor, action, idle, true, true, target);
 			}
 			return false;
 		}

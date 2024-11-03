@@ -4,15 +4,9 @@
   "description": "",
   "license": "GPL-3.0",
   "dependencies": [
-    "fmt",
-    "directxtk",
-    "rapidcsv",
+    "rsm-binary-io",
     "spdlog",
     "xbyak",
-    "catch2",
-    "magic-enum",
-    "nlohmann-json",
-    "clib-util",
-    "detours"
+    "clib-util"
   ]
 }
