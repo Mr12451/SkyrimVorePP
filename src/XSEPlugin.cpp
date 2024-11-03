@@ -49,6 +49,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 	case SKSE::MessagingInterface::kPostLoadGame:
 		flog::trace("Save file successfuly loaded? {}", static_cast<bool>(a_msg->data));
 		Vore::Plugin::SetInGame(true);
+		Scaleform::VoreMenu::Show();
 		break;
 	case SKSE::MessagingInterface::kSaveGame:
 		flog::trace("Game saved: {}", static_cast<char*>(a_msg->data));
@@ -66,7 +67,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 	case SKSE::MessagingInterface::kDataLoaded:
 		flog::trace("Data loaded");
 		InitializeEvents();
-		Vore::UI::VoreMenu::Register();
+		Scaleform::VoreMenu::Register();
 		break;
 	}
 }
@@ -108,13 +109,9 @@ extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []() noexcept {
 	v.PluginName(Plugin::NAME.data());
 	v.PluginVersion(Plugin::VERSION);
 	v.UsesAddressLibrary();
+	v.CompatibleVersions({ SKSE::RUNTIME_LATEST });
+	v.AuthorName("Mr12451");
+	v.UsesUpdatedStructs();
+
 	return v;
 }();
-
-extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface*, SKSE::PluginInfo* pluginInfo)
-{
-	pluginInfo->name = SKSEPlugin_Version.pluginName;
-	pluginInfo->infoVersion = SKSE::PluginInfo::kVersion;
-	pluginInfo->version = SKSEPlugin_Version.pluginVersion;
-	return true;
-}

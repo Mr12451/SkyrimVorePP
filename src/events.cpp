@@ -70,12 +70,8 @@ namespace Vore
 					//Prints vore data;
 					Log::PrintVoreData();
 				} else if (keyCode == VoreSettings::test_key) {
-					std::string_view na = "oxygenMeter2";
-					RE::GPtr<RE::IMenu> t = RE::UI::GetSingleton()->RE::UI::GetMenu(na);
-					flog::info("Registered oxygen {}", (t != nullptr));
-					RE::GPtr<RE::IMenu> t1 = RE::UI::GetSingleton()->RE::UI::GetMenu(UI::VoreMenu::MENU_NAME);
-					flog::info("Registered vore {}", (t1 != nullptr));
 					//Prints vore data;
+					Scaleform::VoreMenu::ShowShow();
 				}
 
 				break;
