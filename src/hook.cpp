@@ -36,9 +36,10 @@ namespace Vore::Hooks
 	void Hook_MainUpdate::Hook(SKSE::Trampoline& trampoline)
 	{
 		//from tdm source
-		REL::Relocation<uintptr_t> hook{ REL::RelocationID(35565, 36564) };  // 5B2FF0, 5D9F50, main update
-		flog::info("Vore is applying Main Update Hook at {:X}", hook.address());
-		_Update = trampoline.write_call<5>(hook.address() + RELOCATION_OFFSET(0x748, 0xC26), Update);  // 5B3738, 5DAB76
+		//REL::Relocation<uintptr_t> hook{ REL::RelocationID(35565, 36564) };  // 5B2FF0, 5D9F50, main update
+		REL::Relocation<uintptr_t> target{ REL::ID(36564), 0xC26 };  // 5B2FF0, 5D9F50, main update
+		flog::info("Vore is applying Main Update Hook at {:X}", target.address());
+		_Update = trampoline.write_call<5>(target.address(), &Update);  // 5B3738, 5DAB76
 
 	}
 

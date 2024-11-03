@@ -1,17 +1,55 @@
 #pragma once
 
+//some code taken from oxyMeter2 and TrueHUD source
 namespace Vore
 {
 	namespace UI
 	{
-		class VoreMenu : RE::IMenu
+		class VoreMenu : public RE::IMenu
 		{
-		private:
-			constexpr static std::string_view FILE_NAME{ "SkyrimVorePP" };
-			constexpr static std::string_view MENU_NAME{ "SkyrimVorePP" };
-			constexpr static std::int8_t SORT_PRIORITY{ 0 };
-			RE::GPtr<RE::GFxMovieView> _view;
+		public:
+			static constexpr const char* MENU_PATH = "VoreMenu";
+			static constexpr const char* MENU_NAME = "VoreMenu";
+			VoreMenu();
+			static void Register();
+			static RE::GPtr<VoreMenu> GetVoreMenu();
+			static void Show();
+			static void Hide();
+			static void Update();
+			static void ApplyLayout(RE::GPtr<RE::IMenu> voreMeter);
+			static void ApplyColour(RE::GPtr<RE::IMenu> voreMeter);
 
+			static RE::stl::owner<RE::IMenu*> Creator() { 
+				flog::info("????????????????????????? ");
+				return new VoreMenu(); 
+			}
+
+			void AdvanceMovie(float a_interval, std::uint32_t a_currentTime) override;
+			RE::UI_MESSAGE_RESULTS ProcessMessage(RE::UIMessage& a_message) override;
+
+			enum class MenuVisibilityMode : uint8_t
+			{
+				kHidden,
+				kVisible
+			};
+
+			MenuVisibilityMode _menuVisibilityMode = MenuVisibilityMode::kVisible;
+			static inline bool want_visible{ false };
+
+			static void SetMenuVisibilityMode(MenuVisibilityMode a_mode);
+
+			bool IsOpen() const;
+			void OnOpen();
+			void OnClose();
+
+			static constexpr std::string_view Name();
+
+		private:
+			static inline bool holding_breath{ false };
+			static inline bool drowning{ false };
+			bool _bIsOpen = false;
+
+		private:
 			class Logger : public RE::GFxLog
 			{
 			public:
@@ -28,74 +66,13 @@ namespace Vore
 					std::vsnprintf(buf.data(), buf.size(), fmt.c_str(), args);
 					va_end(args);
 
-					flog::info("{}: {}"sv, VoreMenu::MenuName(), buf.data());
+					flog::info("{}"sv, buf.data());
 				}
 			};
 
-		public:
-			static constexpr std::string_view MenuName() noexcept { return MENU_NAME; }
-			static constexpr std::int8_t SortPriority() noexcept { return SORT_PRIORITY; }
-
-			VoreMenu()
-			{
-				auto menu = static_cast<RE::IMenu*>(this);
-				menu->depthPriority = SortPriority();
-				auto scaleformManager = RE::BSScaleformManager::GetSingleton();
-
-				[[maybe_unused]] const auto success =
-					scaleformManager->LoadMovieEx(menu, FILE_NAME, [](RE::GFxMovieDef* a_def) -> void {
-						a_def->SetState(
-							RE::GFxState::StateType::kLog,
-							RE::make_gptr<Logger>().get());
-					});
-
-				assert(success);
-				if (menu && menu->uiMovie) {
-					auto def = menu->uiMovie->GetMovieDef();
-					if (def) {
-						def->SetState(
-							RE::GFxState::StateType::kLog,
-							RE::make_gptr<Logger>().get());
-					}
-				}
-
-				menuFlags.set(RE::UI_MENU_FLAGS::kAlwaysOpen);
-				menuFlags.set(RE::UI_MENU_FLAGS::kRequiresUpdate);
-				menuFlags.set(RE::UI_MENU_FLAGS::kAllowSaving);
-
-				menu->inputContext = Context::kNone;
-
-				_view = menu->uiMovie;
-				_view->SetMouseCursorCount(0);  // disable input
-			}
-			VoreMenu(const VoreMenu&) = default;
-			VoreMenu(VoreMenu&&) = default;
-			~VoreMenu() = default;
-			static RE::stl::owner<RE::IMenu*> Creator() { return new VoreMenu(); }
-			void PostCreate()
-			{
-				RE::IMenu::PostCreate();
-			}
-
-			RE::UI_MESSAGE_RESULTS ProcessMessage(RE::UIMessage& a_message) override
-			{
-				using Type = RE::UI_MESSAGE_TYPE;
-
-				switch (*a_message.type) {
-				case Type::kShow:
-					return RE::IMenu::ProcessMessage(a_message);
-				case Type::kHide:
-					return RE::IMenu::ProcessMessage(a_message);
-				default:
-					return RE::IMenu::ProcessMessage(a_message);
-				}
-			}
-			static void Register();
-
-			void MakePreyBar(RE::ObjectRefHandle a_actorHandle);
 		};
 
-		class VoreWidget
+		/*class VoreWidget
 		{
 		public:
 			RE::GPtr<RE::GFxMovieView> _view;
@@ -122,7 +99,6 @@ namespace Vore
 
 			virtual void Initialize() = 0;
 			virtual void Dispose() = 0;
-			
 		};
 
 		class VoreBar : public VoreWidget
@@ -144,8 +120,7 @@ namespace Vore
 			PreyBar(RE::GPtr<RE::GFxMovieView> a_view, RE::ObjectRefHandle a_refHandle) :
 				VoreBar(a_view, a_refHandle)
 			{
-				
 			}
-		};
+		};*/
 	}
 }

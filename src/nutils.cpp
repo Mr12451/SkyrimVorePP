@@ -88,7 +88,7 @@ namespace Vore::AV
 {
 	double GetMaxAV(Actor* actor, ActorValue av)
 	{
-		auto baseValue = actor->AsActorValueOwner()->GetBaseActorValue(av);
+		auto baseValue = actor->GetBaseActorValue(av);
 		auto permMod = actor->GetActorValueModifier(ACTOR_VALUE_MODIFIERS::kPermanent, av);
 		auto tempMod = actor->GetActorValueModifier(ACTOR_VALUE_MODIFIERS::kTemporary, av);
 		return baseValue + permMod + tempMod;
@@ -102,7 +102,7 @@ namespace Vore::AV
 	}
 	void ModAV(Actor* actor, ActorValue av, double amount)
 	{
-		actor->AsActorValueOwner()->RestoreActorValue(RE::ACTOR_VALUE_MODIFIER::kTemporary, av, static_cast<float>(amount));
+		actor->RestoreActorValue(RE::ACTOR_VALUE_MODIFIER::kTemporary, av, static_cast<float>(amount));
 	}
 	void SetAV(Actor* actor, ActorValue av, double amount)
 	{
@@ -113,7 +113,7 @@ namespace Vore::AV
 
 	void DamageAV(Actor* actor, ActorValue av, double amount)
 	{
-		actor->AsActorValueOwner()->RestoreActorValue(RE::ACTOR_VALUE_MODIFIER::kDamage, av, static_cast<float>(-amount));
+		actor->RestoreActorValue(RE::ACTOR_VALUE_MODIFIER::kDamage, av, static_cast<float>(-amount));
 	}
 
 	double GetPercentageAV(Actor* actor, ActorValue av)
@@ -127,7 +127,7 @@ namespace Vore::AV
 		double maxValue = GetMaxAV(actor, av);
 		double targetValue = target / 100 * maxValue;
 		double delta = targetValue - currentValue;
-		actor->AsActorValueOwner()->RestoreActorValue(ACTOR_VALUE_MODIFIER::kDamage, av, static_cast<float>(delta));
+		actor->RestoreActorValue(ACTOR_VALUE_MODIFIER::kDamage, av, static_cast<float>(delta));
 	}
 }
 
