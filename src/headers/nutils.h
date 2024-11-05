@@ -33,7 +33,7 @@ namespace Vore
 	}
 	namespace Name
 	{
-		const char* GetName(RE::TESObjectREFR* form);
-		const char* GetName(RE::FormID form);
+		std::string_view GetName(RE::TESObjectREFR* form);
+		std::string_view GetName(RE::FormID form);
 	}
 }

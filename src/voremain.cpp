@@ -3,6 +3,7 @@
 #include "headers/settings.h"
 #include "headers/times.h"
 #include "headers/vutils.h"
+#include "headers/ui.h"
 
 namespace Vore::Core
 {
@@ -10,7 +11,7 @@ namespace Vore::Core
 
 	void SwitchToDigestion(RE::FormID pred, Locus locus, VoreState ldType, bool forceStopDigestion)
 	{
-		if (!VoreData::IsPred(pred)) {
+		if (!VoreData::IsPred(pred, true)) {
 			flog::warn("Switching to digestion failed: bad pred: {}", Name::GetName(pred));
 			return;
 		}
@@ -22,13 +23,14 @@ namespace Vore::Core
 			ldType == VoreState::hSafe && forceStopDigestion || ldType != VoreState::hSafe) {
 			VoreData::Data[pred].pdLoci[locus] = ldType;
 			for (auto& el : FilterPrey(pred, locus, false)) {
-				VoreData::Data[el].pyDigestion = ldType;
+				auto& pyData = VoreData::Data[el];
+				pyData.pyDigestion = ldType;
 
-				flog::info("Prey {} digestion set to {}", Name::GetName(el), (uint8_t)VoreData::Data[el].pyDigestion);
+				flog::info("Prey {} digestion set to {}", Name::GetName(pyData.get()), (uint8_t)pyData.pyDigestion);
 			}
 		}
-		flog::info("Pred {} digestion in locus {} set to {}", Name::GetName(pred), (uint8_t)locus, (uint8_t)VoreData::Data[pred].pdLoci[locus]);
-	}
+		flog::info("Pred {} digestion in locus {} set to {}", Name::GetName(VoreData::Data[pred].get()), (uint8_t)locus, (uint8_t)VoreData::Data[pred].pdLoci[locus]);
+	} 
 
 	bool CanMoveToLocus([[maybe_unused]] RE::FormID pred, [[maybe_unused]] RE::FormID prey, Locus locus, Locus locusSource)
 	{
@@ -51,10 +53,11 @@ namespace Vore::Core
 			return;
 		}
 		if (CanMoveToLocus(pred, prey, locus, locusSource)) {
-			VoreData::Data[prey].pyLocus = locus;
-			VoreData::Data[prey].pyDigestion = VoreData::Data[pred].pdLoci[locus];
-			VoreData::Data[prey].pyLocusProcess = 0.0;
-			flog::info("Moved Prey {} to Locus {}", Name::GetName(prey), (uint8_t)locus);
+			auto& pyData = VoreData::Data[prey];
+			pyData.pyLocus = locus;
+			pyData.pyDigestion = VoreData::Data[pred].pdLoci[locus];
+			pyData.pyLocusProcess = 0.0;
+			flog::info("Moved Prey {} to Locus {}", Name::GetName(pyData.get()), (uint8_t)locus);
 		}
 	}
 
@@ -124,7 +127,7 @@ namespace Vore::Core
 
 			if (prey->GetFormType() == RE::FormType::ActorCharacter) {
 				RE::Actor* preyA = skyrim_cast<RE::Actor*>(prey);
-				flog::info("Pred {}, prey {}, health {}", Name::GetName(pred), Name::GetName(prey), AV::GetAV(preyA, RE::ActorValue::kHealth));
+				flog::info("Pred {}, prey {}, health {}", Name::GetName(pred), Name::GetName(preyA), AV::GetAV(preyA, RE::ActorValue::kHealth));
 
 				//initialize prey
 
@@ -175,6 +178,7 @@ namespace Vore::Core
 		} else {
 			flog::warn("No prey were swallowed");
 		}
+		UI::VoreMenu::SetMenuMode(UI::kDefault);
 		Log::PrintVoreData();
 		flog::info("Swallow end");
 	}
@@ -205,7 +209,7 @@ namespace Vore::Core
 
 		RE::FormID predId = pred->GetFormID();
 
-		if (!VoreData::IsPred(predId)) {
+		if (!VoreData::IsPred(predId, true)) {
 			flog::warn("Pred {} is not pred", Name::GetName(pred));
 			return;
 		}
@@ -309,6 +313,7 @@ namespace Vore::Core
 		}
 
 		VoreData::SoftDelete(predId);
+		UI::VoreMenu::SetMenuMode(UI::kDefault);
 		Log::PrintVoreData();
 		flog::info("End of Regurgitation");
 	}
@@ -325,7 +330,7 @@ namespace Vore::Core
 			flog::warn("Regurgitation: Missing pred");
 			return;
 		}
-		if (!VoreData::IsPred(pred->GetFormID())) {
+		if (!VoreData::IsPred(pred->GetFormID(), true)) {
 			flog::warn("Regurgitation: {} is not a pred", Name::GetName(pred));
 			return;
 		}
@@ -447,8 +452,11 @@ namespace Vore::Core
 			//calculate prey full size
 			//calculate prey full weight
 			double preySize = 0.0;
-			preyData.GetSizeWeight(preySize, predData.pdFullBurden);
-			preySize *= 1 - preyData.pyDigestProgress / 100.0;
+			double thisBurden = 0.0;
+			double digestionMod = 1 - preyData.pyDigestProgress / 100.0;
+			preyData.GetSizeWeight(preySize, thisBurden);
+			preySize *= digestionMod;
+			predData.pdFullBurden += thisBurden * digestionMod;
 
 			//unfortunately sliders are floats, while everything else in this mod is a double
 			//doubles can be better for precision at really small wg/digestion steps, that's why I use them
@@ -534,7 +542,7 @@ namespace Vore::Core
 			//digestion
 			else if (val.pyDigestProgress < 100) {
 				//aWeight can increase / decrease digestion time
-				val.pyDigestProgress += std::min(val.pyDigestProgress + digestBase * 100 / val.aWeight, 100.0);
+				val.pyDigestProgress = std::min(val.pyDigestProgress + digestBase * 100 / val.aWeight, 100.0);
 				if (val.pyLocus == Locus::lBowel) {
 					val.pyLocusProcess = val.pyDigestProgress;
 				}
@@ -543,7 +551,7 @@ namespace Vore::Core
 				// locus increase
 				// fat
 				// fat growth
-				// height (size) increase; check gts for info
+				// height (size) increase; (for me) check gts for info
 				for (uint8_t i = 0; i < LocusSliders::uFatLow - LocusSliders::uFatBelly; i++) {
 					pred.pdGrowthLocus[i] += digestBase * VoreSettings::voretypes_partgain[val.pyElimLocus][i] * VoreSettings::wg_locusgrowth;
 				}
@@ -619,15 +627,24 @@ namespace Vore::Core
 				it = dq.erase(it);
 			}
 		}
+
+		UI::VoreMenu::NeedUpdate = true;
 	}
 
 	//updates live characters
 	void UpdateFast()
 	{
 		static double& delta = VoreSettings::fast_update;
+
+		bool needUIUpdate = false;
 		//updates prey only
 		for (auto& [key, val] : VoreData::Data) {
 			if (!val.aAlive || !val.pred) {
+				continue;
+			}
+
+			if (!VoreData::Data.contains(val.pred)) {
+				flog::critical("!!!!!Found a prey with a broken pred: {}", Name::GetName(key));
 				continue;
 			}
 
@@ -666,7 +683,7 @@ namespace Vore::Core
 						}
 						AV::DamageAV(asActor, RE::ActorValue::kHealth, VoreSettings::acid_damage * delta);
 						//Funcs::ApplyDamage(predData.get()->As<RE::Actor>(), asActor, static_cast<float>(VoreSettings::acid_damage));
-						flog::trace("Dealing damage to {}, health {}", Name::GetName(asActor), AV::GetAV(asActor, RE::ActorValue::kHealth));
+						//flog::trace("Dealing damage to {}, health {}", Name::GetName(asActor), AV::GetAV(asActor, RE::ActorValue::kHealth));
 					}
 				} else if (val.pyDigestion == VoreState::hReformation) {
 					if (asActor) {
@@ -700,6 +717,7 @@ namespace Vore::Core
 					val.pyStruggle = VoreState::sStruggling;
 				}
 			}
+			needUIUpdate = true;
 		}
 		//updates top preds
 		for (auto const& [key, val] : VoreData::Data) {
@@ -710,6 +728,7 @@ namespace Vore::Core
 				UpdateStruggleGoals(key);
 			}
 		}
+		UI::VoreMenu::NeedUpdate = true;
 	}
 
 	void SetupTimers()

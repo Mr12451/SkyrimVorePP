@@ -49,7 +49,6 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 	case SKSE::MessagingInterface::kPostLoadGame:
 		flog::trace("Save file successfuly loaded? {}", static_cast<bool>(a_msg->data));
 		Vore::Plugin::SetInGame(true);
-		Scaleform::VoreMenu::Show();
 		break;
 	case SKSE::MessagingInterface::kSaveGame:
 		flog::trace("Game saved: {}", static_cast<char*>(a_msg->data));
@@ -67,7 +66,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 	case SKSE::MessagingInterface::kDataLoaded:
 		flog::trace("Data loaded");
 		InitializeEvents();
-		Scaleform::VoreMenu::Register();
+		Vore::UI::VoreMenu::Register();
 		break;
 	}
 }

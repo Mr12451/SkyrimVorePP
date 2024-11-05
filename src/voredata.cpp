@@ -2,6 +2,7 @@
 #include "headers/nutils.h"
 #include "headers/vutils.h"
 #include "headers/settings.h"
+#include "headers/ui.h"
 
 namespace Vore
 {
@@ -19,11 +20,9 @@ namespace Vore
 	bool VoreData::IsValid(RE::FormID character)
 	{
 		if (!character) {
-			flog::trace("Not a valid FormID: {}", Name::GetName(character));
 			return false;
 		}
 		if (!Data.contains(character)) {
-			flog::trace("Character not in vore: {}", Name::GetName(character));
 			return false;
 		}
 		if (!Data[character].get()) {
@@ -33,13 +32,17 @@ namespace Vore
 		return true;
 	}
 
-	bool VoreData::IsPred(RE::FormID character)
+	bool VoreData::IsPred(RE::FormID character, bool onlyActive)
 	{
 		if (!IsValid(character)) {
 			return false;
 		}
 		uint8_t flag = 0;
 		flag += !Data[character].prey.empty();
+		if (onlyActive) {
+			return flag;
+		}
+
 		flag += Data[character].pdFat > 0;
 		flag += Data[character].pdFatgrowth > 0;
 		flag += Data[character].pdSizegrowth > 0;
@@ -53,7 +56,6 @@ namespace Vore
 		if (flag > 0) {
 			return true;
 		}
-		flog::trace("No prey in {}", Name::GetName(character));
 		return false;
 	}
 
@@ -65,7 +67,6 @@ namespace Vore
 
 		auto& pred = Data[character].pred;
 		if (!IsValid(pred)) {
-			flog::trace("Not a prey because no pred");
 			return false;
 		}
 		if (!Data[pred].prey.contains(character)) {
@@ -115,9 +116,9 @@ namespace Vore
 			value.aAlive = (value.aCharType == RE::FormType::ActorCharacter) ?
 			                   !(skyrim_cast<RE::Actor*>(character)->IsDead()) :
 			                   false;
-			value.aSize = std::max(character->GetBaseHeight() * 100.0f, 1.0f);
+			value.aSize = std::max(character->GetHeight(), 1.0f);
 			value.aWeight = std::max(character->GetWeight(), 1.0f);
-			value.me = character->CreateRefHandle();
+			value.me = character->GetHandle();
 			for (auto& el : value.pdLoci) {
 				el = VoreState::hSafe;
 			}
@@ -136,7 +137,7 @@ namespace Vore
 			flog::trace("Character not in vore: {}", Name::GetName(character));
 			return;
 		}
-		if (IsPred(character)) {
+		if (IsPred(character, false)) {
 			flog::trace("{} still a pred", Name::GetName(character));
 		} else if (IsPrey(character)) {
 			flog::trace("{} still a prey", Name::GetName(character));
@@ -167,9 +168,9 @@ namespace Vore
 	{
 		// Fix characters
 		std::vector<RE::FormID> bad = {};
-		for (auto& el : Data) {
-			if (!IsPred(el.first) && !IsPrey(el.first)) {
-				bad.push_back(el.first);
+		for (auto& [key, val] : Data) {
+			if (!IsPred(key, false) && !IsPrey(key)) {
+				bad.push_back(key);
 			}
 		}
 		for (auto& el : bad) {
@@ -182,7 +183,7 @@ namespace Vore
 				VoreGlobals::body_morphs->ClearBodyMorphKeys(val.get(), VoreGlobals::MORPH_KEY);
 			}
 		}
-
+		UI::VoreMenu::SetMenuMode(UI::VoreMenuMode::kDefault);
 		// Final
 		flog::trace("Printing VoreData after loading is finished");
 		Log::PrintVoreData();
@@ -219,7 +220,7 @@ namespace Vore
 		// assigned (in this case 0). You can increase the version number if making breaking format change from a previous
 		// version of your mod, so that the load handler can know which version of the format is being used.
 		if (!a_intfc->OpenRecord('VORE', 0)) {
-			flog::error("Unable to open record to write cosave data.");
+			flog::critical("Unable to open record to write cosave data.");
 			return;
 		}
 
@@ -230,6 +231,10 @@ namespace Vore
 
 		//cosave version
 		s = s && a_intfc->WriteRecordData(&VORE_VERSION, sizeof(VORE_VERSION));
+
+		s = s && a_intfc->WriteRecordData(&PlayerPrefs::voreLoc, sizeof(PlayerPrefs::voreLoc));
+		s = s && a_intfc->WriteRecordData(&PlayerPrefs::regLoc, sizeof(PlayerPrefs::regLoc));
+		s = s && a_intfc->WriteRecordData(&PlayerPrefs::voreType, sizeof(PlayerPrefs::voreType));
 
 		//size of Data
 		size_t size = Data.size();
@@ -391,6 +396,12 @@ namespace Vore
 				a_intfc->ReadRecordData(V_VERSION);
 				flog::warn("SAVE VERSION: {}", V_VERSION);
 
+				//read player prefs
+
+				a_intfc->ReadRecordData(PlayerPrefs::voreLoc);
+				a_intfc->ReadRecordData(PlayerPrefs::regLoc);
+				a_intfc->ReadRecordData(PlayerPrefs::voreType);
+
 				//size of Data
 				size_t size;
 				a_intfc->ReadRecordData(size);
@@ -509,7 +520,7 @@ namespace Vore
 	}
 	void VoreData::OnRevert(SKSE::SerializationInterface* /*a_intfc*/)
 	{
-
+		PlayerPrefs::clear();
 		flog::info("reverting, clearing data");
 		Data.clear();
 	}

@@ -22,7 +22,7 @@ namespace flog = SKSE::log;
 #include <ClibUtil/rng.hpp>
 #include <ClibUtil/simpleINI.hpp>
 
-#include <unordered_set>
+#include <set>
 
 using uint = uint32_t;
 

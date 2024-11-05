@@ -58,20 +58,24 @@ namespace Vore
 				//
 				// info("Key pressed: {}", keyCode);
 
-				if (keyCode == VoreSettings::endo_key) {
-					Vore::Core::SwallowTarget(RE::PlayerCharacter::GetSingleton(), Locus::lStomach, VoreState::hSafe, false);
-				} else if (keyCode == VoreSettings::vore_key) {
-					Vore::Core::SwallowTarget(RE::PlayerCharacter::GetSingleton(), Locus::lStomach, VoreState::hLethal, false);
-				} else if (keyCode == VoreSettings::heal_key) {
-					Vore::Core::SwallowTarget(RE::PlayerCharacter::GetSingleton(), Locus::lStomach, VoreState::hReformation, false);
-				} else if (keyCode == VoreSettings::regurg_key) {
-					Vore::Core::RegurgitateAll(RE::PlayerCharacter::GetSingleton());
-				} else if (keyCode == VoreSettings::check_time_key) {
-					//Prints vore data;
-					Log::PrintVoreData();
-				} else if (keyCode == VoreSettings::test_key) {
-					//Prints vore data;
-					Scaleform::VoreMenu::ShowShow();
+				if (keyCode == VoreSettings::k_vore_key) {
+					Core::SwallowTarget(RE::PlayerCharacter::GetSingleton(), PlayerPrefs::voreLoc, PlayerPrefs::voreType);
+				} else if (keyCode == VoreSettings::k_regurg_key) {
+					Core::RegurgitateAll(RE::PlayerCharacter::GetSingleton(), PlayerPrefs::regLoc);
+				}
+				// menu actions
+				else if (keyCode == VoreSettings::k_menu_1) {
+					UI::VoreMenu::DoMenuAction(UI::MenuAction::kMenuA1);
+				} else if (keyCode == VoreSettings::k_menu_2) {
+					UI::VoreMenu::DoMenuAction(UI::MenuAction::kMenuA2);
+				} else if (keyCode == VoreSettings::k_menu_3) {
+					UI::VoreMenu::DoMenuAction(UI::MenuAction::kMenuA3);
+				}
+				// menu switching 
+				else if (keyCode == VoreSettings::k_i_menu) {
+					UI::VoreMenu::SetMenuMode(UI::VoreMenuMode::kInfo);
+				} else if (keyCode == VoreSettings::k_sw_menu) {
+					UI::VoreMenu::SetMenuMode(UI::VoreMenuMode::kSwallow);
 				}
 
 				break;

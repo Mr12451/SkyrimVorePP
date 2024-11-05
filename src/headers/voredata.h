@@ -85,7 +85,7 @@ namespace Vore
 		// pred
 		RE::FormID pred = 0;
 		//set of prey
-		std::unordered_set<RE::FormID> prey = {};
+		std::set<RE::FormID> prey = {};
 		/*
 		hNone = 0,
 		hSafe = 1,
@@ -146,13 +146,14 @@ namespace Vore
 		//so, at 2 preys this may be something like 200, while pdGoal is like 150
 		//std::array<double, LocusSliders::NUMOFSLIDERS> pdGoalVolume = { 0 };
 		//moved this calculation to UpdateBelly()
+		// old comments, idk how this works now
 
 		bool pdUpdateGoal = false;
 		bool pdUpdateSlider = false;
-		//this is float to count the amount of preys, including stamina or health% (idk)
 		bool pdUpdateStruggleGoal = 0;
 
 		bool pdUpdateStruggleSlider = false;
+		//this is float to count the amount of preys, including stamina or health% (idk)
 		double pdFullBurden = 0.0;
 
 
@@ -162,6 +163,11 @@ namespace Vore
 		RE::TESObjectREFR* get() const;
 
 		void GetSizeWeight(double& size, double& weight);
+		/// <summary>
+		/// not implemented
+		/// </summary>
+		/// <param name="locus"></param>
+		/// <returns></returns>
 		double GetStomachSpace(uint64_t locus);
 	};
 
@@ -172,7 +178,7 @@ namespace Vore
 		static inline std::unordered_map<RE::FormID, Vore::VoreDataEntry> Data;
 
 		static bool IsValid(RE::FormID character);
-		static bool IsPred(RE::FormID character);
+		static bool IsPred(RE::FormID character, bool onlyActive);
 		static bool IsPrey(RE::FormID character);
 
 		static RE::FormID MakeData(RE::TESObjectREFR* character);

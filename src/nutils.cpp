@@ -74,11 +74,12 @@ RE::TESObjectREFR* Vore::Utils::GetCrosshairObject()
 {
 	RE::CrosshairPickData* crosshairPick = RE::CrosshairPickData::GetSingleton();
 	if (!crosshairPick) {
-		return {};
+		flog::critical("No CrosshairPickData!!!");
+		return nullptr;
 	}
 	if (!crosshairPick->target.get()) {
-		flog::info("No target selected");
-		return {};
+		
+		return nullptr;
 	}
 
 	return crosshairPick->target.get().get();
@@ -156,12 +157,12 @@ namespace Vore::Funcs
 		SkyrimStartCombat(victim, agressor, agressor, agressor);                           // Called from Attacked above at some point
 	}
 
-	//void ApplyDamage(Actor* giant, Actor* tiny, float damage)
-	//{  // applies correct amount of damage and kills actors properly
-	//	typedef void (*DefApplyDamage)(Actor* a_this, float dmg, Actor* aggressor, HitData* maybe_hitdata, TESObjectREFR* damageSrc);
-	//	REL::Relocation<DefApplyDamage> Skyrim_ApplyDamage{ RELOCATION_ID(36345, 37335) };  // 5D6300 (SE)
-	//	Skyrim_ApplyDamage(tiny, damage, nullptr, nullptr, nullptr);
-	//}
+	void ApplyDamage([[maybe_unused]] Actor* giant, Actor* tiny, float damage)
+	{  // applies correct amount of damage and kills actors properly
+		typedef void (*DefApplyDamage)(Actor* a_this, float dmg, Actor* aggressor, HitData* maybe_hitdata, TESObjectREFR* damageSrc);
+		REL::Relocation<DefApplyDamage> Skyrim_ApplyDamage{ RELOCATION_ID(36345, 37335) };  // 5D6300 (SE)
+		Skyrim_ApplyDamage(tiny, damage, nullptr, nullptr, nullptr);
+	}
 
 	void SetRestrained(RE::Actor* actor, bool param)
 	{
@@ -186,7 +187,7 @@ namespace Vore::Funcs
 
 namespace Vore::Name
 {
-	const char* GetName(RE::TESObjectREFR* form)
+	std::string_view GetName(RE::TESObjectREFR* form)
 	{
 		if (!form) {
 			return "NULL";
@@ -194,12 +195,16 @@ namespace Vore::Name
 		return form->GetDisplayFullName();
 	}
 
-	const char* GetName(RE::FormID form)
+	std::string_view GetName(RE::FormID form)
 	{
 		if (!form) {
 			return "NULL";
 		}
 		RE::TESObjectREFR* formPtr = RE::TESForm::LookupByID(form)->As<RE::TESObjectREFR>();
-		return GetName(formPtr);
+		if (formPtr) {
+			return GetName(formPtr);
+		} else {
+			return "ERROR";
+		}
 	}
 }

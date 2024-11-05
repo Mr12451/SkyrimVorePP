@@ -1,21 +1,42 @@
 #pragma once
 
-namespace Scaleform
+namespace Vore::UI
 {
+
+	enum VoreMenuMode : uint8_t
+	{
+		kDefault, // hidden. When player is involed in vore, instead switches to PredPrey
+		kPredPrey, // display player's pred, prey, and other characters in the same locus. Can select one of the characters
+		kInfo, // shows the character's info, depending on the context
+		kSwallow, // configurate player's swallow and regurgitation preferences
+
+		kNone
+	};
+
+	enum MenuAction : uint8_t
+	{
+		kMenuA1,
+		kMenuA2,
+		kMenuA3
+	};
 
 	class VoreMenu : public RE::IMenu
 	{
 	public:
-		static constexpr const char* MENU_PATH = "VoreMenu";
-		static constexpr const char* MENU_NAME = "VoreMenu";
+		static constexpr std::string_view MENU_PATH{ "VoreMenu" };
+		static constexpr std::string_view MENU_NAME{ "VoreMenu" };
 
 		VoreMenu();
 
 		static void Register();
 		static void Show();
 		static void Hide();
-		static void ShowShow();
 		static RE::GPtr<VoreMenu> GetVoreMenu();
+
+		void SetText(std::string_view text);
+		static void Update();
+		static void SetMenuMode(VoreMenuMode mode);
+		static void DoMenuAction(MenuAction action);
 
 		static RE::stl::owner<RE::IMenu*> Creator()
 		{
@@ -23,23 +44,28 @@ namespace Scaleform
 		}
 		RE::UI_MESSAGE_RESULTS ProcessMessage(RE::UIMessage& a_message) override;
 
-		enum class MenuVisibilityMode : uint8_t
-		{
-			kHidden,
-			kVisible
-		};
-		MenuVisibilityMode _menuVisibilityMode = MenuVisibilityMode::kVisible;
-		static inline bool want_visible{ false };
 
-		static void SetMenuVisibilityMode(MenuVisibilityMode a_mode);
+
+		static void SetMenuVisibilityMode(bool a_mode);
 		bool IsOpen() const;
 		void OnOpen();
 		void OnClose();
 
-	private:
-		bool _bIsOpen = false;
+		static inline bool NeedUpdate{ false };
 
+		static inline int _lastCharCount { 0 };
+		static inline int _charIndex { 0 };
 	private:
+		static inline VoreMenuMode _menuMode{ VoreMenuMode::kNone };
+		bool _visible = true;
+		static inline bool _exists { false };
+		static inline RE::ObjectRefHandle _infoTarget;
+		static inline bool _firstInfoUpdate { false };
+
+		static inline VoreMenuMode _setModeAfterShow{ kNone };
+
+		void WriteSwallowMenu();
+
 		class Logger : public RE::GFxLog
 		{
 		public:

@@ -1,4 +1,5 @@
 #include "headers/times.h"
+#include "headers/ui.h"
 
 namespace Vore
 {
@@ -66,6 +67,11 @@ namespace Vore
 		float delta = Time::RealTimeDelta();
 		//worldTimeElapsed += delta;
 		realTimeElapsed += delta;
+
+		if (UI::VoreMenu::NeedUpdate) {
+			UI::VoreMenu::Update();
+		}
+
 		for (auto& el : timers) {
 			el.Process(delta);
 		}

@@ -8,12 +8,25 @@ namespace Vore
 	{
 		//settings will be loaded here
 	public:
-		static inline uint32_t endo_key = 59;
-		static inline uint32_t vore_key = 60;
-		static inline uint32_t heal_key = 61;
-		static inline uint32_t regurg_key = 62;
-		static inline uint32_t check_time_key = 64;
-		static inline uint32_t test_key = 65;
+		// keycodes: look here https://ck.uesp.net/wiki/Input_Script
+
+		// main
+		static inline uint32_t k_vore_key = 59;
+		static inline uint32_t k_regurg_key = 62;
+
+		// menus
+		static inline uint32_t k_i_menu = 60;
+		static inline uint32_t k_sw_menu = 61;
+
+		// menu actions
+
+		static inline uint32_t k_menu_1 = 64;
+		static inline uint32_t k_menu_2 = 65;
+		static inline uint32_t k_menu_3 = 66;
+
+		// main
+
+		static inline bool dual_boobs = false;
 
 		static inline double slow_update = 5;
 		static inline double fast_update = 0.2;
@@ -143,8 +156,7 @@ namespace Vore
 			{},
 			{} } };
 
-		static inline std::array<std::vector<std::tuple<const char*, float, float>>, Locus::NUMOFLOCI> struggle_sliders = { { 
-			{ { "StruggleSlider1", 1.0f, 5.0f }, { "StruggleSlider2", 1.0f, 5.0f }, { "StruggleSlider3", 1.0f, 5.0f } },
+		static inline std::array<std::vector<std::tuple<const char*, float, float>>, Locus::NUMOFLOCI> struggle_sliders = { { { { "StruggleSlider1", 1.0f, 5.0f }, { "StruggleSlider2", 1.0f, 5.0f }, { "StruggleSlider3", 1.0f, 5.0f } },
 			{ { "StruggleSlider1", 1.0f, 5.0f }, { "StruggleSlider2", 1.0f, 5.0f }, { "StruggleSlider3", 1.0f, 5.0f } },
 			{ { "BVoreStruggleL1", 1.0f, 5.0f }, { "BVoreStruggleL2", 1.0f, 5.0f }, { "BVoreStruggleL3", 1.0f, 5.0f } },
 			{ { "BVoreStruggleR1", 1.0f, 5.0f }, { "BVoreStruggleR2", 1.0f, 5.0f }, { "BVoreStruggleR3", 1.0f, 5.0f } },
@@ -167,8 +179,7 @@ namespace Vore
 		uFatCock,
 
 		*/
-		static inline std::array<std::array<double, LocusSliders::uFatLow - LocusSliders::uFatBelly>, Locus::NUMOFLOCI> voretypes_partgain = { { 
-			{ 0.7, 0.05, 0.05, 0.0 },
+		static inline std::array<std::array<double, LocusSliders::uFatLow - LocusSliders::uFatBelly>, Locus::NUMOFLOCI> voretypes_partgain = { { { 0.7, 0.05, 0.05, 0.0 },
 			{ 0.2, 0.5, 0.5, 0.0 },
 			{ 0.0, 0.0, 1.0, 0.0 },
 			{ 0.0, 0.0, 1.0, 0.0 },
@@ -191,5 +202,150 @@ namespace Vore
 			Locus::lStomach };
 
 		static inline std::vector<RE::FormID> delete_queue;
+	};
+
+	class PlayerPrefs
+	{
+	public:
+		static inline Locus voreLoc = Locus::lStomach;
+		static inline Locus regLoc = Locus::lNone;
+		static inline VoreState voreType = VoreState::hSafe;
+
+		static void clear() {
+			voreLoc = Locus::lStomach;
+			regLoc = Locus::lNone;
+			voreType = VoreState::hSafe;
+		}
+
+		static std::string_view GetTypeStr(VoreState vType)
+		{
+			switch (vType) {
+			case VoreState::hSafe:
+				return "Safe";
+			case VoreState::hLethal:
+				return "Lethal";
+			default:
+				return "Error!";
+			}
+		}
+
+		static std::string_view GetLocStr(Locus& loc)
+		{
+			switch (loc) {
+			case Locus::lStomach:
+				return "Oral";
+			case Locus::lBowel:
+				return "Anal";
+			case Locus::lBreastl:
+				return "Breast L";
+			case Locus::lBreastr:
+				return "Breast R";
+			case Locus::lWomb:
+				return "Unbirth";
+			case Locus::lBalls:
+				return "Cock";
+			case Locus::lNone:
+				return "Any";
+			default:
+				return "???";
+			}
+		}
+
+		static bool hasC(RE::Actor* character = nullptr)
+		{
+			if (!character) {
+				character = RE::PlayerCharacter::GetSingleton();
+			}
+
+			RE::TESNPC* actorbase = character->GetActorBase();
+			if (actorbase->GetSex() == RE::SEX::kMale) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		static bool hasB(RE::Actor* character = nullptr)
+		{
+			if (!character) {
+				character = RE::PlayerCharacter::GetSingleton();
+			}
+
+			RE::TESNPC* actorbase = character->GetActorBase();
+			if (actorbase->GetSex() == RE::SEX::kFemale) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		static bool hasV(RE::Actor* character = nullptr)
+		{
+			if (!character) {
+				character = RE::PlayerCharacter::GetSingleton();
+			}
+
+			RE::TESNPC* actorbase = character->GetActorBase();
+			if (actorbase->GetSex() == RE::SEX::kFemale) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		static Locus LIter(Locus loc, bool allowAll)
+		{
+			switch (loc) {
+			case Locus::lNone:
+				return Locus::lStomach;
+			case Locus::lStomach:
+				return Locus::lBowel;
+			case Locus::lBowel:
+				if (hasB())
+					return Locus::lBreastl;
+				else if (hasV())
+					return Locus::lWomb;
+				else if (hasC())
+					return Locus::lBalls;
+				else if (allowAll)
+					return Locus::lNone;
+				else
+					return Locus::lStomach;
+			case Locus::lBreastl:
+				if (VoreSettings::dual_boobs)
+					return Locus::lBreastr;
+				else if (hasV())
+					return Locus::lWomb;
+				else if (hasC())
+					return Locus::lBalls;
+				else if (allowAll)
+					return Locus::lNone;
+				else
+					return Locus::lStomach;
+			case Locus::lBreastr:
+				if (hasV())
+					return Locus::lWomb;
+				else if (hasC())
+					return Locus::lBalls;
+				else if (allowAll)
+					return Locus::lNone;
+				else
+					return Locus::lStomach;
+			case Locus::lWomb:
+				if (hasC())
+					return Locus::lBalls;
+				else if (allowAll)
+					return Locus::lNone;
+				else
+					return Locus::lStomach;
+			case Locus::lBalls:
+				if (allowAll)
+					return Locus::lNone;
+				else
+					return Locus::lStomach;
+			default:
+				return Locus::lStomach;
+			}
+		}
 	};
 }
