@@ -3,6 +3,7 @@
 #include "headers/settings.h"
 #include "headers/util.h"
 #include "headers/voredata.h"
+#include "headers/voremain.h"
 #include "headers/vutils.h"
 
 namespace Vore::UI
@@ -52,7 +53,7 @@ namespace Vore::UI
 
 	static void WriteStats(std::string& text, RE::Actor* actr)
 	{
-		text += "\nStats: HP ";
+		text += "\nHP ";
 		text += std::to_string(static_cast<int>(AV::GetAV(actr, RE::ActorValue::kHealth)));
 		text += "/";
 		text += std::to_string(static_cast<int>(AV::GetMaxAV(actr, RE::ActorValue::kHealth)));
@@ -125,9 +126,9 @@ namespace Vore::UI
 				text += "Up [";
 				text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_1);
 				text += "] Down [";
-				text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_2);
-				text += "] Select [";
 				text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_3);
+				text += "] Select [";
+				text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_2);
 				text += "]\n\n";
 
 				RE::FormID playerId = RE::PlayerCharacter::GetSingleton()->GetFormID();
@@ -182,6 +183,8 @@ namespace Vore::UI
 			}
 		case (VoreMenuMode::kInfo):
 			{
+				_iMode = kNeutral;
+				_iAllowReg = false;
 				if (!_infoTarget.get()) {
 					_firstInfoUpdate = false;
 					std::string text{ "No target (THIS SHOULD NEVER BE DISPLAYED!)" };
@@ -212,7 +215,7 @@ namespace Vore::UI
 
 				if (VoreData::IsValid(charId)) {
 					VoreDataEntry& actorData = VoreData::Data[charId];
-					text += "Has vore data: true";
+					text += "\nHas vore data: true";
 					text += "\nAlive: ";
 					text += actorData.aAlive ? "true" : "false";
 					text += "\nSize: ";
@@ -220,11 +223,13 @@ namespace Vore::UI
 					text += " Weight: ";
 					text += std::format("{:.2f}", actorData.aWeight);
 
-					WriteStats(text, actr);
 
 					if (VoreData::IsPrey(charId)) {
 						WritePreyData(text, charId, false);
+					} else {
+						WriteStats(text, actr);
 					}
+
 					if (actorData.prey.size() > 0) {
 						text += "\n\nPreys: ";
 						for (auto& el : actorData.prey) {
@@ -246,31 +251,42 @@ namespace Vore::UI
 						if (actorData.pred == playerId) {
 							text += "\nTalk [";
 							text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_1);
-							text += "]\nRelease [";
+							text += "]\nSwitch Lethality [";
 							text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_2);
-							text += "]\nDigest [";
-							text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_3);
+							if (Core::CanBeRegurgitated(actorData)) {
+								text += "]\nRelease [";
+								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_3);
+								_iAllowReg = true;
+							}
+							if (actorData.pyLocus == lStomach && Core::CanMoveToLocus(playerId, charId, lBowel, lStomach)) {
+								text += "]\nFull tour [";
+								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_sw_menu);
+								_iAllowReg = true;
+							}
 							text += "]";
+							_iMode = kPrey;
 						} else if (VoreData::IsValid(playerId)) {
 							if (VoreData::Data[playerId].pred == charId) {
 								text += "\nTalk [";
 								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_1);
-								text += "]\nStart/Stop Struggling [";
+								text += "]\nStruggle/Stop [";
 								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_2);
 								text += "]";
+								_iMode = kPred;
 							} else if (VoreData::Data[playerId].pred == actorData.pred && actorData.pred) {
 								text += "\nTalk [";
 								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_1);
-								text += "]\Try To Devour [";
+								text += "]\nTry To swallow [";
 								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_2);
 								text += "]";
+								_iMode = kSameLocus;
 							}
 						}
 					}
 					text += "\n";
 
 				} else {
-					text += "Has vore data: false";
+					text += "\nHas vore data: false";
 					text += "\nAlive: ";
 					text += actr->IsDead() ? "false" : "true";
 					text += "\nSize: ";
@@ -320,7 +336,7 @@ namespace Vore::UI
 		SetText(text);
 	}
 
-	void VoreMenu::SetMenuMode(VoreMenuMode mode)
+	void VoreMenu::SetMenuMode(VoreMenuMode mode, bool ignoreInfoCrosshair)
 	{
 		if (mode == kNone) {
 			return;
@@ -335,8 +351,9 @@ namespace Vore::UI
 			flog::critical("Cannot switch menu states - no menu found!");
 			return;
 		}
-
-		_infoTarget.reset();
+		if (!ignoreInfoCrosshair) {
+			_infoTarget.reset();
+		}
 		// return to default/predprey menu
 		if (mode > VoreMenuMode::kPredPrey && _menuMode == mode) {
 			SetMenuMode(VoreMenuMode::kDefault);
@@ -361,11 +378,13 @@ namespace Vore::UI
 		case VoreMenuMode::kInfo:
 			{
 				// get target or player
-				RE::TESObjectREFR* target = Utils::GetCrosshairObject();
-				if (!target || target->GetFormType() != RE::FormType::ActorCharacter) {
-					target = RE::PlayerCharacter::GetSingleton();
+				if (!ignoreInfoCrosshair) {
+					RE::TESObjectREFR* target = Utils::GetCrosshairObject();
+					if (!target || target->GetFormType() != RE::FormType::ActorCharacter) {
+						target = RE::PlayerCharacter::GetSingleton();
+					}
+					_infoTarget = target->GetHandle();
 				}
-				_infoTarget = target->GetHandle();
 				_firstInfoUpdate = true;
 				SetMenuVisibilityMode(true);
 				Update();
@@ -380,6 +399,11 @@ namespace Vore::UI
 			SetMenuVisibilityMode(false);
 			break;
 		}
+	}
+
+	void VoreMenu::TalkToA(RE::Actor* character)
+	{
+		character->InitiateDialogue(RE::PlayerCharacter::GetSingleton(), nullptr, nullptr);
 	}
 
 	void VoreMenu::DoMenuAction(MenuAction action)
@@ -399,7 +423,7 @@ namespace Vore::UI
 				case (MenuAction::kMenuA1):
 					_charIndex--;
 					Update();
-					return;
+					break;
 				case (MenuAction::kMenuA2):
 					{
 						if (_charIndex < 0) {
@@ -434,12 +458,13 @@ namespace Vore::UI
 						if (_charIndex < allCharsWithPlayer.size()) {
 							_infoTarget = VoreData::Data[allCharsWithPlayer[_charIndex]].get()->GetHandle();
 						}
-						SetMenuMode(kInfo);
+						SetMenuMode(kInfo, true);
 						return;
 					}
 				case (MenuAction::kMenuA3):
+					_charIndex++;
 					Update();
-					return;
+					break;
 				}
 
 				if (_charIndex < 0) {
@@ -451,12 +476,72 @@ namespace Vore::UI
 			}
 		case VoreMenuMode::kInfo:
 			{
-				switch (action) {
-				case (MenuAction::kMenuA1):
+				switch (_iMode) {
+				case InfoMode::kPred:
+					switch (action) {
+					case (MenuAction::kMenuA1):
+						TalkToA(_infoTarget.get().get()->As<RE::Actor>());
+						SetMenuMode(kDefault);
+						break;
+					case (MenuAction::kMenuA2):
+						{
+							if (VoreData::IsValid(RE::PlayerCharacter::GetSingleton()->GetFormID())) {
+								VoreDataEntry& playerData = VoreData::Data[RE::PlayerCharacter::GetSingleton()->GetFormID()];
+								if (playerData.pyStruggle == VoreState::sStill) {
+									playerData.pyStruggle = sStruggling;
+								} else {
+									playerData.pyStruggle = sStill;
+								}
+							}
+							Update();
+							break;
+						}
+					}
 					break;
-				case (MenuAction::kMenuA2):
+				case InfoMode::kPrey:
+					switch (action) {
+					case (MenuAction::kMenuA1):
+						TalkToA(_infoTarget.get().get()->As<RE::Actor>());
+						SetMenuMode(kDefault);
+						break;
+					case (MenuAction::kMenuA2):
+						{
+							if (VoreData::IsValid(_infoTarget.get().get()->GetFormID())) {
+								VoreDataEntry& preyData = VoreData::Data[_infoTarget.get().get()->GetFormID()];
+								if (preyData.pyDigestion == VoreState::hLethal) {
+									Core::SwitchToDigestion(RE::PlayerCharacter::GetSingleton()->GetFormID(), preyData.pyLocus, VoreState::hSafe, true);
+								} else {
+									Core::SwitchToDigestion(RE::PlayerCharacter::GetSingleton()->GetFormID(), preyData.pyLocus, VoreState::hLethal, true);
+								}
+							}
+							Update();
+							break;
+						}
+					case (MenuAction::kMenuA3):
+						if (_iAllowReg) {
+							Core::Regurgitate(RE::PlayerCharacter::GetSingleton(), _infoTarget.get().get()->GetFormID(), Core::rNormal);
+							SetMenuMode(kDefault);
+						}
+						break;
+					case (MenuAction::kMenuA4):
+						if (_iFullTour) {
+							Core::MoveToLocus(RE::PlayerCharacter::GetSingleton()->GetFormID(), _infoTarget.get().get()->GetFormID(), lBowel, lStomach);
+							Update();
+						}
+						break;
+					}
 					break;
-				case (MenuAction::kMenuA3):
+				case InfoMode::kSameLocus:
+					switch (action) {
+					case (MenuAction::kMenuA1):
+						TalkToA(_infoTarget.get().get()->As<RE::Actor>());
+						SetMenuMode(kDefault);
+						break;
+					case (MenuAction::kMenuA2):
+						Core::Swallow(RE::PlayerCharacter::GetSingleton(), _infoTarget.get().get(), PlayerPrefs::voreLoc, PlayerPrefs::voreType, false);
+						SetMenuMode(kDefault);
+						break;
+					}
 					break;
 				}
 				break;
@@ -467,6 +552,7 @@ namespace Vore::UI
 				case (MenuAction::kMenuA1):
 					{
 						PlayerPrefs::voreLoc = PlayerPrefs::LIter(PlayerPrefs::voreLoc, false);
+						thisMenu->WriteSwallowMenu();
 						break;
 					}
 				case (MenuAction::kMenuA2):
@@ -476,15 +562,16 @@ namespace Vore::UI
 						} else {
 							PlayerPrefs::voreType = VoreState::hLethal;
 						}
+						thisMenu->WriteSwallowMenu();
 						break;
 					}
 				case (MenuAction::kMenuA3):
 					{
 						PlayerPrefs::regLoc = PlayerPrefs::LIter(PlayerPrefs::regLoc, true);
+						thisMenu->WriteSwallowMenu();
 						break;
 					}
 				}
-				thisMenu->WriteSwallowMenu();
 				break;
 			}
 		}
@@ -555,6 +642,8 @@ namespace Vore::UI
 		_exists = false;
 		_menuMode = kNone;
 		_setModeAfterShow = kNone;
+		_infoTarget.reset();
+
 	}
 
 	void VoreMenu::SetMenuVisibilityMode(bool a_mode)

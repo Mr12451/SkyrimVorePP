@@ -1,11 +1,11 @@
 #include "headers/events.h"
+#include "headers/settings.h"
+#include "headers/times.h"
+#include "headers/ui.h"
 #include "headers/util.h"
 #include "headers/voredata.h"
 #include "headers/voremain.h"
-#include "headers/times.h"
 #include "headers/vutils.h"
-#include "headers/settings.h"
-#include "headers/ui.h"
 
 namespace Vore
 {
@@ -70,8 +70,10 @@ namespace Vore
 					UI::VoreMenu::DoMenuAction(UI::MenuAction::kMenuA2);
 				} else if (keyCode == VoreSettings::k_menu_3) {
 					UI::VoreMenu::DoMenuAction(UI::MenuAction::kMenuA3);
+				} else if (keyCode == VoreSettings::k_menu_4) {
+					UI::VoreMenu::DoMenuAction(UI::MenuAction::kMenuA4);
 				}
-				// menu switching 
+				// menu switching
 				else if (keyCode == VoreSettings::k_i_menu) {
 					UI::VoreMenu::SetMenuMode(UI::VoreMenuMode::kInfo);
 				} else if (keyCode == VoreSettings::k_sw_menu) {

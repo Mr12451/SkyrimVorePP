@@ -17,7 +17,8 @@ namespace Vore::UI
 	{
 		kMenuA1,
 		kMenuA2,
-		kMenuA3
+		kMenuA3,
+		kMenuA4
 	};
 
 	class VoreMenu : public RE::IMenu
@@ -35,7 +36,8 @@ namespace Vore::UI
 
 		void SetText(std::string_view text);
 		static void Update();
-		static void SetMenuMode(VoreMenuMode mode);
+		static void SetMenuMode(VoreMenuMode mode, bool ignoreInfoCrosshair = false);
+		static void TalkToA(RE::Actor* character);
 		static void DoMenuAction(MenuAction action);
 
 		static RE::stl::owner<RE::IMenu*> Creator()
@@ -56,10 +58,22 @@ namespace Vore::UI
 		static inline int _lastCharCount { 0 };
 		static inline int _charIndex { 0 };
 	private:
+
+		enum InfoMode : uint8_t
+		{
+			kNeutral,
+			kPred,
+			kPrey,
+			kSameLocus
+		};
+
+		static inline InfoMode _iMode = kNeutral;
+		static inline RE::ObjectRefHandle _infoTarget;
+		static inline bool _iAllowReg = false;
+		static inline bool _iFullTour = false;
 		static inline VoreMenuMode _menuMode{ VoreMenuMode::kNone };
 		bool _visible = true;
 		static inline bool _exists { false };
-		static inline RE::ObjectRefHandle _infoTarget;
 		static inline bool _firstInfoUpdate { false };
 
 		static inline VoreMenuMode _setModeAfterShow{ kNone };

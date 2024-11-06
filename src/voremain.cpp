@@ -47,6 +47,19 @@ namespace Vore::Core
 		return false;
 	}
 
+	bool CanBeRegurgitated(VoreDataEntry& prey)
+	{
+		// prey is fully digested
+		if (!prey.aAlive && prey.pyDigestProgress == 100) {
+			return true;
+		}
+		// no full tour
+		if (prey.aAlive && prey.pyLocusProcess == 0.0) {
+			return true;
+		}
+		return false;
+	}
+
 	void MoveToLocus(RE::FormID pred, RE::FormID prey, Locus locus, Locus locusSource)
 	{
 		if (!VoreData::IsValid(pred) || !VoreData::IsValid(prey)) {
@@ -56,7 +69,11 @@ namespace Vore::Core
 			auto& pyData = VoreData::Data[prey];
 			pyData.pyLocus = locus;
 			pyData.pyDigestion = VoreData::Data[pred].pdLoci[locus];
-			pyData.pyLocusProcess = 0.0;
+			if (locusSource == lStomach && locus == lBowel) {
+				pyData.pyLocusProcess = 100.0;
+			} else {
+				pyData.pyLocusProcess = 0.0;
+			}
 			flog::info("Moved Prey {} to Locus {}", Name::GetName(pyData.get()), (uint8_t)locus);
 		}
 	}
@@ -158,10 +175,12 @@ namespace Vore::Core
 				preyData.pyLocus = locus;
 				preyData.pyDigestion = ldType;
 				preyData.pyStruggle = GetStruggle(preyA, locus, ldType);
-				preyData.pyLocusMovement = (preyData.pyLocus == Locus::lBowel) ? VoreState::mIncrease : VoreState::mStill;
 
 				preyData.pyDigestProgress = 0;
 				preyData.pySwallowProcess = fullswallow ? 100 : 20;
+
+				//full tour related shit
+				preyData.pyLocusMovement = (preyData.pyLocus == Locus::lBowel) ? VoreState::mIncrease : VoreState::mStill;
 				preyData.pyLocusProcess = 0;
 
 				preyCount++;
@@ -248,6 +267,11 @@ namespace Vore::Core
 
 			if (preyData.pyDigestProgress > 0 && preyData.pyDigestProgress < 100) {
 				flog::info("Prey is not digested yet.");
+				continue;
+			}
+
+			if (rtype != rAll && !CanBeRegurgitated(preyData)) {
+				flog::info("Can't regurgitate {}", Name::GetName(preyData.get()));
 				continue;
 			}
 
@@ -544,7 +568,7 @@ namespace Vore::Core
 				//aWeight can increase / decrease digestion time
 				val.pyDigestProgress = std::min(val.pyDigestProgress + digestBase * 100 / val.aWeight, 100.0);
 				if (val.pyLocus == Locus::lBowel) {
-					val.pyLocusProcess = val.pyDigestProgress;
+					val.pyLocusProcess = 100 - val.pyDigestProgress;
 				}
 				// weight gain
 

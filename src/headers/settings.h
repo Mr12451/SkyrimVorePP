@@ -23,6 +23,9 @@ namespace Vore
 		static inline uint32_t k_menu_1 = 64;
 		static inline uint32_t k_menu_2 = 65;
 		static inline uint32_t k_menu_3 = 66;
+		static inline uint32_t k_menu_4 = 68;
+
+		static inline uint32_t k_test = 87;
 
 		// main
 

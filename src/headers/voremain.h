@@ -14,6 +14,7 @@ namespace Vore
 		};
 		void SwitchToDigestion(RE::FormID pred, Locus locus, VoreState dType, bool forceStopDigestion);
 		bool CanMoveToLocus(RE::FormID pred, RE::FormID prey, Locus locus, Locus locusSource);
+		bool CanBeRegurgitated(VoreDataEntry& prey);
 		void MoveToLocus(RE::FormID pred, RE::FormID prey, Locus locus, Locus locusSource = Locus::lNone);
 		void Swallow(RE::Actor* pred, std::vector<RE::TESObjectREFR*> preys, Locus locus, VoreState ldType, bool fullswallow = false);
 		void Swallow(RE::Actor* pred, RE::TESObjectREFR* prey, Locus locus, VoreState ldType, bool fullswallow = false);
