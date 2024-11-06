@@ -30,6 +30,8 @@ namespace Vore
 		// main
 
 		static inline bool dual_boobs = false;
+		static inline bool digest_protected = true;
+		static inline bool digest_essential = true;
 
 		static inline double slow_update = 5;
 		static inline double fast_update = 0.2;

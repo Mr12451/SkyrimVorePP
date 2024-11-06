@@ -17,6 +17,7 @@ inline void InitializeEvents()
 	//RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::TESActivateEvent>(&eventProcessor);
 	//RE::UI::GetSingleton()->AddEventSink<RE::MenuOpenCloseEvent>(&eventProcessor);
 	RE::BSInputDeviceManager::GetSingleton()->AddEventSink<InputEvents>(&eventProcessor);
+	RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::TESDeathEvent>(&eventProcessor);
 	flog::trace("End event initialization");
 }
 

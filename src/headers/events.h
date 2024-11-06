@@ -6,7 +6,8 @@ namespace Vore
 	class EventProcessor :
 		public RE::BSTEventSink<RE::TESActivateEvent>,
 		public RE::BSTEventSink<InputEvents>,
-		public RE::BSTEventSink<RE::MenuOpenCloseEvent>
+		public RE::BSTEventSink<RE::MenuOpenCloseEvent>,
+		public RE::BSTEventSink<RE::TESDeathEvent>
 	{
 		// Pretty typical singleton setup
 		// *Private* constructor/destructor
@@ -29,6 +30,10 @@ namespace Vore
 		// Log information about Menu open/close events that happen in the game
 		RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent* event,
 			RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override;
+
+		// handle actor death
+		RE::BSEventNotifyControl ProcessEvent(const RE::TESDeathEvent* event,
+			RE::BSTEventSource<RE::TESDeathEvent>*) override;
 
 	private:
 		EventProcessor();

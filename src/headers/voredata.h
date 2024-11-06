@@ -182,7 +182,7 @@ namespace Vore
 		static bool IsPrey(RE::FormID character);
 
 		static RE::FormID MakeData(RE::TESObjectREFR* character);
-		static void SoftDelete(RE::FormID character);
+		static void SoftDelete(RE::FormID character, bool leaveOnlyActive = false);
 		static void HardDelete(RE::FormID character);
 
 		static void DataSetup();

@@ -128,7 +128,7 @@ namespace Vore
 		return chid;
 	}
 
-	void VoreData::SoftDelete(RE::FormID character)
+	void VoreData::SoftDelete(RE::FormID character, bool leaveOnlyActive)
 	{
 		if (!character) {
 			flog::warn("Invalid character for deletion");
@@ -137,7 +137,7 @@ namespace Vore
 			flog::trace("Character not in vore: {}", Name::GetName(character));
 			return;
 		}
-		if (IsPred(character, false)) {
+		if (IsPred(character, leaveOnlyActive)) {
 			flog::trace("{} still a pred", Name::GetName(character));
 		} else if (IsPrey(character)) {
 			flog::trace("{} still a prey", Name::GetName(character));

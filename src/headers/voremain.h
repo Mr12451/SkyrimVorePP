@@ -22,7 +22,6 @@ namespace Vore
 		void Regurgitate(RE::Actor* pred, std::vector<RE::FormID> preys, RegType rtype);
 		void Regurgitate(RE::Actor* pred, RE::FormID prey, RegType rtype);
 		void RegurgitateAll(RE::Actor* pred, Locus locus = Locus::lNone, RegType rtype = RegType::rNormal);
-		void KillPrey(RE::FormID prey, RE::Actor* asActor);
 		void SetupTimers();
 	}
 }

@@ -6,6 +6,7 @@
 #include "headers/voredata.h"
 #include "headers/voremain.h"
 #include "headers/vutils.h"
+#include "headers/nutils.h"
 
 namespace Vore
 {
@@ -81,6 +82,35 @@ namespace Vore
 				}
 
 				break;
+			}
+		}
+		return RE::BSEventNotifyControl::kContinue;
+	}
+
+	RE::BSEventNotifyControl EventProcessor::ProcessEvent(const RE::TESDeathEvent* event, RE::BSTEventSource<RE::TESDeathEvent>*)
+	{
+		if (!event)
+			return RE::BSEventNotifyControl::kContinue;
+		if (event->dead && event->actorDying && event->actorDying.get()) {
+			RE::FormID aId = event->actorDying->GetFormID();
+			if (VoreData::IsValid(aId)) {
+				VoreDataEntry& actorData = VoreData::Data[aId];
+				actorData.aAlive = false;
+				if (VoreData::IsPred(aId, true)) {
+					Core::RegurgitateAll(event->actorDying->As<RE::Actor>(), lNone, Core::rAll);
+				}
+
+				if (std::find(VoreGlobals::delete_queue.begin(), VoreGlobals::delete_queue.end(), aId) != VoreGlobals::delete_queue.end()) {
+					flog::warn("Trying to kill a deleted prey: {}", Name::GetName(actorData.get()));
+					return RE::BSEventNotifyControl::kContinue;
+				}
+
+				actorData.pyDigestProgress = 0.0;
+				actorData.pyElimLocus = actorData.pyLocus;
+				actorData.pyLocusMovement = mStill;
+				if (actorData.pyLocus == Locus::lStomach) {
+					Core::MoveToLocus(actorData.pred, aId, Locus::lBowel);
+				}
 			}
 		}
 		return RE::BSEventNotifyControl::kContinue;

@@ -67,19 +67,21 @@ namespace Vore::UI
 		text += std::to_string(static_cast<int>(AV::GetMaxAV(actr, RE::ActorValue::kMagicka)));
 	}
 
-	static void WritePreyData(std::string& text, RE::FormID prey, bool countIndex)
+	static void WritePreyData(std::string& text, RE::FormID prey, bool countIndex, bool writeName)
 	{
 		if (!VoreData::IsValid(prey)) {
 			flog::critical("Found an illigal prey {}", Name::GetName(prey));
 			return;
 		}
 		VoreDataEntry& pyData = VoreData::Data[prey];
-		text += "\n";
+		if (writeName) {
 
-		if (countIndex && VoreMenu::_charIndex == VoreMenu::_lastCharCount) {
-			text += "--> ";
+			text += "\n";
+			if (countIndex && VoreMenu::_charIndex == VoreMenu::_lastCharCount) {
+				text += "--> ";
+			}
+			text += Name::GetName(pyData.get());
 		}
-		text += Name::GetName(pyData.get());
 
 		WriteStats(text, pyData.get()->As<RE::Actor>());
 		text += "\n";
@@ -163,7 +165,7 @@ namespace Vore::UI
 						text += "\nOther prey";
 						for (RE::FormID& prey : otherPrey) {
 							if (prey != playerId) {
-								WritePreyData(text, prey, true);
+								WritePreyData(text, prey, true, true);
 							}
 						}
 						text += "\n";
@@ -171,10 +173,15 @@ namespace Vore::UI
 				}
 				if ((VoreData::IsPred(playerId, true))) {
 					text.reserve(512);
-					VoreDataEntry& actorData = VoreData::Data[playerId];
+					VoreDataEntry& playerData = VoreData::Data[playerId];
 					text += "Your prey:";
-					for (auto& prey : actorData.prey) {
-						WritePreyData(text, prey, true);
+					for (auto& prey : playerData.prey) {
+						WritePreyData(text, prey, true, true);
+					}
+					text += "\nIndigestion:";
+					for (auto& lInd : playerData.pdIndigestion) {
+						text += " ";
+						text += std::to_string(static_cast<int>(lInd));
 					}
 				}
 
@@ -223,9 +230,8 @@ namespace Vore::UI
 					text += " Weight: ";
 					text += std::format("{:.2f}", actorData.aWeight);
 
-
 					if (VoreData::IsPrey(charId)) {
-						WritePreyData(text, charId, false);
+						WritePreyData(text, charId, false, false);
 					} else {
 						WriteStats(text, actr);
 					}
@@ -525,8 +531,12 @@ namespace Vore::UI
 						break;
 					case (MenuAction::kMenuA4):
 						if (_iFullTour) {
-							Core::MoveToLocus(RE::PlayerCharacter::GetSingleton()->GetFormID(), _infoTarget.get().get()->GetFormID(), lBowel, lStomach);
-							Update();
+							if (VoreData::IsValid(_infoTarget.get().get()->GetFormID())) {
+								VoreDataEntry& preyData = VoreData::Data[_infoTarget.get().get()->GetFormID()];
+								Core::MoveToLocus(RE::PlayerCharacter::GetSingleton()->GetFormID(), _infoTarget.get().get()->GetFormID(), lBowel, lStomach);
+								preyData.pyLocusMovement = mDecrease;
+								Update();
+							}
 						}
 						break;
 					}
@@ -643,7 +653,6 @@ namespace Vore::UI
 		_menuMode = kNone;
 		_setModeAfterShow = kNone;
 		_infoTarget.reset();
-
 	}
 
 	void VoreMenu::SetMenuVisibilityMode(bool a_mode)

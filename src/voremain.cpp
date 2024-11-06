@@ -2,12 +2,11 @@
 #include "headers/nutils.h"
 #include "headers/settings.h"
 #include "headers/times.h"
-#include "headers/vutils.h"
 #include "headers/ui.h"
+#include "headers/vutils.h"
 
 namespace Vore::Core
 {
-
 
 	void SwitchToDigestion(RE::FormID pred, Locus locus, VoreState ldType, bool forceStopDigestion)
 	{
@@ -30,7 +29,7 @@ namespace Vore::Core
 			}
 		}
 		flog::info("Pred {} digestion in locus {} set to {}", Name::GetName(VoreData::Data[pred].get()), (uint8_t)locus, (uint8_t)VoreData::Data[pred].pdLoci[locus]);
-	} 
+	}
 
 	bool CanMoveToLocus([[maybe_unused]] RE::FormID pred, [[maybe_unused]] RE::FormID prey, Locus locus, Locus locusSource)
 	{
@@ -69,7 +68,7 @@ namespace Vore::Core
 			auto& pyData = VoreData::Data[prey];
 			pyData.pyLocus = locus;
 			pyData.pyDigestion = VoreData::Data[pred].pdLoci[locus];
-			if (locusSource == lStomach && locus == lBowel) {
+			if (locus == lBowel) {
 				pyData.pyLocusProcess = 100.0;
 			} else {
 				pyData.pyLocusProcess = 0.0;
@@ -94,9 +93,9 @@ namespace Vore::Core
 		return VoreState::sStill;
 	}
 
-	void SetPreyVisibility(RE::Actor* prey, bool show) {
+	void SetPreyVisibility(RE::Actor* prey, bool show)
+	{
 		if (!show) {
-
 			Funcs::StopCombatAlarm(prey);
 			Funcs::StopCombat(prey);
 		}
@@ -155,7 +154,6 @@ namespace Vore::Core
 				}
 				Vore::VoreDataEntry& preyData = VoreData::Data[preyId];
 
-
 				RE::FormID oldPred = preyData.pred;
 
 				if (oldPred) {
@@ -202,7 +200,8 @@ namespace Vore::Core
 		flog::info("Swallow end");
 	}
 
-	void Swallow(RE::Actor* pred, RE::TESObjectREFR* prey, Locus locus, VoreState ldType, bool fullswallow) {
+	void Swallow(RE::Actor* pred, RE::TESObjectREFR* prey, Locus locus, VoreState ldType, bool fullswallow)
+	{
 		std::vector<RE::TESObjectREFR*> preys = { prey };
 		Swallow(pred, preys, locus, ldType, fullswallow);
 	}
@@ -259,7 +258,7 @@ namespace Vore::Core
 			}
 
 			VoreDataEntry& preyData = VoreData::Data[prey];
-			
+
 			if (preyData.pred != predId) {
 				flog::warn("Prey and pred mismatch! Skipping.");
 				continue;
@@ -296,7 +295,7 @@ namespace Vore::Core
 					preysToSwallow.push_back(preyData.get());
 				} else {
 					preyData.pred = 0;
-					VoreData::SoftDelete(prey);
+					VoreData::SoftDelete(prey, !preyData.aAlive);
 					preysToDelete.push_back(preyData.get());
 				}
 
@@ -335,8 +334,7 @@ namespace Vore::Core
 				predData.pdIndigestion[l] = 0.0;
 			}
 		}
-
-		VoreData::SoftDelete(predId);
+		VoreData::SoftDelete(predId, !predData.aAlive);
 		UI::VoreMenu::SetMenuMode(UI::kDefault);
 		Log::PrintVoreData();
 		flog::info("End of Regurgitation");
@@ -359,26 +357,6 @@ namespace Vore::Core
 			return;
 		}
 		Regurgitate(pred, FilterPrey(pred->GetFormID(), locus, true), rtype);
-	}
-
-	void KillPrey(RE::FormID prey, RE::Actor* asActor)
-	{
-		if (!VoreData::IsValid(prey)) {
-			flog::warn("Trying to kill an invalid prey: {}", Name::GetName(asActor));
-			return;
-		}
-		RegurgitateAll(asActor, Locus::lNone, RegType::rAll);
-		if (std::find(VoreGlobals::delete_queue.begin(), VoreGlobals::delete_queue.end(), prey) != VoreGlobals::delete_queue.end()) {
-			flog::warn("Trying to kill a deleted prey: {}", Name::GetName(asActor));
-			return;
-		}
-		auto& preyData = VoreData::Data[prey];
-		preyData.aAlive = false;
-		preyData.pyDigestProgress = 0.0;
-		preyData.pyElimLocus = preyData.pyLocus;
-		if (preyData.pyLocus == Locus::lStomach) {
-			MoveToLocus(preyData.pred, prey, Locus::lBowel);
-		}
 	}
 
 	void UpdateStruggleGoals(RE::FormID pred)
@@ -698,26 +676,33 @@ namespace Vore::Core
 					Regurgitate(predData.get()->As<RE::Actor>(), key, RegType::rAll);
 				}
 
-			} else {
+			} else if (asActor) {
 				//process digestion
 				if (val.pyDigestion == VoreState::hLethal) {
-					if (asActor) {
-						if (AV::GetAV(asActor, RE::ActorValue::kHealth) - VoreSettings::acid_damage * delta <= 0) {
-							KillPrey(key, asActor);
+					if (AV::GetAV(asActor, RE::ActorValue::kHealth) - VoreSettings::acid_damage * delta <= 0) {
+						// LATER implement entrapment for essential/protected instead of regurgitation NPCs
+						if (asActor->IsEssential()) {
+							if (VoreSettings::digest_essential) {
+								asActor->KillImmediate();
+							} else {
+								Regurgitate(predData.get()->As<RE::Actor>(), key, RegType::rAll);
+							}
+						} else if (asActor->IsProtected()) {
+							if (VoreSettings::digest_protected) {
+								asActor->KillImmediate();
+							} else {
+								Regurgitate(predData.get()->As<RE::Actor>(), key, RegType::rAll);
+							}
+						} else {
+							//Funcs::ApplyDamage(predData.get()->As<RE::Actor>(), asActor, static_cast<float>(VoreSettings::acid_damage));
+							AV::DamageAV(asActor, RE::ActorValue::kHealth, VoreSettings::acid_damage * delta);
+							//flog::trace("Dealing damage to {}, health {}", Name::GetName(asActor), AV::GetAV(asActor, RE::ActorValue::kHealth));
 						}
-						AV::DamageAV(asActor, RE::ActorValue::kHealth, VoreSettings::acid_damage * delta);
-						//Funcs::ApplyDamage(predData.get()->As<RE::Actor>(), asActor, static_cast<float>(VoreSettings::acid_damage));
-						//flog::trace("Dealing damage to {}, health {}", Name::GetName(asActor), AV::GetAV(asActor, RE::ActorValue::kHealth));
 					}
 				} else if (val.pyDigestion == VoreState::hReformation) {
-					if (asActor) {
-						AV::DamageAV(asActor, RE::ActorValue::kHealth, -VoreSettings::acid_damage * delta);
-					}
+					AV::DamageAV(asActor, RE::ActorValue::kHealth, -VoreSettings::acid_damage * delta);
 				}
-				// handle death?
-				// kill essential
-				// dealdamage
-				// handle crime and aggro
+				// handle crime and aggro ????????????????????????
 
 				// handle struggle
 				if (val.pyStruggle == VoreState::sStruggling) {

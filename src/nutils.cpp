@@ -161,7 +161,7 @@ namespace Vore::Funcs
 	{  // applies correct amount of damage and kills actors properly
 		typedef void (*DefApplyDamage)(Actor* a_this, float dmg, Actor* aggressor, HitData* maybe_hitdata, TESObjectREFR* damageSrc);
 		REL::Relocation<DefApplyDamage> Skyrim_ApplyDamage{ RELOCATION_ID(36345, 37335) };  // 5D6300 (SE)
-		Skyrim_ApplyDamage(tiny, damage, nullptr, nullptr, nullptr);
+		Skyrim_ApplyDamage(tiny, damage, giant, nullptr, nullptr);
 	}
 
 	void SetRestrained(RE::Actor* actor, bool param)
