@@ -116,6 +116,7 @@ namespace Vore
 			value.aAlive = (value.aCharType == RE::FormType::ActorCharacter) ?
 			                   !(skyrim_cast<RE::Actor*>(character)->IsDead()) :
 			                   false;
+			value.aSex = character->As<RE::Actor>()->GetActorBase()->GetSex();
 			value.aSize = std::max(character->GetHeight(), 1.0f);
 			value.aWeight = std::max(character->GetWeight(), 1.0f);
 			value.me = character->GetHandle();
@@ -305,6 +306,7 @@ namespace Vore
 			flog::info("Locus: {}, ElimLocus: {}, Digestion: {}, Struggle: {}, Movement: {}", 
 				(uint8_t)vde.pyLocus, (uint8_t)vde.pyElimLocus, (uint8_t)vde.pyDigestion, (uint8_t)vde.pyStruggle, (uint8_t)vde.pyLocusMovement);
 			s = s && a_intfc->WriteRecordData(&vde.pyLocus, sizeof(vde.pyLocus));
+			s = s && a_intfc->WriteRecordData(&vde.pyElimLocus, sizeof(vde.pyElimLocus));
 			s = s && a_intfc->WriteRecordData(&vde.pyDigestion, sizeof(vde.pyDigestion));
 			s = s && a_intfc->WriteRecordData(&vde.pyStruggle, sizeof(vde.pyStruggle));
 			s = s && a_intfc->WriteRecordData(&vde.pyLocusMovement, sizeof(vde.pyLocusMovement));

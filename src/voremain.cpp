@@ -8,22 +8,40 @@
 namespace Vore::Core
 {
 
-	void SwitchToDigestion(RE::FormID pred, Locus locus, VoreState ldType, bool forceStopDigestion)
+	VoreState GetStruggle(RE::Actor* prey, Locus locus, VoreState dType)
+	{
+		//placeholder!!!
+		if (locus == Locus::lNone) {
+			return VoreState::sStill;
+		}
+		//placeholder!!!
+		if (prey->IsDead()) {
+			return VoreState::sStill;
+		}
+		if (dType == VoreState::hLethal) {
+			Funcs::SendAssaultAlarm(prey);
+			return VoreState::sStruggling;
+		}
+		return VoreState::sStill;
+	}
+
+	void SwitchToDigestion(const RE::FormID& pred, const Locus& locus, const VoreState& dType, const bool& forceStopDigestion)
 	{
 		if (!VoreData::IsPred(pred, true)) {
 			flog::warn("Switching to digestion failed: bad pred: {}", Name::GetName(pred));
 			return;
 		}
-		if (ldType == VoreState::hNone) {
+		if (dType == VoreState::hNone) {
 			flog::warn("Switching to None digestion type! Returning.: {}", Name::GetName(pred));
 			return;
 		}
 		if (VoreData::Data[pred].pdLoci[locus] == VoreState::hNone ||
-			ldType == VoreState::hSafe && forceStopDigestion || ldType != VoreState::hSafe) {
-			VoreData::Data[pred].pdLoci[locus] = ldType;
+			dType == VoreState::hSafe && forceStopDigestion || dType != VoreState::hSafe) {
+			VoreData::Data[pred].pdLoci[locus] = dType;
 			for (auto& el : FilterPrey(pred, locus, false)) {
 				auto& pyData = VoreData::Data[el];
-				pyData.pyDigestion = ldType;
+				pyData.pyDigestion = dType;
+				pyData.pyStruggle = GetStruggle(pyData.get()->As<RE::Actor>(), pyData.pyLocus, pyData.pyDigestion);
 
 				flog::info("Prey {} digestion set to {}", Name::GetName(pyData.get()), (uint8_t)pyData.pyDigestion);
 			}
@@ -31,7 +49,7 @@ namespace Vore::Core
 		flog::info("Pred {} digestion in locus {} set to {}", Name::GetName(VoreData::Data[pred].get()), (uint8_t)locus, (uint8_t)VoreData::Data[pred].pdLoci[locus]);
 	}
 
-	bool CanMoveToLocus([[maybe_unused]] RE::FormID pred, [[maybe_unused]] RE::FormID prey, Locus locus, Locus locusSource)
+	bool CanMoveToLocus([[maybe_unused]] const RE::FormID& pred, [[maybe_unused]] const RE::FormID& prey, const Locus& locus, const Locus& locusSource)
 	{
 		// incorrect locus destination
 		if (locus >= Locus::NUMOFLOCI) {
@@ -46,7 +64,7 @@ namespace Vore::Core
 		return false;
 	}
 
-	bool CanBeRegurgitated(VoreDataEntry& prey)
+	bool CanBeRegurgitated(const VoreDataEntry& prey)
 	{
 		// prey is fully digested
 		if (!prey.aAlive && prey.pyDigestProgress == 100) {
@@ -59,7 +77,7 @@ namespace Vore::Core
 		return false;
 	}
 
-	void MoveToLocus(RE::FormID pred, RE::FormID prey, Locus locus, Locus locusSource)
+	void MoveToLocus(const RE::FormID& pred, const RE::FormID& prey, const Locus& locus, const Locus& locusSource)
 	{
 		if (!VoreData::IsValid(pred) || !VoreData::IsValid(prey)) {
 			return;
@@ -75,22 +93,6 @@ namespace Vore::Core
 			}
 			flog::info("Moved Prey {} to Locus {}", Name::GetName(pyData.get()), (uint8_t)locus);
 		}
-	}
-
-	VoreState GetStruggle(RE::Actor* prey, Locus locus, VoreState dType)
-	{
-		//placeholder!!!
-		if (locus == Locus::lNone) {
-			return VoreState::sStill;
-		}
-		//placeholder!!!
-		if (prey->IsDead()) {
-			return VoreState::sStill;
-		}
-		if (dType == VoreState::hLethal) {
-			return VoreState::sStruggling;
-		}
-		return VoreState::sStill;
 	}
 
 	void SetPreyVisibility(RE::Actor* prey, bool show)
@@ -681,6 +683,7 @@ namespace Vore::Core
 				if (val.pyDigestion == VoreState::hLethal) {
 					if (AV::GetAV(asActor, RE::ActorValue::kHealth) - VoreSettings::acid_damage * delta <= 0) {
 						// LATER implement entrapment for essential/protected instead of regurgitation NPCs
+
 						if (asActor->IsEssential()) {
 							if (VoreSettings::digest_essential) {
 								asActor->KillImmediate();
@@ -694,10 +697,13 @@ namespace Vore::Core
 								Regurgitate(predData.get()->As<RE::Actor>(), key, RegType::rAll);
 							}
 						} else {
-							//Funcs::ApplyDamage(predData.get()->As<RE::Actor>(), asActor, static_cast<float>(VoreSettings::acid_damage));
-							AV::DamageAV(asActor, RE::ActorValue::kHealth, VoreSettings::acid_damage * delta);
-							//flog::trace("Dealing damage to {}, health {}", Name::GetName(asActor), AV::GetAV(asActor, RE::ActorValue::kHealth));
+							asActor->KillImmediate();
 						}
+						AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth));
+						predData.pdUpdateStruggleGoal = true;
+						//val.aAlive = false;
+					} else {
+						AV::DamageAV(asActor, RE::ActorValue::kHealth, VoreSettings::acid_damage * delta + 1);
 					}
 				} else if (val.pyDigestion == VoreState::hReformation) {
 					AV::DamageAV(asActor, RE::ActorValue::kHealth, -VoreSettings::acid_damage * delta);
@@ -733,7 +739,7 @@ namespace Vore::Core
 			if (!val.pred && val.pdUpdateGoal) {
 				UpdateSliderGoals(key);
 			}
-			if (val.pdUpdateStruggleGoal) {
+			if (!val.pred && val.pdUpdateStruggleGoal) {
 				UpdateStruggleGoals(key);
 			}
 		}
@@ -748,5 +754,13 @@ namespace Vore::Core
 		Time::SetTimer(digUpdateS);
 		Time::SetTimer(digUpdatef);
 		Time::SetTimer(belUpdatef);
+	}
+	void SetupBellies()
+	{
+		for (auto& [key, val] : VoreData::Data) {
+			if (!val.pred) {
+				val.pdUpdateGoal = true;
+			}
+		}
 	}
 }

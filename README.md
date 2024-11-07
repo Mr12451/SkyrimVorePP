@@ -35,11 +35,14 @@ However, you can build it from source yourself.
 * Basic ui
 * Belly visuals (a little wonky)
 * Basic WG
+* Proper damage and death handling (not fully tested)
 ### Plans
-* Proper damage and death handling
+#### Currently working on
+* Fix WG and locus volume->slider stacking
+* Improve code for struggle sliders
+#### For the future
 * A better way to hide actors during vore
 * INI settings
-* Improve code for struggle sliders
 * Basic reformation
 * Fix Talk to prey/pred
 * Basic dialogue

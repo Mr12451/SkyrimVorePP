@@ -41,16 +41,20 @@ namespace Vore
 		static inline double locus_process_speed = 10;
 
 		static inline double acid_damage = 5;
-		static inline double digestion_amount_base = 5;
+		static inline double digestion_amount_base = 0.1;
 		static inline double struggle_amount = 5;
 		static inline double struggle_stamina = 10;
 		static inline double indigestion_loss = 1;
 
 		//wg
-		static inline double wg_fattemp = 0.2;
+		/*static inline double wg_fattemp = 0.2;
 		static inline double wg_fatlong = 0.075;
 		static inline double wg_locusgrowth = 0.1;
-		static inline double wg_sizegrowth = 0.075;
+		static inline double wg_sizegrowth = 0.075;*/
+		static inline double wg_fattemp = 0;
+		static inline double wg_fatlong = 0;
+		static inline double wg_locusgrowth = 0;
+		static inline double wg_sizegrowth = 0;
 
 		// 6 humans/hour
 		// 120

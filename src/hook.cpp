@@ -23,6 +23,7 @@ namespace Vore::Hooks
 				// First update this load
 				//EventDispatcher::DoStart();
 				flog::trace("First Update");
+				Core::SetupBellies();
 				Core::SetupTimers();
 			}
 		} else if (!Plugin::InGame()) {

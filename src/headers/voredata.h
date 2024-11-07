@@ -104,6 +104,7 @@ namespace Vore
 		RE::FormType aCharType = RE::FormType::None;
 		bool aIsPlayer = false;
 		bool aAlive = true;
+		RE::SEX aSex = RE::SEX::kNone;
 		// how big this character is. changes stomach size
 		double aSize = 0;
 		// how much does this character weight (with equipment), changes digestion speed

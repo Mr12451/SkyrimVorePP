@@ -79,6 +79,8 @@ namespace Vore
 					UI::VoreMenu::SetMenuMode(UI::VoreMenuMode::kInfo);
 				} else if (keyCode == VoreSettings::k_sw_menu) {
 					UI::VoreMenu::SetMenuMode(UI::VoreMenuMode::kSwallow);
+				} else if (keyCode == VoreSettings::k_test) {
+					Log::PrintVoreData();
 				}
 
 				break;

@@ -7,29 +7,29 @@ namespace Vore::Log
 	void PrintVoreDataSingle(RE::FormID voreNpc, VoreDataEntry& entry)
 	{
 		flog::info("\n");
-		flog::info("Entry {}, Name {}, Type {}, Is Player {}, Alive {}, Size {}, Weight {}", 
+		flog::info("Entry {}, Name {}, Type {}, Is Player {}, Alive {}, Size {}, Weight {}",
 			std::format("{:x}", voreNpc),
 			Name::GetName(voreNpc), (int)entry.aCharType,
 			entry.aIsPlayer, entry.aAlive,
 			entry.aSize, entry.aWeight);
 		if (entry.aCharType == RE::FormType::ActorCharacter) {
 			RE::Actor* entryActor = entry.get()->As<RE::Actor>();
-			flog::info("Stats: H {}/{}, S {}/{}, M {}/{}", 
-				AV::GetAV(entryActor, RE::ActorValue::kHealth), AV::GetMaxAV(entryActor, RE::ActorValue::kHealth), 
-				AV::GetAV(entryActor, RE::ActorValue::kStamina), AV::GetMaxAV(entryActor, RE::ActorValue::kStamina), 
+			flog::info("Stats: H {}/{}, S {}/{}, M {}/{}",
+				AV::GetAV(entryActor, RE::ActorValue::kHealth), AV::GetMaxAV(entryActor, RE::ActorValue::kHealth),
+				AV::GetAV(entryActor, RE::ActorValue::kStamina), AV::GetMaxAV(entryActor, RE::ActorValue::kStamina),
 				AV::GetAV(entryActor, RE::ActorValue::kMagicka), AV::GetMaxAV(entryActor, RE::ActorValue::kMagicka));
 		}
-		
+
 		flog::info("Pred: {}", (entry.pred ? Name::GetName(entry.pred) : "None"));
 		flog::info("Pred Stats: Fat {}, Growth {}, Size {}, Prey Count {}, Update Goal {}, Update Slider {}, Burden {}",
-			entry.pdFat, entry.pdFatgrowth, 
-			entry.pdSizegrowth, entry.prey.size(), 
+			entry.pdFat, entry.pdFatgrowth,
+			entry.pdSizegrowth, entry.prey.size(),
 			entry.pdUpdateGoal, entry.pdUpdateSlider, entry.pdFullBurden);
 
-		flog::info("Prey Stats: Locus {}, ElimLocus {}, Digestion {}, Struggle {}, Movement {}; Digestion P {}, Swallow P {}, Locus P {}", 
-			(uint8_t)entry.pyLocus, (uint8_t)entry.pyElimLocus, 
-			(uint8_t)entry.pyDigestion, (uint8_t)entry.pyStruggle, 
-			(uint8_t)entry.pyLocusMovement, entry.pyDigestProgress, 
+		flog::info("Prey Stats: Locus {}, ElimLocus {}, Digestion {}, Struggle {}, Movement {}; Digestion P {}, Swallow P {}, Locus P {}",
+			(uint8_t)entry.pyLocus, (uint8_t)entry.pyElimLocus,
+			(uint8_t)entry.pyDigestion, (uint8_t)entry.pyStruggle,
+			(uint8_t)entry.pyLocusMovement, entry.pyDigestProgress,
 			entry.pySwallowProcess, entry.pyLocusProcess);
 		std::string pr = "";
 		for (auto& el : entry.prey) {
@@ -82,7 +82,8 @@ namespace Vore::Log
 		}
 	}
 }
-namespace Vore{
+namespace Vore
+{
 
 	std::vector<RE::FormID> FilterPrey(RE::FormID pred, Locus locus, bool noneIsAny)
 	{
@@ -95,7 +96,8 @@ namespace Vore{
 		return preys;
 	}
 
-	float randfloat(float min, float max) {
+	float randfloat(float min, float max)
+	{
 		static bool first = true;
 		if (first) {
 			srand((unsigned int)time(NULL));
@@ -108,7 +110,6 @@ namespace Vore{
 			return min;
 		}
 		return min + (float)rand() / ((float)RAND_MAX / (max - min));
-
 	}
 	void UpdateBelly()
 	{
@@ -128,7 +129,9 @@ namespace Vore{
 				//get sliders for correct sex
 				//get sliders for correct sex
 				//get sliders for correct sex
-				auto& voresliders = VoreSettings::sliders_bodypart_female;
+
+				auto& voresliders = val.aSex == RE::SEX::kFemale ? VoreSettings::sliders_bodypart_female : val.aSex == RE::SEX::kMale ? VoreSettings::sliders_bodypart_male :
+				                                                                                                              VoreSettings::sliders_bodypart_creature;
 
 				for (uint8_t i = 0; i < LocusSliders::NUMOFSLIDERS; i++) {
 					//move sliders towards the goal
@@ -153,6 +156,7 @@ namespace Vore{
 						if (std::abs(finalval) > std::abs(max) && finalval * max > 0.0f) {
 							finalval = max;
 						}
+						//flog::warn("{}, {}", name, finalval);
 						if (slidervalues.contains(name)) {
 							slidervalues[name] += finalval;
 						} else {
@@ -168,7 +172,6 @@ namespace Vore{
 				auto& ssliders = VoreSettings::struggle_sliders;
 
 				for (uint8_t i = 0; i < Locus::NUMOFLOCI * struggle_sliders_per_locus; i++) {
-
 					//slider does not exist in VoreSettings::struggle_sliders (it's not set by user)
 					if (ssliders[i / struggle_sliders_per_locus].size() <= i % struggle_sliders_per_locus) {
 						continue;
