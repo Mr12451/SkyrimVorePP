@@ -27,6 +27,13 @@ namespace Vore
 
 		static inline uint32_t k_test = 87;
 
+		// ui
+
+		static inline bool ui_show_struggle_sliders = false;
+		static inline bool ui_show_wg = true;
+
+		
+		
 		// main
 
 		static inline bool dual_boobs = false;
@@ -38,33 +45,34 @@ namespace Vore
 		static inline float belly_fast_update = 0.05f;
 
 		//change this to a lower value, about ~0.1
-		static inline double locus_process_speed = 10;
+		//full tour speed
+		static inline double locus_process_speed = 5;
 
 		static inline double acid_damage = 5;
-		static inline double digestion_amount_base = 0.1;
-		static inline double struggle_amount = 5;
-		static inline double struggle_stamina = 10;
+		static inline double digestion_amount_base = 0.01;
+		static inline double struggle_amount = 3;
+		static inline double struggle_stamina = 5;
 		static inline double indigestion_loss = 1;
 
 		//wg
-		/*static inline double wg_fattemp = 0.2;
-		static inline double wg_fatlong = 0.075;
-		static inline double wg_locusgrowth = 0.1;
-		static inline double wg_sizegrowth = 0.075;*/
-		static inline double wg_fattemp = 0;
+		static inline double wg_fattemp = 0.02;
+		static inline double wg_fatlong = 0.005;
+		static inline double wg_locusgrowth = 0.015;
+		static inline double wg_sizegrowth = 0.005;
+		/*static inline double wg_fattemp = 1.0;
 		static inline double wg_fatlong = 0;
 		static inline double wg_locusgrowth = 0;
-		static inline double wg_sizegrowth = 0;
+		static inline double wg_sizegrowth = 0;*/
 
 		// 6 humans/hour
 		// 120
 		// 30/hour
 		// 1/2 minute
 		// 1/120 second ~ 0.008
-		static inline double wg_loss_temp = 0.008;
-		static inline double wg_loss_long = 0.001;
-		static inline double wg_loss_locus = 0.001;
-		static inline double wg_loss_size = 0.001;
+		static inline double wg_loss_temp = 0.0001;
+		static inline double wg_loss_long = 0.00001;
+		static inline double wg_loss_locus = 0.00001;
+		static inline double wg_loss_size = 0.00001;
 
 		//enabling this disables qte for swallow
 		static inline bool swallow_auto = true;
@@ -76,10 +84,9 @@ namespace Vore
 		//changes the graph of the function from cubic volume to linear slider increase
 		static inline float slider_pow_divider = 2.0f;
 		//weight of a single person
-		static inline float slider_100 = 100.0f;
+		static inline float slider_one = 120.0f;
 		//max slider step per second
-		static inline float slider_maxstep = 100.0f;
-		static inline float slider_struggle_maxstep = 20.0f;
+		static inline float slider_maxstep = 150.0f;
 
 		/*
 		uStomach,
@@ -103,17 +110,27 @@ namespace Vore
 
 		NUMOFSLIDERS
 		*/
-		static inline std::array<std::vector<std::tuple<const char*, float, float>>, LocusSliders::NUMOFSLIDERS> sliders_bodypart_female = { { //vore
+
+		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		//
+		// if you encounter a bug where sliders freeze and stop changing, change bEnableEarlyRegistration to true in racemenu's skee.ini
+		//
+		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+		// !!!!!!!!!!!!!!!!!!!!!!!!! one person size for sliders in the belly group should be equal
+		static inline std::array<std::vector<std::tuple<const char*, float, float>>, LocusSliders::NUMOFSLIDERS> sliders_bodypart_female = { {
+			// gr1 (belly)
 			{ { "Vore prey belly", 0.7f, 10.0f }, { "Giant belly up", 0.4f, 0.4f } },
+			{ { "Giant belly (coldsteelj)", 1.0f, 5.0f } },
+			{ { "Vore prey belly", 0.7f, 10.0f } },
+			{ { "FatBelly", 2.4f, 4.0f } },
+			//other vore
 			{ { "ChestDepth", 3.0f, 6.0f } },
-			{ { "Giant belly (coldsteelj)", 1.0f, 5.0f } },
 			{ { "BVoreL", 1.0f, 10.0f } },
 			{ { "BVoreR", 1.0f, 10.0f } },
-			{ { "Vore prey belly", 0.7f, 10.0f } },
 			{ { "SOS - SchlongLength", 4.0f, 10.0f }, { "SOS - SchlongGirth", 4.0f, 10.0f }, { "SOS - GlansSize", -1.6f, -4.0f }, { "SOS - GlansMushroom", 0.8f, 2.0f } },
 			{ { "CVore", 1.0f, 10.0f } },
 			//wg
-			{ { "FatBelly", 1.0f, 4.0f } },
 			{ { "ChubbyLegs", 0.25f, 2.5f }, { "Thighs", 0.5f, 5.0f }, { "AppleCheeks", 1.0f, 10.0f }, { "Butt", 1.0f, 10.0f }, { "BigButt", 1.0f, 10.0f }, { "ChubbyButt", 1.0f, 10.0f } },
 			{ { "BreastsNewSH", 1.0f, 4.0f }, { "Breasts", 1.0f, 4.0f }, { "DoubleMelon", 0.25f, 1.0f }, { "BreastWidth", 1.0f, 4.0f } },
 			{ { "SOS - SchlongLength", 1.0f, 4.0f }, { "SOS - SchlongGirth", 1.0f, 4.0f }, { "SOS - GlansSize", -0.4f, -4.0f }, { "SOS - GlansMushroom", 0.2f, 0.8f }, { "SOS - BallsSize", 1.0f, 4.0f },
@@ -124,17 +141,18 @@ namespace Vore
 			{ { "SSBBW2 body", 1.0f, 4.0f } },
 			{ { "SSBBW2 body", 1.0f, 4.0f } } } };
 
-		static inline std::array<std::vector<std::tuple<const char*, float, float>>, LocusSliders::NUMOFSLIDERS> sliders_bodypart_male = { { //vore
+		static inline std::array<std::vector<std::tuple<const char*, float, float>>, LocusSliders::NUMOFSLIDERS> sliders_bodypart_male = { { // gr1 (belly)
 			{ { "Vore prey belly", 0.7f, 10.0f }, { "Giant belly up", 0.4f, 0.4f } },
-			{ { "ChestDepth", 1.0f, 2.0f } },
 			{ { "Giant belly (coldsteelj)", 1.0f, 5.0f } },
+			{ { "Vore prey belly", 0.7f, 10.0f } },
+			{ { "FatBelly", 1.0f, 4.0f } },
+			//other vore
+			{ { "ChestDepth", 1.0f, 2.0f } },
 			{ { "BVoreL", 1.0f, 10.0f } },
 			{ { "BVoreR", 1.0f, 10.0f } },
-			{ { "Vore prey belly", 0.7f, 10.0f } },
 			{ { "SOS - SchlongLength", 4.0f, 10.0f }, { "SOS - SchlongGirth", 4.0f, 10.0f }, { "SOS - GlansSize", -1.6f, -4.0f }, { "SOS - GlansMushroom", 0.8f, 2.0f } },
 			{ { "CVore", 1.0f, 10.0f } },
 			//wg
-			{ { "FatBelly", 1.0f, 4.0f } },
 			{ { "ChubbyLegs", 0.25f, 2.5f }, { "Thighs", 0.5f, 5.0f }, { "AppleCheeks", 1.0f, 10.0f }, { "Butt", 1.0f, 10.0f }, { "BigButt", 1.0f, 10.0f }, { "ChubbyButt", 1.0f, 10.0f } },
 			{ { "BreastsNewSH", 1.0f, 4.0f }, { "Breasts", 1.0f, 4.0f }, { "DoubleMelon", 0.25f, 1.0f }, { "BreastWidth", 1.0f, 4.0f } },
 			{ { "SOS - SchlongLength", 1.0f, 4.0f }, { "SOS - SchlongGirth", 1.0f, 4.0f }, { "SOS - GlansSize", -0.4f, -4.0f }, { "SOS - GlansMushroom", 0.2f, 0.8f }, { "SOS - BallsSize", 1.0f, 4.0f },
@@ -145,17 +163,17 @@ namespace Vore
 			{ { "SSBBW2 body", 1.0f, 4.0f } },
 			{ { "SSBBW2 body", 1.0f, 4.0f } } } };
 
-		static inline std::array<std::vector<std::tuple<const char*, float, float>>, LocusSliders::NUMOFSLIDERS> sliders_bodypart_creature = { { //vore
+		static inline std::array<std::vector<std::tuple<const char*, float, float>>, LocusSliders::NUMOFSLIDERS> sliders_bodypart_creature = { {// gr1 (belly)
+			{ { "Vore prey belly", 0.7f, 10.0f } },
+			{ { "Vore prey belly", 0.7f, 10.0f } },
 			{ { "Vore prey belly", 0.7f, 10.0f } },
 			{},
-			{ { "Vore prey belly", 0.7f, 10.0f } },
 			{},
 			{},
-			{ { "Vore prey belly", 0.7f, 10.0f } },
+			{},
 			{},
 			{ { "CVore", 1.0f, 10.0f } },
 			//wg
-			{},
 			{},
 			{},
 			{},
@@ -188,7 +206,7 @@ namespace Vore
 		uFatCock,
 
 		*/
-		static inline std::array<std::array<double, LocusSliders::uFatLow - LocusSliders::uFatBelly>, Locus::NUMOFLOCI> voretypes_partgain = { { { 0.7, 0.05, 0.05, 0.0 },
+		static inline std::array<std::array<double, 4>, Locus::NUMOFLOCI> voretypes_partgain = { { { 0.7, 0.05, 0.05, 0.0 },
 			{ 0.2, 0.5, 0.5, 0.0 },
 			{ 0.0, 0.0, 1.0, 0.0 },
 			{ 0.0, 0.0, 1.0, 0.0 },

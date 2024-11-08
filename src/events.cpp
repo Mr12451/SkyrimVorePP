@@ -110,9 +110,7 @@ namespace Vore
 				actorData.pyDigestProgress = 0.0;
 				actorData.pyElimLocus = actorData.pyLocus;
 				actorData.pyLocusMovement = mStill;
-				if (actorData.pyLocus == Locus::lStomach) {
-					Core::MoveToLocus(actorData.pred, aId, Locus::lBowel);
-				}
+
 			}
 		}
 		return RE::BSEventNotifyControl::kContinue;

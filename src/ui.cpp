@@ -192,6 +192,7 @@ namespace Vore::UI
 			{
 				_iMode = kNeutral;
 				_iAllowReg = false;
+				_iFullTour = false;
 				if (!_infoTarget.get()) {
 					_firstInfoUpdate = false;
 					std::string text{ "No target (THIS SHOULD NEVER BE DISPLAYED!)" };
@@ -227,8 +228,6 @@ namespace Vore::UI
 					text += actorData.aAlive ? "true" : "false";
 					text += "\nSize: ";
 					text += std::format("{:.2f}", actorData.aSize);
-					text += " Weight: ";
-					text += std::format("{:.2f}", actorData.aWeight);
 
 					if (VoreData::IsPrey(charId)) {
 						WritePreyData(text, charId, false, false);
@@ -246,8 +245,19 @@ namespace Vore::UI
 								flog::critical("Found an illegal prey {}", Name::GetName(el));
 							}
 						}
-						text += "\nTotal burden: ";
-						text += std::format("{:.2f}", actorData.pdFullBurden + actorData.aWeight);
+						/*text += "\nTotal burden: ";
+						text += std::format("{:.2f}", actorData.pdFullBurden + actorData.aWeight);*/
+						if (VoreSettings::ui_show_struggle_sliders) {
+							text += "\nStruggle sliders\n";
+							for (uint8_t stSlId = 0; stSlId < 5; stSlId++) {
+								text += std::format("{:.1f}, {:.1f}\n", actorData.pdStruggleSliders[stSlId], actorData.pdStruggleGoal[stSlId]);
+							}
+						}
+						if (VoreSettings::ui_show_wg) {
+							text += "\nStruggle sliders\n";
+							text += std::format("WG {:.2f}, PERMA {:.2f}, SIZE {:.2f}\n", actorData.pdFat, actorData.pdFatgrowth, actorData.pdSizegrowth);
+							text += std::format("{:.2f}, {:.2f}, {:.2f}, {:.2f}\n", actorData.pdGrowthLocus[0], actorData.pdGrowthLocus[1], actorData.pdGrowthLocus[2], actorData.pdGrowthLocus[3]);
+						}
 					}
 
 					RE::FormID playerId = RE::PlayerCharacter::GetSingleton()->GetFormID();
@@ -264,10 +274,10 @@ namespace Vore::UI
 								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_3);
 								_iAllowReg = true;
 							}
-							if (actorData.pyLocus == lStomach && Core::CanMoveToLocus(playerId, charId, lBowel, lStomach)) {
+							if (actorData.aAlive && actorData.pyLocus == lStomach && Core::CanMoveToLocus(playerId, charId, lBowel, lStomach)) {
 								text += "]\nFull tour [";
 								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_sw_menu);
-								_iAllowReg = true;
+								_iFullTour = true;
 							}
 							text += "]";
 							_iMode = kPrey;

@@ -65,6 +65,8 @@ namespace Vore
 	{
 		framesElapsed++;
 		float delta = Time::RealTimeDelta();
+		if (Time::WorldTimeDelta() > 1) {
+		}
 		//worldTimeElapsed += delta;
 		realTimeElapsed += delta;
 

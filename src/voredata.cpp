@@ -88,14 +88,12 @@ namespace Vore
 	/// calculates the size and weight of a prey, including all the preys inside them
 	/// </summary>
 	/// <param name="size"></param>
-	/// <param name="weight"></param>
-	void VoreDataEntry::GetSizeWeight(double& size, double& weight)
+	void VoreDataEntry::GetSize(double& size)
 	{
 		size += this->aSize;
-		weight += this->aWeight;
 		for (const RE::FormID& p : this->prey) {
 			if (VoreData::IsValid(p)) {
-				VoreData::Data[p].GetSizeWeight(size, weight);
+				VoreData::Data[p].GetSize(size);
 			}
 		}
 	}
@@ -118,7 +116,6 @@ namespace Vore
 			                   false;
 			value.aSex = character->As<RE::Actor>()->GetActorBase()->GetSex();
 			value.aSize = std::max(character->GetHeight(), 1.0f);
-			value.aWeight = std::max(character->GetWeight(), 1.0f);
 			value.me = character->GetHandle();
 			for (auto& el : value.pdLoci) {
 				el = VoreState::hSafe;
@@ -283,9 +280,9 @@ namespace Vore
 			}
 			// save body part growth
 			size = vde.pdGrowthLocus.size();
-			flog::info("Saving List of growt per body part, size: {} (should be {})", size, (uint8_t)(LocusSliders::uFatLow - LocusSliders::uFatBelly));
+			flog::info("Saving List of growt per body part, size: {} (should be {})", size, (uint8_t)(4));
 			s = s && a_intfc->WriteRecordData(&size, sizeof(size));
-			for (int8_t i = 0; i < (LocusSliders::uFatLow - LocusSliders::uFatBelly); i++) {
+			for (int8_t i = 0; i < 4; i++) {
 				double locus = vde.pdGrowthLocus[i];
 				flog::info("Body Growth {}: {}", i, locus);
 				s = s && a_intfc->WriteRecordData(&locus, sizeof(locus));

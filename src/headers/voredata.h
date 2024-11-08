@@ -38,15 +38,16 @@ namespace Vore
 	enum LocusSliders : uint8_t
 	{
 		uStomach,
-		uThroat,
 		uBowel,
+		uWomb,
+		uFatBelly,
+
+		uThroat,
 		uBreastl,
 		uBreastr,
-		uWomb,
 		uCock,
 		uBalls,
 
-		uFatBelly,
 		uFatAss,
 		uFatBreasts,
 		uFatCock,
@@ -98,7 +99,7 @@ namespace Vore
 		std::array<double, Locus::NUMOFLOCI> pdIndigestion = { 0 };
 
 		//semi-permanent growth
-		std::array<double, LocusSliders::uFatLow - LocusSliders::uFatBelly> pdGrowthLocus = { 0 };
+		std::array<double, 4> pdGrowthLocus = { 0 };
 
 		//universal stats
 		RE::FormType aCharType = RE::FormType::None;
@@ -107,8 +108,6 @@ namespace Vore
 		RE::SEX aSex = RE::SEX::kNone;
 		// how big this character is. changes stomach size
 		double aSize = 0;
-		// how much does this character weight (with equipment), changes digestion speed
-		double aWeight = 0;
 
 		//pred stats
 		//temp wg
@@ -129,7 +128,7 @@ namespace Vore
 		double pyDigestProgress = 0;
 		double pySwallowProcess = 0;
 		// full tour, only for lBowel
-		// if character is dead, this will be synced with digest process
+		// if character is dead, this will be synced with digest in reverse with an offset
 		double pyLocusProcess = 0;
 
 		//not saved
@@ -138,16 +137,14 @@ namespace Vore
 		std::array<float, LocusSliders::NUMOFSLIDERS> pdSliders = { 0 };
 		//slider goals
 		std::array<float, LocusSliders::NUMOFSLIDERS> pdGoal = { 0 };
+		std::array<float, LocusSliders::NUMOFSLIDERS> pdGoalDiff = { 0 };
 
 		//struggle sliders per locus
 		std::array<float, Locus::NUMOFLOCI * struggle_sliders_per_locus> pdStruggleSliders = { 0 };
 		std::array<float, Locus::NUMOFLOCI * struggle_sliders_per_locus> pdStruggleGoal = { 0 };
+		std::array<float, Locus::NUMOFLOCI * struggle_sliders_per_locus> pdStruggleGoalDiff = { 0 };
+		std::array<float, LocusSliders::NUMOFSLIDERS> pdAccumStruggle = { 0 };
 
-		//size of all loci/sliders before factoring in that at higher values a slider will add more volume
-		//so, at 2 preys this may be something like 200, while pdGoal is like 150
-		//std::array<double, LocusSliders::NUMOFSLIDERS> pdGoalVolume = { 0 };
-		//moved this calculation to UpdateBelly()
-		// old comments, idk how this works now
 
 		bool pdUpdateGoal = false;
 		bool pdUpdateSlider = false;
@@ -163,7 +160,7 @@ namespace Vore
 
 		RE::TESObjectREFR* get() const;
 
-		void GetSizeWeight(double& size, double& weight);
+		void GetSize(double& size);
 		/// <summary>
 		/// not implemented
 		/// </summary>
