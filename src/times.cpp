@@ -1,9 +1,10 @@
 #include "headers/times.h"
 #include "headers/ui.h"
+#include "headers/settings.h"
 
 namespace Vore
 {
-	Timer::Timer(uint8_t id, double max, VoidFunc f)
+	Timer::Timer(uint8_t id, double max, TimerFunc f)
 	{
 		this->value = 0;
 		this->id = id;
@@ -15,21 +16,21 @@ namespace Vore
 	{
 		value += delta;
 		if (value >= max) {
-			f();
+			f(value);
 			value = 0;
 		}
 	}
 
-	float Time::WorldTimeDelta()
+	float* Time::WorldTimeDelta()
 	{
 		static float* wtdelta = (float*)RELOCATION_ID(523660, 410199).address();
-		return (*wtdelta);
+		return wtdelta;
 		//return 1;
 	}
-	float Time::RealTimeDelta()
+	float* Time::RealTimeDelta()
 	{
 		static float* rtdelta = (float*)RELOCATION_ID(523661, 410200).address();
-		return (*rtdelta);
+		return rtdelta;
 		//return 1;
 	}
 	double Time::WorldTimeElapsed()
@@ -64,19 +65,31 @@ namespace Vore
 	void Time::Update()
 	{
 		framesElapsed++;
-		float delta = Time::RealTimeDelta();
-		if (Time::WorldTimeDelta() > 1) {
-		}
-		//worldTimeElapsed += delta;
-		realTimeElapsed += delta;
+		/*if (*GetTimeMultiplier() > 1.0) {
+			flog::critical("TIME {}", *GetTimeMultiplier());
+		}*/
+		worldTimeElapsed += *WorldTimeDelta();
+		realTimeElapsed += *RealTimeDelta();
 
 		if (UI::VoreMenu::NeedUpdate) {
 			UI::VoreMenu::Update();
 		}
-
-		for (auto& el : timers) {
-			el.Process(delta);
+		else if (UI::VoreMenu::_menuMode == UI::kSwallow && VoreSettings::ui_show_time) {
+			auto thisMenu = UI::VoreMenu::GetVoreMenu();
+			if (!thisMenu) {
+				flog::critical("Cannot switch menu states - no menu found!");
+				return;
+			}
+			std::string text{ "" };
+			text += std::format("\n\n{:.4f}, {:.4f}", *Time::RealTimeDelta(), realTimeElapsed);
+			text += std::format("\n{:.4f}, {:.4f}", *Time::WorldTimeDelta(), worldTimeElapsed);
+			text += std::format("\n{:.4f}", *Time::GetTimeMultiplier());
+			thisMenu->SetText(text);
 		}
+		for (auto& el : timers) {
+			el.Process(*WorldTimeDelta());
+		}
+		
 	}
 
 	void Time::SetTimer(Timer& t)

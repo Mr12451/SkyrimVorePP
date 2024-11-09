@@ -5,6 +5,7 @@
 #include "headers/voredata.h"
 #include "headers/voremain.h"
 #include "headers/vutils.h"
+#include "headers/times.h"
 
 namespace Vore::UI
 {
@@ -641,7 +642,7 @@ namespace Vore::UI
 		}
 	}
 
-	bool VoreMenu::IsOpen() const
+	bool VoreMenu::IsOpen()
 	{
 		return _exists;
 	}
@@ -650,6 +651,7 @@ namespace Vore::UI
 	{
 		// Hide menu upon it's creation
 		_exists = true;
+		flog::info("Menu opened");
 		if (_setModeAfterShow != kNone) {
 			SetMenuMode(_setModeAfterShow);
 		} else {
@@ -660,6 +662,7 @@ namespace Vore::UI
 	void VoreMenu::OnClose()
 	{
 		_exists = false;
+		flog::info("Menu closed");
 		_menuMode = kNone;
 		_setModeAfterShow = kNone;
 		_infoTarget.reset();

@@ -111,9 +111,9 @@ namespace Vore
 		}
 		return min + (float)rand() / ((float)RAND_MAX / (max - min));
 	}
-	void UpdateBelly()
+
+	void UpdateBelly(const double& delta)
 	{
-		static float& delta = VoreSettings::belly_fast_update;
 		for (auto& [key, val] : VoreData::Data) {
 			if (val.aCharType != RE::FormType::ActorCharacter || !val.pdUpdateSlider && !val.pdUpdateStruggleSlider) {
 				continue;
@@ -136,17 +136,17 @@ namespace Vore
 				                                                                                                                        VoreSettings::sliders_bodypart_creature;
 				//change
 				for (uint8_t i = 0; i < LocusSliders::NUMOFSLIDERS; i++) {
-					if (val.pdGoalDiff[i] == 0.0f) {
+					if (val.pdGoalStep[i] == 0.0f) {
 						continue;
 					}
 					float diff = val.pdGoal[i] - val.pdSliders[i];
-					float step = delta * VoreSettings::slider_maxstep * std::pow(val.pdGoalDiff[i] / VoreSettings::slider_one, 0.75f);
+					float step = (float)delta * val.pdGoalStep[i];
 
 
 					if (diff > 0) {
 						if (diff <= step) {
 							val.pdSliders[i] += diff;
-							val.pdGoalDiff[i] = 0.0f;
+							val.pdGoalStep[i] = 0.0f;
 						} else {
 							val.pdSliders[i] += step;
 							val.pdUpdateSlider = true;
@@ -158,7 +158,7 @@ namespace Vore
 					} else if (diff < 0) {
 						if (-diff <= step) {
 							val.pdSliders[i] += diff;
-							val.pdGoalDiff[i] = 0.0f;
+							val.pdGoalStep[i] = 0.0f;
 						} else {
 							val.pdSliders[i] += -step;
 							val.pdUpdateSlider = true;
@@ -168,7 +168,7 @@ namespace Vore
 							changedG1 = true;
 						}
 					} else {
-						val.pdGoalDiff[i] = 0.0f;
+						val.pdGoalStep[i] = 0.0f;
 						continue;
 					}
 				}
@@ -181,7 +181,7 @@ namespace Vore
 						}
 					}
 					if (totalG1 > 0) {
-						volumeG1 = std::pow(totalG1 / VoreSettings::slider_one, 1.0f / VoreSettings::slider_pow_divider) * VoreSettings::slider_one;
+						volumeG1 = std::pow(totalG1 / VoreSettings::slider_one, VoreSettings::slider_pow) * VoreSettings::slider_one;
 					}
 				}
 
@@ -189,7 +189,7 @@ namespace Vore
 					//move sliders towards the goal
 					//convert volume to slider value
 					float sliderValue = (i < 4 && totalG1 > 0) ? val.pdSliders[i] * volumeG1 / totalG1 :
-					                                             std::pow(val.pdSliders[i] / VoreSettings::slider_one, 1.0f / VoreSettings::slider_pow_divider) * VoreSettings::slider_one;
+					                                             std::pow(val.pdSliders[i] / VoreSettings::slider_one, VoreSettings::slider_pow) * VoreSettings::slider_one;
 					//update sliders
 					for (auto& [name, one, max] : voresliders[i]) {
 						float finalval = sliderValue * one / VoreSettings::slider_one;
@@ -219,16 +219,16 @@ namespace Vore
 						//the id of this slider in predData
 						int sliderId = i * Locus::NUMOFLOCI + j;
 
-						if (val.pdStruggleGoalDiff[sliderId] == 0.0f) {
+						if (val.pdStruggleGoalStep[sliderId] == 0.0f) {
 							continue;
 						}
 
-						float step = delta * VoreSettings::slider_maxstep * std::pow(val.pdStruggleGoalDiff[sliderId] / VoreSettings::slider_one, 0.75f);
 						float diff = val.pdStruggleGoal[sliderId] - val.pdStruggleSliders[sliderId];
+						float step = (float)delta * val.pdStruggleGoalStep[sliderId];
 						if (diff > 0) {
 							if (diff <= step) {
 								val.pdStruggleSliders[sliderId] += diff;
-								val.pdStruggleGoalDiff[sliderId] = 0.0f;
+								val.pdStruggleGoalStep[sliderId] = 0.0f;
 							} else {
 								val.pdStruggleSliders[sliderId] += step;
 								val.pdUpdateStruggleSlider = true;
@@ -237,17 +237,17 @@ namespace Vore
 						} else if (diff < 0) {
 							if (-diff <= step) {
 								val.pdStruggleSliders[sliderId] += diff;
-								val.pdStruggleGoalDiff[sliderId] = 0.0f;
+								val.pdStruggleGoalStep[sliderId] = 0.0f;
 							} else {
 								val.pdStruggleSliders[sliderId] += -step;
 								val.pdUpdateStruggleSlider = true;
 							}
 						} else {
-							val.pdStruggleGoalDiff[sliderId] = 0.0f;
+							val.pdStruggleGoalStep[sliderId] = 0.0f;
 							continue;
 						}
 
-						float sliderValue = std::pow(val.pdStruggleSliders[sliderId] / VoreSettings::slider_one, 1.0f / VoreSettings::slider_pow_divider) * VoreSettings::slider_one;
+						float sliderValue = std::pow(val.pdStruggleSliders[sliderId] / VoreSettings::slider_one, VoreSettings::slider_pow) * VoreSettings::slider_one;
 
 						auto& [name, one, max] = ssliders[i][j];
 						float finalval = sliderValue * one / VoreSettings::slider_one;

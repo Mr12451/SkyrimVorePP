@@ -7,7 +7,12 @@ namespace Vore
 		public RE::BSTEventSink<RE::TESActivateEvent>,
 		public RE::BSTEventSink<InputEvents>,
 		public RE::BSTEventSink<RE::MenuOpenCloseEvent>,
-		public RE::BSTEventSink<RE::TESDeathEvent>
+		public RE::BSTEventSink<RE::TESDeathEvent>,
+		public RE::BSTEventSink<RE::TESWaitStartEvent>,
+		public RE::BSTEventSink<RE::TESWaitStopEvent>,
+		public RE::BSTEventSink<RE::TESSleepStartEvent>,
+		public RE::BSTEventSink<RE::TESSleepStopEvent>,
+		public RE::BSTEventSink<RE::TESFastTravelEndEvent>
 	{
 		// Pretty typical singleton setup
 		// *Private* constructor/destructor
@@ -35,7 +40,24 @@ namespace Vore
 		RE::BSEventNotifyControl ProcessEvent(const RE::TESDeathEvent* event,
 			RE::BSTEventSource<RE::TESDeathEvent>*) override;
 
+
+		// Time pass events
+		RE::BSEventNotifyControl ProcessEvent(const RE::TESWaitStartEvent* event,
+			RE::BSTEventSource<RE::TESWaitStartEvent>*) override;
+		RE::BSEventNotifyControl ProcessEvent(const RE::TESWaitStopEvent* event,
+			RE::BSTEventSource<RE::TESWaitStopEvent>*) override;
+
+		RE::BSEventNotifyControl ProcessEvent(const RE::TESSleepStartEvent* event,
+			RE::BSTEventSource<RE::TESSleepStartEvent>*) override;
+		RE::BSEventNotifyControl ProcessEvent(const RE::TESSleepStopEvent* event,
+			RE::BSTEventSource<RE::TESSleepStopEvent>*) override;
+
+		RE::BSEventNotifyControl ProcessEvent(const RE::TESFastTravelEndEvent* event,
+			RE::BSTEventSource<RE::TESFastTravelEndEvent>*) override;
+
 	private:
+		float _waitHours{ 0 };
+		float _sleepHours{ 0 };
 		EventProcessor();
 		~EventProcessor();
 		EventProcessor(const EventProcessor&);

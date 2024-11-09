@@ -104,7 +104,9 @@ namespace Vore
 		//universal stats
 		RE::FormType aCharType = RE::FormType::None;
 		bool aIsPlayer = false;
-		bool aAlive = true;
+		bool aAlive = false;
+		bool aEssential = false;
+		bool aProtected = false;
 		RE::SEX aSex = RE::SEX::kNone;
 		// how big this character is. changes stomach size
 		double aSize = 0;
@@ -137,12 +139,12 @@ namespace Vore
 		std::array<float, LocusSliders::NUMOFSLIDERS> pdSliders = { 0 };
 		//slider goals
 		std::array<float, LocusSliders::NUMOFSLIDERS> pdGoal = { 0 };
-		std::array<float, LocusSliders::NUMOFSLIDERS> pdGoalDiff = { 0 };
+		std::array<float, LocusSliders::NUMOFSLIDERS> pdGoalStep = { 0 };
 
 		//struggle sliders per locus
 		std::array<float, Locus::NUMOFLOCI * struggle_sliders_per_locus> pdStruggleSliders = { 0 };
 		std::array<float, Locus::NUMOFLOCI * struggle_sliders_per_locus> pdStruggleGoal = { 0 };
-		std::array<float, Locus::NUMOFLOCI * struggle_sliders_per_locus> pdStruggleGoalDiff = { 0 };
+		std::array<float, Locus::NUMOFLOCI * struggle_sliders_per_locus> pdStruggleGoalStep = { 0 };
 		std::array<float, LocusSliders::NUMOFSLIDERS> pdAccumStruggle = { 0 };
 
 

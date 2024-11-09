@@ -2,24 +2,24 @@
 
 namespace Vore
 {
-	typedef void (*VoidFunc)();
+	typedef void (*TimerFunc)(const double& delta);
 
 	struct Timer
 	{
 		double value;
 		double max;
 		uint8_t id;
-		VoidFunc f;
+		TimerFunc f;
 
-		Timer(uint8_t id, double max, VoidFunc f);
+		Timer(uint8_t id, double max, TimerFunc f);
 		void Process(float& delta);
 	};
 
 	class Time
 	{
 	public:
-		static float WorldTimeDelta();
-		static float RealTimeDelta();
+		static float* WorldTimeDelta();
+		static float* RealTimeDelta();
 		static double WorldTimeElapsed();
 		static double RealTimeElapsed();
 		static std::uint64_t FramesElapsed();

@@ -49,7 +49,7 @@ namespace Vore::UI
 
 
 		static void SetMenuVisibilityMode(bool a_mode);
-		bool IsOpen() const;
+		static bool IsOpen();
 		void OnOpen();
 		void OnClose();
 
@@ -57,6 +57,7 @@ namespace Vore::UI
 
 		static inline int _lastCharCount { 0 };
 		static inline int _charIndex { 0 };
+		static inline VoreMenuMode _menuMode{ VoreMenuMode::kNone };
 	private:
 
 		enum InfoMode : uint8_t
@@ -71,7 +72,6 @@ namespace Vore::UI
 		static inline RE::ObjectRefHandle _infoTarget;
 		static inline bool _iAllowReg = false;
 		static inline bool _iFullTour = false;
-		static inline VoreMenuMode _menuMode{ VoreMenuMode::kNone };
 		bool _visible = true;
 		static inline bool _exists { false };
 		static inline bool _firstInfoUpdate { false };

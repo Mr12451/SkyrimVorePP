@@ -90,7 +90,8 @@ namespace Vore
 	/// <param name="size"></param>
 	void VoreDataEntry::GetSize(double& size)
 	{
-		size += this->aSize;
+		double digestionMod = std::max(1 - this->pyDigestProgress / 100.0, 0.2);
+		size += this->aSize * digestionMod;
 		for (const RE::FormID& p : this->prey) {
 			if (VoreData::IsValid(p)) {
 				VoreData::Data[p].GetSize(size);
@@ -110,11 +111,17 @@ namespace Vore
 			flog::trace("Using existing entry for {}", Name::GetName(character));
 		} else {
 			value.aCharType = character->GetFormType();
-			value.aIsPlayer = character->IsPlayerRef();
-			value.aAlive = (value.aCharType == RE::FormType::ActorCharacter) ?
-			                   !(skyrim_cast<RE::Actor*>(character)->IsDead()) :
-			                   false;
-			value.aSex = character->As<RE::Actor>()->GetActorBase()->GetSex();
+			
+			if (value.aCharType == RE::FormType::ActorCharacter) {
+
+				RE::Actor* asActor = character->As<RE::Actor>();
+
+				value.aIsPlayer = asActor->IsPlayerRef();
+				value.aAlive = !(asActor->IsDead());
+				value.aSex = asActor->GetActorBase()->GetSex();
+				value.aEssential = asActor->IsEssential();
+				value.aProtected = asActor->IsProtected();
+			}
 			value.aSize = std::max(character->GetHeight(), 1.0f);
 			value.me = character->GetHandle();
 			for (auto& el : value.pdLoci) {
@@ -188,7 +195,7 @@ namespace Vore
 
 	}
 
-	bool SaveFormIdFromRefr(RE::TESForm* character, SKSE::SerializationInterface* a_intfc)
+	inline bool static SaveFormIdFromRefr(RE::TESForm* character, SKSE::SerializationInterface* a_intfc)
 	{
 		RE::FormID fId = 0;
 		if (!character) {
@@ -202,7 +209,7 @@ namespace Vore
 		}
 	}
 
-	bool SaveFormId(RE::FormID character, SKSE::SerializationInterface* a_intfc)
+	bool static SaveFormId(RE::FormID character, SKSE::SerializationInterface* a_intfc)
 	{
 		if (!character) {
 			flog::info("Form is 0!");
@@ -319,7 +326,7 @@ namespace Vore
 		flog::warn("Saved successful? {}", s);
 	}
 
-	inline std::string& ReadString(SKSE::SerializationInterface* serde, std::string& outStr)
+	inline static std::string& ReadString(SKSE::SerializationInterface* serde, std::string& outStr)
 	{
 		int sz;
 		serde->ReadRecordData(sz);
@@ -330,7 +337,7 @@ namespace Vore
 		return outStr;
 	}
 
-	[[nodiscard]] inline RE::FormID ReadFormID(SKSE::SerializationInterface* a_intfc)
+	[[nodiscard]] inline static RE::FormID ReadFormID(SKSE::SerializationInterface* a_intfc)
 	{
 		RE::FormID formId;
 		a_intfc->ReadRecordData(formId);
@@ -350,7 +357,7 @@ namespace Vore
 		return newFormId;
 	}
 
-	[[nodiscard]] inline RE::TESForm* GetFormPtr(SKSE::SerializationInterface* a_intfc)
+	[[nodiscard]] inline static RE::TESForm* GetFormPtr(SKSE::SerializationInterface* a_intfc)
 	{
 
 		RE::TESForm* newObject = nullptr;
@@ -364,7 +371,7 @@ namespace Vore
 		return newObject;
 	}
 
-	[[nodiscard]] inline RE::TESObjectREFR* GetObjectPtr(SKSE::SerializationInterface* a_intfc)
+	[[nodiscard]] inline static RE::TESObjectREFR* GetObjectPtr(SKSE::SerializationInterface* a_intfc)
 	{
 		return skyrim_cast<RE::TESObjectREFR*>(GetFormPtr(a_intfc));
 	}

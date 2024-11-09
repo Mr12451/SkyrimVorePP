@@ -19,7 +19,7 @@ namespace Vore::Core
 			return VoreState::sStill;
 		}
 		if (dType == VoreState::hLethal) {
-			//Funcs::SendAssaultAlarm(prey);
+			Funcs::SendAssaultAlarm(prey);
 			return VoreState::sStruggling;
 		}
 		return VoreState::sStill;
@@ -40,6 +40,9 @@ namespace Vore::Core
 			VoreData::Data[pred].pdLoci[locus] = dType;
 			for (auto& el : FilterPrey(pred, locus, false)) {
 				auto& pyData = VoreData::Data[el];
+				if (!pyData.aAlive) {
+					continue;
+				}
 				pyData.pyDigestion = dType;
 				pyData.pyStruggle = GetStruggle(pyData.get()->As<RE::Actor>(), pyData.pyLocus, pyData.pyDigestion);
 
@@ -85,7 +88,9 @@ namespace Vore::Core
 		if (CanMoveToLocus(pred, prey, locus, locusSource)) {
 			auto& pyData = VoreData::Data[prey];
 			pyData.pyLocus = locus;
-			pyData.pyDigestion = VoreData::Data[pred].pdLoci[locus];
+			if (pyData.aAlive) {
+				pyData.pyDigestion = VoreData::Data[pred].pdLoci[locus];
+			}
 			if (locus == lBowel) {
 				pyData.pyLocusProcess = 100.0;
 			} else {
@@ -398,11 +403,10 @@ namespace Vore::Core
 			if (accum_struggle[i] == 0.0f && predData.pdAccumStruggle[i] == 0.0f) {
 				continue;
 			} else if (accum_struggle[i] == 0.0f) {
-
 				for (int j = 0; j < ssliders[i].size(); j++) {
 					//the id of this slider in predData
 					int sliderId = i * Locus::NUMOFLOCI + j;
-					predData.pdStruggleGoalDiff[sliderId] = 100.0f;
+					predData.pdStruggleGoalStep[sliderId] = 100.0f;
 					predData.pdStruggleGoal[sliderId] = 0.0f;
 				}
 				continue;
@@ -416,7 +420,7 @@ namespace Vore::Core
 				int sliderId = i * Locus::NUMOFLOCI + j;
 
 				// goal diff is reset by updatebelly when slider reaches it's goal
-				if (predData.pdStruggleGoalDiff[sliderId] == 0.0f) {
+				if (predData.pdStruggleGoalStep[sliderId] == 0.0f) {
 					float maxValue = accum_struggle[i];
 					if (predData.pdStruggleGoal[sliderId] > maxValue / 2.0f) {
 						predData.pdStruggleGoal[sliderId] = randfloat(0.0, maxValue / 2.0f);
@@ -424,7 +428,7 @@ namespace Vore::Core
 						predData.pdStruggleGoal[sliderId] = randfloat(maxValue / 2.0f, maxValue);
 					}
 
-					predData.pdStruggleGoalDiff[sliderId] = std::abs(predData.pdStruggleGoal[sliderId] - predData.pdStruggleSliders[sliderId]);
+					predData.pdStruggleGoalStep[sliderId] = VoreSettings::slider_maxstep * std::pow(std::abs(predData.pdStruggleGoal[sliderId] - predData.pdStruggleSliders[sliderId]) / VoreSettings::slider_one, 0.75f);
 				}
 				// i got brain damage when writing this lol
 			}
@@ -458,9 +462,7 @@ namespace Vore::Core
 			//calculate prey full size
 			//calculate prey full weight
 			double preySize = 0.0;
-			double digestionMod = 1 - preyData.pyDigestProgress / 100.0;
 			preyData.GetSize(preySize);
-			preySize *= digestionMod;
 			predData.pdFullBurden += preySize;
 
 			//unfortunately sliders are floats, while everything else in this mod is a double
@@ -509,7 +511,7 @@ namespace Vore::Core
 		predData.pdGoal[LocusSliders::uGrowthHigh] = static_cast<float>((predData.pdFatgrowth >= 0) ? predData.pdFatgrowth : 0);
 
 		for (uint8_t i = 0; i < LocusSliders::NUMOFSLIDERS; i++) {
-			predData.pdGoalDiff[i] = std::abs(predData.pdGoal[i] - predData.pdSliders[i]);
+			predData.pdGoalStep[i] = VoreSettings::slider_maxstep * std::pow(std::abs(predData.pdGoal[i] - predData.pdSliders[i]) / VoreSettings::slider_one, 0.75f);
 		}
 
 		//size growth
@@ -518,9 +520,8 @@ namespace Vore::Core
 	}
 
 	//updates dead characters and idle preds
-	static void UpdateSlow()
+	static void UpdateSlow(const double& delta)
 	{
-		static double& delta = VoreSettings::slow_update;
 		double digestBase = VoreSettings::digestion_amount_base * delta;
 
 		//process prey
@@ -552,7 +553,15 @@ namespace Vore::Core
 			//digestion
 			else if (val.pyDigestProgress < 100) {
 				//aWeight can increase / decrease digestion time
-				val.pyDigestProgress = std::min(val.pyDigestProgress + digestBase * 100 / val.aSize, 100.0);
+				//calculate speed -> (100 - val.pyDigestProgress) / VoreSettings::digestion_amount_base * 100 / val.aSize
+				//get actual digestion time
+				// multiply it by speed
+				double toDigest = (100 - val.pyDigestProgress) * val.aSize / 100;
+				const double& newBase = digestBase > toDigest ? toDigest : digestBase;
+				val.pyDigestProgress = val.pyDigestProgress + newBase * 100 / val.aSize;
+				if (val.pyDigestProgress > 100) {
+					val.pyDigestProgress = 100;
+				}
 				if (val.pyLocus == Locus::lBowel) {
 					val.pyLocusProcess = 100 - val.pyDigestProgress;
 				}
@@ -566,11 +575,11 @@ namespace Vore::Core
 				// fat growth
 				// height (size) increase; (for me) check gts for info
 				for (uint8_t i = 0; i < 4; i++) {
-					pred.pdGrowthLocus[i] += digestBase * VoreSettings::voretypes_partgain[val.pyElimLocus][i] * VoreSettings::wg_locusgrowth;
+					pred.pdGrowthLocus[i] += newBase * VoreSettings::voretypes_partgain[val.pyElimLocus][i] * VoreSettings::wg_locusgrowth;
 				}
-				pred.pdFat += digestBase * VoreSettings::wg_fattemp;
-				pred.pdFatgrowth += digestBase * VoreSettings::wg_fatlong;
-				pred.pdSizegrowth += digestBase * VoreSettings::wg_sizegrowth;
+				pred.pdFat += newBase * VoreSettings::wg_fattemp;
+				pred.pdFatgrowth += newBase * VoreSettings::wg_fatlong;
+				pred.pdSizegrowth += newBase * VoreSettings::wg_sizegrowth;
 				pred.pdUpdateGoal = true;
 			}
 		}
@@ -644,11 +653,16 @@ namespace Vore::Core
 		UI::VoreMenu::NeedUpdate = true;
 	}
 
-	//updates live characters
-	static void UpdateFast()
-	{
-		static double& delta = VoreSettings::fast_update;
+	static void HandlePreyDeathImmidiate(VoreDataEntry& preyData) {
+		preyData.aAlive = false;
+		preyData.pyDigestProgress = 0.0;
+		preyData.pyElimLocus = preyData.pyLocus;
+		preyData.pyLocusMovement = mStill;
+	}
 
+	//updates live characters
+	static void UpdateFast(const double& delta)
+	{
 		bool needUIUpdate = false;
 		//updates prey only
 		for (auto& [key, val] : VoreData::Data) {
@@ -664,7 +678,6 @@ namespace Vore::Core
 			RE::Actor* asActor = val.get()->As<RE::Actor>();
 
 			VoreDataEntry& predData = VoreData::Data[val.pred];
-
 			//swallow process
 
 			if (val.pySwallowProcess < 100) {
@@ -690,30 +703,52 @@ namespace Vore::Core
 			} else if (asActor) {
 				//process digestion
 				if (val.pyDigestion == VoreState::hLethal) {
+
+					// calculate if the actor escapes or dies during long digestion
+					if (delta > 10 && val.pyStruggle != sStill) {
+						//can the prey struggle out while he lives
+						//this is not entirely accurate because it doesn't account for the struggles of other prey,
+						//but it also doesn't account stamina drain and regen, so it's fine for the time being
+						double ttl = AV::GetAV(asActor, RE::ActorValue::kHealth) / VoreSettings::acid_damage;
+						if (ttl <= delta && predData.pdIndigestion[val.pyLocus] + VoreSettings::struggle_amount * ttl > 100) {
+							Regurgitate(predData.get()->As<RE::Actor>(), key, RegType::rAll);
+							continue;
+						}
+					}
+
 					if (AV::GetAV(asActor, RE::ActorValue::kHealth) - VoreSettings::acid_damage * delta <= 0) {
 						// LATER implement entrapment for essential/protected instead of regurgitation NPCs
 
 						if (asActor->IsEssential()) {
 							if (VoreSettings::digest_essential) {
+								//asActor->boolFlags = (unsigned int)(asActor->boolFlags) & ~(unsigned int)RE::Actor::BOOL_FLAGS::kEssential;
+								asActor->GetActorBase()->actorData.actorBaseFlags.reset(RE::ACTOR_BASE_DATA::Flag::kEssential);
 								AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth));
-								asActor->KillImmediate();
+								
+								
+								HandlePreyDeathImmidiate(val);
 							} else {
 								Regurgitate(predData.get()->As<RE::Actor>(), key, RegType::rAll);
 							}
 						} else if (asActor->IsProtected()) {
 							if (VoreSettings::digest_protected) {
+								asActor->GetActorBase()->actorData.actorBaseFlags.reset(RE::ACTOR_BASE_DATA::Flag::kProtected);
 								AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth));
-								asActor->KillImmediate();
+								
+								
+								HandlePreyDeathImmidiate(val);
 							} else {
 								Regurgitate(predData.get()->As<RE::Actor>(), key, RegType::rAll);
 							}
 						} else {
 							AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth));
-							asActor->KillImmediate();
+							//asActor->KillImmediate();
+							HandlePreyDeathImmidiate(val);
 						}
-
+						needUIUpdate = true;
 						predData.pdUpdateStruggleGoal = true;
-						//val.aAlive = false;
+						continue;
+						//
 					} else {
 						AV::DamageAV(asActor, RE::ActorValue::kHealth, VoreSettings::acid_damage * delta + 1);
 					}
@@ -748,23 +783,25 @@ namespace Vore::Core
 		}
 		//updates top preds
 		for (auto const& [key, val] : VoreData::Data) {
-			if (!val.pred && val.pdUpdateGoal) {
-				UpdateSliderGoals(key);
-			}
-			if (!val.pred && val.pdUpdateStruggleGoal) {
-				UpdateStruggleGoals(key);
+			if (!val.pred) {
+				if (val.pdUpdateGoal) {
+					UpdateSliderGoals(key);
+				}
+				if (val.pdUpdateStruggleGoal) {
+					UpdateStruggleGoals(key);
+				}
 			}
 		}
-		UI::VoreMenu::NeedUpdate = true;
+		UI::VoreMenu::NeedUpdate = UI::VoreMenu::NeedUpdate || needUIUpdate;
 	}
 
 	void SetupTimers()
 	{
-		Timer digUpdateS(1, VoreSettings::slow_update, UpdateSlow);
-		Timer digUpdatef(2, VoreSettings::fast_update, UpdateFast);
+		Timer digUpdatef(1, VoreSettings::fast_update, UpdateFast);
+		Timer digUpdateS(2, VoreSettings::slow_update, UpdateSlow);
 		Timer belUpdatef(3, (double)VoreSettings::belly_fast_update, UpdateBelly);
-		Time::SetTimer(digUpdateS);
 		Time::SetTimer(digUpdatef);
+		Time::SetTimer(digUpdateS);
 		Time::SetTimer(belUpdatef);
 	}
 	void SetupBellies()
@@ -774,5 +811,21 @@ namespace Vore::Core
 				val.pdUpdateGoal = true;
 			}
 		}
+	}
+	void MegaDigest(const double& delta)
+	{
+		UpdateFast(delta);
+		UpdateSlow(delta);
+		for (auto const& [key, val] : VoreData::Data) {
+			if (!val.pred) {
+				if (val.pdUpdateGoal) {
+					UpdateSliderGoals(key);
+				}
+				if (val.pdUpdateStruggleGoal) {
+					UpdateStruggleGoals(key);
+				}
+			}
+		}
+		UpdateBelly(delta);
 	}
 }

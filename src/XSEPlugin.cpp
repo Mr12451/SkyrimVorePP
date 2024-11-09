@@ -18,6 +18,11 @@ inline void InitializeEvents()
 	//RE::UI::GetSingleton()->AddEventSink<RE::MenuOpenCloseEvent>(&eventProcessor);
 	RE::BSInputDeviceManager::GetSingleton()->AddEventSink<InputEvents>(&eventProcessor);
 	RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::TESDeathEvent>(&eventProcessor);
+	RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::TESWaitStartEvent>(&eventProcessor);
+	RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::TESWaitStopEvent>(&eventProcessor);
+	RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::TESSleepStartEvent>(&eventProcessor);
+	RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::TESSleepStopEvent>(&eventProcessor);
+	RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::TESFastTravelEndEvent>(&eventProcessor);
 	flog::trace("End event initialization");
 }
 

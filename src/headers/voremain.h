@@ -24,5 +24,6 @@ namespace Vore
 		void RegurgitateAll(RE::Actor* pred, Locus locus = Locus::lNone, RegType rtype = RegType::rNormal);
 		void SetupTimers();
 		void SetupBellies();
+		void MegaDigest(const double& delta);
 	}
 }

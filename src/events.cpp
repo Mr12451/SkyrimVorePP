@@ -1,4 +1,5 @@
 #include "headers/events.h"
+#include "headers/nutils.h"
 #include "headers/settings.h"
 #include "headers/times.h"
 #include "headers/ui.h"
@@ -6,7 +7,6 @@
 #include "headers/voredata.h"
 #include "headers/voremain.h"
 #include "headers/vutils.h"
-#include "headers/nutils.h"
 
 namespace Vore
 {
@@ -89,6 +89,13 @@ namespace Vore
 		return RE::BSEventNotifyControl::kContinue;
 	}
 
+	// Log information about Menu open/close events that happen in the game
+	RE::BSEventNotifyControl EventProcessor::ProcessEvent(const RE::MenuOpenCloseEvent* event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*)
+	{
+		flog::info("Menu {} Open? {}", event->menuName.c_str(), event->opening);
+		return RE::BSEventNotifyControl::kContinue;
+	}
+
 	RE::BSEventNotifyControl EventProcessor::ProcessEvent(const RE::TESDeathEvent* event, RE::BSTEventSource<RE::TESDeathEvent>*)
 	{
 		if (!event)
@@ -97,9 +104,18 @@ namespace Vore
 			RE::FormID aId = event->actorDying->GetFormID();
 			if (VoreData::IsValid(aId)) {
 				VoreDataEntry& actorData = VoreData::Data[aId];
+				RE::Actor* asActor = event->actorDying->As<RE::Actor>();
 				actorData.aAlive = false;
+
+				if (actorData.aEssential) {
+					asActor->GetActorBase()->actorData.actorBaseFlags.set(RE::ACTOR_BASE_DATA::Flag::kEssential);
+				}
+				if (actorData.aProtected) {
+					asActor->GetActorBase()->actorData.actorBaseFlags.set(RE::ACTOR_BASE_DATA::Flag::kProtected);
+				}
+
 				if (VoreData::IsPred(aId, true)) {
-					Core::RegurgitateAll(event->actorDying->As<RE::Actor>(), lNone, Core::rAll);
+					Core::RegurgitateAll(asActor, lNone, Core::rAll);
 				}
 
 				if (std::find(VoreGlobals::delete_queue.begin(), VoreGlobals::delete_queue.end(), aId) != VoreGlobals::delete_queue.end()) {
@@ -110,16 +126,54 @@ namespace Vore
 				actorData.pyDigestProgress = 0.0;
 				actorData.pyElimLocus = actorData.pyLocus;
 				actorData.pyLocusMovement = mStill;
-
 			}
 		}
 		return RE::BSEventNotifyControl::kContinue;
 	}
 
-	// Log information about Menu open/close events that happen in the game
-	RE::BSEventNotifyControl EventProcessor::ProcessEvent(const RE::MenuOpenCloseEvent* event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*)
+	RE::BSEventNotifyControl EventProcessor::ProcessEvent([[maybe_unused]] const RE::TESWaitStartEvent* event, RE::BSTEventSource<RE::TESWaitStartEvent>*)
 	{
-		flog::info("Menu {} Open? {}", event->menuName.c_str(), event->opening);
+		_waitHours = RE::Calendar::GetSingleton()->GetHoursPassed();
+		return RE::BSEventNotifyControl::kContinue;
+	}
+
+	RE::BSEventNotifyControl EventProcessor::ProcessEvent([[maybe_unused]] const RE::TESWaitStopEvent* event, RE::BSTEventSource<RE::TESWaitStopEvent>*)
+	{
+		double delta = static_cast<double>(RE::Calendar::GetSingleton()->GetHoursPassed() - _waitHours);
+		double timeScale = static_cast<double>(RE::Calendar::GetSingleton()->GetTimescale());
+		flog::debug("WAIT: {}, {}", delta, timeScale);
+		if (timeScale > 0) {
+			Core::MegaDigest(delta * 3600 / timeScale);
+		}
+		return RE::BSEventNotifyControl::kContinue;
+	}
+
+	RE::BSEventNotifyControl EventProcessor::ProcessEvent([[maybe_unused]] const RE::TESSleepStartEvent* event, RE::BSTEventSource<RE::TESSleepStartEvent>*)
+	{
+		_sleepHours = RE::Calendar::GetSingleton()->GetHoursPassed();
+		return RE::BSEventNotifyControl::kContinue;
+	}
+
+	RE::BSEventNotifyControl EventProcessor::ProcessEvent([[maybe_unused]] const RE::TESSleepStopEvent* event, RE::BSTEventSource<RE::TESSleepStopEvent>*)
+	{
+		double delta = static_cast<double>(RE::Calendar::GetSingleton()->GetHoursPassed() - _sleepHours);
+		double timeScale = static_cast<double>(RE::Calendar::GetSingleton()->GetTimescale());
+		flog::debug("SLEEP: {}, {}", delta, timeScale);
+		if (timeScale > 0) {
+			Core::MegaDigest(delta * 3600 / timeScale);
+		}
+		return RE::BSEventNotifyControl::kContinue;
+	}
+
+	RE::BSEventNotifyControl EventProcessor::ProcessEvent(const RE::TESFastTravelEndEvent* event, RE::BSTEventSource<RE::TESFastTravelEndEvent>*)
+	{
+		double delta = static_cast<double>(event->fastTravelEndHours);
+		double timeScale = static_cast<double>(RE::Calendar::GetSingleton()->GetTimescale());
+		flog::debug("TRAVEL: {}, {}", delta, timeScale);
+		if (timeScale > 0) {
+			Core::MegaDigest(delta * 3600 / timeScale);
+		}
+		UI::VoreMenu::SetMenuMode(UI::kDefault);
 		return RE::BSEventNotifyControl::kContinue;
 	}
 

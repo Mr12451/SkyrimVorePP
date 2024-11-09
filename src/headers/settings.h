@@ -31,7 +31,7 @@ namespace Vore
 
 		static inline bool ui_show_struggle_sliders = false;
 		static inline bool ui_show_wg = true;
-
+		static inline bool ui_show_time = false;
 		
 		
 		// main
@@ -48,10 +48,11 @@ namespace Vore
 		//full tour speed
 		static inline double locus_process_speed = 5;
 
-		static inline double acid_damage = 5;
-		static inline double digestion_amount_base = 0.01;
-		static inline double struggle_amount = 3;
-		static inline double struggle_stamina = 5;
+		static inline double acid_damage = 50;
+		//static inline double digestion_amount_base = 0.03;
+		static inline double digestion_amount_base = 5.0;
+		static inline double struggle_amount = 5;
+		static inline double struggle_stamina = 7;
 		static inline double indigestion_loss = 1;
 
 		//wg
@@ -82,7 +83,7 @@ namespace Vore
 		//sliders
 
 		//changes the graph of the function from cubic volume to linear slider increase
-		static inline float slider_pow_divider = 2.0f;
+		static inline float slider_pow = 0.5f;
 		//weight of a single person
 		static inline float slider_one = 120.0f;
 		//max slider step per second

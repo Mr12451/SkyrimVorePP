@@ -46,18 +46,24 @@ You can fix this in 2 ways
 * Basic ui
 * Belly visuals (a little wonky)
 * Basic WG
-* Proper damage and death handling (not fully tested)
+* Proper damage and death handling
+* Assault alarm on vore
+* Fix WG and locus volume stacking
+* Improve code for struggle sliders
+* Wait/Sleep/Travel/Timescale/Global time multiplier support
 ### Plans
 #### Currently working on
-* Fix WG and locus volume->slider stacking
-* Improve code for struggle sliders
-#### For the future
 * A better way to hide actors during vore
 * INI settings
 * Basic reformation
+* Item/Object vore
+* Acid levels
+* Fix menu disappearing on cell change
+#### For the future
+* Add size gain
+* Disposal skeleton
 * Fix Talk to prey/pred
 * Basic dialogue
-* Disposal
 * Basic Animations
 * Basic Sounds
 * Basic VFX
@@ -65,14 +71,13 @@ You can fix this in 2 ways
 * Compatibility with futa mods
 * Compatibility with needs mods
 * Compatibility with survival mods
-* Add size gain
-* Optimize WG
+* Compatibility with ostim
+* Compatibility with devourment sound mod
+* Better WG (food, sprint, etc. should affect WG/Loss)
 * NPC Vore in combat
 * Non-combat NPC vore
 * Vore personalities and preferences for NPCs
-* Item/Object vore
 * Capacity limits
-* Acid levels
 * Spells/Perks/Vore leveling
 * Struggle minigame
 * Become your killer
