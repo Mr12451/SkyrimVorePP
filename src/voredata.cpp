@@ -1,8 +1,8 @@
 #include "headers/voredata.h"
 #include "headers/nutils.h"
-#include "headers/vutils.h"
 #include "headers/settings.h"
 #include "headers/ui.h"
+#include "headers/vutils.h"
 
 namespace Vore
 {
@@ -111,9 +111,8 @@ namespace Vore
 			flog::trace("Using existing entry for {}", Name::GetName(character));
 		} else {
 			value.aCharType = character->GetFormType();
-			
-			if (value.aCharType == RE::FormType::ActorCharacter) {
 
+			if (value.aCharType == RE::FormType::ActorCharacter) {
 				RE::Actor* asActor = character->As<RE::Actor>();
 
 				value.aIsPlayer = asActor->IsPlayerRef();
@@ -162,9 +161,10 @@ namespace Vore
 			flog::trace("Character not in vore: {}", Name::GetName(character));
 			return;
 		} else {
-			flog::trace("Deleted character {}", Name::GetName(character));
-			VoreGlobals::body_morphs->ClearBodyMorphKeys(Data[character].get(), VoreGlobals::MORPH_KEY);
-			Data.erase(character);
+			flog::trace("HARD Deleting character {}", Name::GetName(character));
+			Data[character].pdGoal.fill(0.0f);
+			Data[character].pdStruggleGoal.fill(0.0f);
+			VoreGlobals::delete_queue.push_back(character);
 		}
 	}
 
@@ -184,7 +184,7 @@ namespace Vore
 
 		// Setup bellies
 		for (auto& [key, val] : Data) {
-			if (val.get()) {
+			if (val.get() && val.get()->Is3DLoaded()) {
 				VoreGlobals::body_morphs->ClearBodyMorphKeys(val.get(), VoreGlobals::MORPH_KEY);
 			}
 		}
@@ -192,7 +192,6 @@ namespace Vore
 		// Final
 		flog::trace("Printing VoreData after loading is finished");
 		Log::PrintVoreData();
-
 	}
 
 	inline bool static SaveFormIdFromRefr(RE::TESForm* character, SKSE::SerializationInterface* a_intfc)
@@ -247,7 +246,6 @@ namespace Vore
 		s = s && a_intfc->WriteRecordData(&size, sizeof(size));
 
 		for (auto& [fid, vde] : Data) {
-
 			flog::trace("\n\n");
 
 			//save entity itself
@@ -307,7 +305,7 @@ namespace Vore
 
 			//save prey stats
 			flog::info("Prey");
-			flog::info("Locus: {}, ElimLocus: {}, Digestion: {}, Struggle: {}, Movement: {}", 
+			flog::info("Locus: {}, ElimLocus: {}, Digestion: {}, Struggle: {}, Movement: {}",
 				(uint8_t)vde.pyLocus, (uint8_t)vde.pyElimLocus, (uint8_t)vde.pyDigestion, (uint8_t)vde.pyStruggle, (uint8_t)vde.pyLocusMovement);
 			s = s && a_intfc->WriteRecordData(&vde.pyLocus, sizeof(vde.pyLocus));
 			s = s && a_intfc->WriteRecordData(&vde.pyElimLocus, sizeof(vde.pyElimLocus));
@@ -320,7 +318,6 @@ namespace Vore
 			s = s && a_intfc->WriteRecordData(&vde.pyLocusProcess, sizeof(vde.pyLocusProcess));
 
 			flog::trace("\n{}\n", s);
-
 		}
 
 		flog::warn("Saved successful? {}", s);
@@ -359,7 +356,6 @@ namespace Vore
 
 	[[nodiscard]] inline static RE::TESForm* GetFormPtr(SKSE::SerializationInterface* a_intfc)
 	{
-
 		RE::TESForm* newObject = nullptr;
 		RE::FormID objectForm = ReadFormID(a_intfc);
 		if (objectForm != 0) {
@@ -378,7 +374,6 @@ namespace Vore
 
 	void VoreData::OnLoad(SKSE::SerializationInterface* a_intfc)
 	{
-
 		std::uint32_t type;
 		std::uint32_t size1;
 		std::uint32_t version;
@@ -414,7 +409,6 @@ namespace Vore
 				flog::info("Vore Data entries, size: {}", size);
 
 				for (; size > 0; --size) {
-
 					flog::trace("\n\n");
 
 					flog::info("New Entry");
@@ -500,7 +494,7 @@ namespace Vore
 					a_intfc->ReadRecordData(entry.pyDigestion);
 					a_intfc->ReadRecordData(entry.pyStruggle);
 					a_intfc->ReadRecordData(entry.pyLocusMovement);
-					flog::info("Locus: {}, ElimLocus: {}, Digestion: {}, Struggle: {}, Movement: {}", 
+					flog::info("Locus: {}, ElimLocus: {}, Digestion: {}, Struggle: {}, Movement: {}",
 						(uint8_t)entry.pyLocus, (uint8_t)entry.pyElimLocus, (uint8_t)entry.pyDigestion, (uint8_t)entry.pyStruggle, (uint8_t)entry.pyLocusMovement);
 					a_intfc->ReadRecordData(entry.pyDigestProgress);
 					a_intfc->ReadRecordData(entry.pySwallowProcess);
@@ -527,6 +521,7 @@ namespace Vore
 	void VoreData::OnRevert(SKSE::SerializationInterface* /*a_intfc*/)
 	{
 		PlayerPrefs::clear();
+		VoreGlobals::delete_queue.clear();
 		flog::info("reverting, clearing data");
 		Data.clear();
 	}

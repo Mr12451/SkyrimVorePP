@@ -213,7 +213,7 @@ namespace Vore::Name
 		if (!form) {
 			return "NULL";
 		}
-		RE::TESObjectREFR* formPtr = RE::TESForm::LookupByID(form)->As<RE::TESObjectREFR>();
+		RE::TESObjectREFR* formPtr = RE::TESForm::LookupByID<RE::TESObjectREFR>(form);
 		if (formPtr) {
 			return GetName(formPtr);
 		} else {

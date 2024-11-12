@@ -220,6 +220,8 @@ namespace Vore::UI
 				RE::Actor* actr = target->As<RE::Actor>();
 				text += "Name: ";
 				text += actr->GetDisplayFullName();
+				text += "\nRace: ";
+				text += actr->GetRace()->GetFullName();
 				RE::FormID charId = actr->GetFormID();
 
 				if (VoreData::IsValid(charId)) {

@@ -45,11 +45,10 @@ You can fix this in 2 ways
 * Vore data saving/loading
 * Basic ui
 * Belly visuals (a little wonky)
+* Struggle visuals
 * Basic WG
 * Proper damage and death handling
-* Assault alarm on vore
-* Fix WG and locus volume stacking
-* Improve code for struggle sliders
+* Assault (Combat) on vore
 * Wait/Sleep/Travel/Timescale/Global time multiplier support
 ### Plans
 #### Currently working on
@@ -67,6 +66,12 @@ You can fix this in 2 ways
 * Basic Animations
 * Basic Sounds
 * Basic VFX
+* Limit WG to certain NPC categories
+* Player-as-prey internal view
+* Ui - hide debug info
+* Struggle minigame for prey and pred
+* Struggle damage
+* Swallow minigame
 * Find more people
 * Compatibility with futa mods
 * Compatibility with needs mods
@@ -79,6 +84,5 @@ You can fix this in 2 ways
 * Vore personalities and preferences for NPCs
 * Capacity limits
 * Spells/Perks/Vore leveling
-* Struggle minigame
 * Become your killer
 * MCM

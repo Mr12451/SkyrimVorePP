@@ -50,7 +50,7 @@ namespace Vore
 
 		static inline double acid_damage = 50;
 		//static inline double digestion_amount_base = 0.03;
-		static inline double digestion_amount_base = 5.0;
+		static inline double digestion_amount_base = 20.0;
 		static inline double struggle_amount = 5;
 		static inline double struggle_stamina = 7;
 		static inline double indigestion_loss = 1;
@@ -58,7 +58,7 @@ namespace Vore
 		//wg
 		static inline double wg_fattemp = 0.02;
 		static inline double wg_fatlong = 0.005;
-		static inline double wg_locusgrowth = 0.015;
+		static inline double wg_locusgrowth = 0.008;
 		static inline double wg_sizegrowth = 0.005;
 		/*static inline double wg_fattemp = 1.0;
 		static inline double wg_fatlong = 0;
@@ -229,7 +229,42 @@ namespace Vore
 			Locus::lStomach,
 			Locus::lStomach };
 
-		static inline std::vector<RE::FormID> delete_queue;
+		static inline std::vector<RE::FormID> delete_queue {};
+
+		static inline std::unordered_map<std::string_view, std::string_view> race_remains {
+			//humans
+			{ "NordRace", "VoreSkeletonHuman" },
+			{ "NordRaceVampire", "VoreSkeletonHuman" },
+			{ "NordRaceAstrid", "VoreSkeletonHuman" },
+			{ "BretonRace", "VoreSkeletonHuman" },
+			{ "BretonRaceVampire", "VoreSkeletonHuman" },
+			{ "ElderRace", "VoreSkeletonHuman" },
+			{ "ElderRaceVampire", "VoreSkeletonHuman" },
+			{ "ImperialRace", "VoreSkeletonHuman" },
+			{ "ImperialRaceVampire", "VoreSkeletonHuman" },
+			{ "RedguardRace", "VoreSkeletonHuman" },
+			{ "RedguardRaceVampire", "VoreSkeletonHuman" },
+			//argonians
+			{ "ArgonianRace", "VoreSkeletonArg" },
+			{ "ArgonianRaceVampire", "VoreSkeletonArg" },
+			//khajit
+			{ "KhajitRace", "VoreSkeletonKha" },
+			{ "KhajitRaceVampire", "VoreSkeletonKha" },
+			//elf
+			{ "DarkElfRace", "VoreSkeletonMer" },
+			{ "DarkElfRaceVampire", "VoreSkeletonMer" },
+			{ "HighElfRace", "VoreSkeletonMer" },
+			{ "HighElfRaceVampire", "VoreSkeletonMer" },
+			{ "WoodElfRace", "VoreSkeletonMer" },
+			{ "WoodElfRaceVampire", "VoreSkeletonMer" },
+			//orc
+			{ "OrcRace", "VoreSkeletonOrc" },
+			{ "OrcRaceVampire", "VoreSkeletonOrc" },
+			//dragon
+			{ "DragonRace", "VoreSkeletonDragon" },
+			{ "AlduinRace", "VoreSkeletonDragon" },
+			{ "UndeadDragonRace", "VoreSkeletonDragon" }
+		};
 	};
 
 	class PlayerPrefs

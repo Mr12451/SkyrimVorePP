@@ -262,12 +262,15 @@ namespace Vore
 					}
 				}
 			}
-			//commit all sliders to skee
-			for (auto& [sname, svalue] : slidervalues) {
-				//flog::trace("Setting slider: char {}, slider {}, value {}", Name::GetName(val.get()), sname, svalue);
-				VoreGlobals::body_morphs->SetMorph(val.get(), sname, VoreGlobals::MORPH_KEY, svalue);
+			if (val.get()->Is3DLoaded()) {
+
+				//commit all sliders to skee
+				for (auto& [sname, svalue] : slidervalues) {
+					//flog::trace("Setting slider: char {}, slider {}, value {}", Name::GetName(val.get()), sname, svalue);
+					VoreGlobals::body_morphs->SetMorph(val.get(), sname, VoreGlobals::MORPH_KEY, svalue);
+				}
+				VoreGlobals::body_morphs->UpdateModelWeight(val.get());
 			}
-			VoreGlobals::body_morphs->UpdateModelWeight(val.get());
 		}
 	}
 }
