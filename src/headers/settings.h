@@ -31,7 +31,6 @@ namespace Vore
 
 		static inline bool ui_show_struggle_sliders = false;
 		static inline bool ui_show_wg = true;
-		static inline bool ui_show_time = false;
 		
 		
 		// main
@@ -52,7 +51,7 @@ namespace Vore
 		//static inline double digestion_amount_base = 0.03;
 		static inline double digestion_amount_base = 20.0;
 		static inline double struggle_amount = 5;
-		static inline double struggle_stamina = 7;
+		static inline double struggle_stamina = 15;
 		static inline double indigestion_loss = 1;
 
 		//wg
@@ -229,7 +228,7 @@ namespace Vore
 			Locus::lStomach,
 			Locus::lStomach };
 
-		static inline std::vector<RE::FormID> delete_queue {};
+		static inline std::set<RE::FormID> delete_queue {};
 
 		static inline std::unordered_map<std::string_view, std::string_view> race_remains {
 			//humans

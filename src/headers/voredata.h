@@ -159,6 +159,7 @@ namespace Vore
 
 		// REF HANDLE !!!
 		RE::ObjectRefHandle me;
+		RE::BSTSmartPointer<RE::BSScript::Object> meVm = nullptr;
 
 		RE::TESObjectREFR* get() const;
 

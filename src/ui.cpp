@@ -371,7 +371,7 @@ namespace Vore::UI
 			return;
 		}
 		if (!ignoreInfoCrosshair) {
-			_infoTarget.reset();
+			_infoTarget = {};
 		}
 		// return to default/predprey menu
 		if (mode > VoreMenuMode::kPredPrey && _menuMode == mode) {
@@ -667,7 +667,7 @@ namespace Vore::UI
 		flog::info("Menu closed");
 		_menuMode = kNone;
 		_setModeAfterShow = kNone;
-		_infoTarget.reset();
+		_infoTarget = {};
 	}
 
 	void VoreMenu::SetMenuVisibilityMode(bool a_mode)

@@ -3,6 +3,7 @@
 #include "headers/settings.h"
 #include "headers/ui.h"
 #include "headers/vutils.h"
+#include "headers/papyrusUtil.h"
 
 namespace Vore
 {
@@ -111,18 +112,23 @@ namespace Vore
 			flog::trace("Using existing entry for {}", Name::GetName(character));
 		} else {
 			value.aCharType = character->GetFormType();
-
 			if (value.aCharType == RE::FormType::ActorCharacter) {
 				RE::Actor* asActor = character->As<RE::Actor>();
 
+				//RE::REF
+				//character->ref
 				value.aIsPlayer = asActor->IsPlayerRef();
 				value.aAlive = !(asActor->IsDead());
 				value.aSex = asActor->GetActorBase()->GetSex();
 				value.aEssential = asActor->IsEssential();
 				value.aProtected = asActor->IsProtected();
+
+				VM::GetSingleton()->CreateObject2("Actor", value.meVm);
+				VM::GetSingleton()->BindObject(value.meVm, GetHandle(character), false);
 			}
 			value.aSize = std::max(character->GetHeight(), 1.0f);
 			value.me = character->GetHandle();
+		
 			for (auto& el : value.pdLoci) {
 				el = VoreState::hSafe;
 			}
@@ -150,7 +156,7 @@ namespace Vore
 
 			Data[character].pdGoal.fill(0.0f);
 			Data[character].pdStruggleGoal.fill(0.0f);
-			VoreGlobals::delete_queue.push_back(character);
+			VoreGlobals::delete_queue.insert(character);
 		}
 	}
 	void VoreData::HardDelete(RE::FormID character)
@@ -164,7 +170,7 @@ namespace Vore
 			flog::trace("HARD Deleting character {}", Name::GetName(character));
 			Data[character].pdGoal.fill(0.0f);
 			Data[character].pdStruggleGoal.fill(0.0f);
-			VoreGlobals::delete_queue.push_back(character);
+			VoreGlobals::delete_queue.insert(character);
 		}
 	}
 

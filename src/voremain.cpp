@@ -112,7 +112,24 @@ namespace Vore::Core
 			//flog::critical("FOUND CELL MARKER {}", (int)stomachCell);
 			// test: can you move dead actors?
 			prey->MoveTo(stomachCell);
+
+			Funcs::SetAlpha(prey, 0.0f, false);
+			Funcs::SetGhost(prey, true);
+			Funcs::SetAlpha(prey, 0.0f, false);
+			Funcs::SetRestrained(prey, true);
+
+			if (!prey->IsPlayerRef()) {
+				prey->EnableAI(false);
+			}
 		} else {
+			Funcs::SetAlpha(prey, 1.0f, false);
+			Funcs::SetGhost(prey, false);
+			Funcs::SetAlpha(prey, 1.0f, false);
+			Funcs::SetRestrained(prey, false);
+
+			if (!prey->IsPlayerRef()) {
+				prey->EnableAI(true);
+			}
 			if (digested) {
 				RE::TESObjectREFR* stomachDeadCell = RE::TESForm::LookupByEditorID<RE::TESObjectREFR>("BellyDMarker");
 				prey->MoveTo(stomachDeadCell);
@@ -134,35 +151,30 @@ namespace Vore::Core
 				                                 VoreGlobals::race_remains[prey->GetRace()->GetFormEditorID()] :
 				                                 (prey->IsHumanoid() ? "VoreSkeletonHuman" : "VoreSkeletonHuman");
 
-				//bonesName = "VoreSkeletonDragon";
+				//std::string_view bonesName = "VoreSkeletonHuman";
 				RE::TESActorBase* bonesBase = RE::TESForm::LookupByEditorID<RE::TESActorBase>(bonesName);
 				//RE::TESActorBase* bonesBase = RE::TESForm::LookupByID<RE::TESActorBase>(0x00039cf5);
 
 				RE::Actor* bones = pred->PlaceObjectAtMe(bonesBase, false)->As<RE::Actor>();
 				//flog::critical("GET BONE AND PREY SCALE {} {} {}", bones->GetBaseHeight(), bones->GetScale(), prey->GetHeight());
-				bones->KillImmediate();
-				//bones->KillImpl(nullptr, (float)AV::GetAV(bones, RE::ActorValue::kHealth), true, true);
+				//bones->KillImmediate();
 				AV::DamageAV(bones, RE::ActorValue::kHealth, AV::GetAV(bones, RE::ActorValue::kHealth));
+				bones->KillImpl(nullptr, (float)AV::GetAV(bones, RE::ActorValue::kHealth), true, true);
 				auto items = prey->GetInventory();
 				//bones->SetSize();
 				for (auto& [i, j] : items) {
-					prey->RemoveItem(i, j.first, RE::ITEM_REMOVE_REASON::kRemove, nullptr, bones);
+					prey->RemoveItem(i, j.first, RE::ITEM_REMOVE_REASON::kStoreInContainer, nullptr, bones);
 				}
+				//prey->SetDelete(true);
+				//flog::critical("Marked for deletion {}", prey->IsMarkedForDeletion());
+				/*if (prey->GetActorBase()->Respawns() || !prey->IsPersistent()) {
+				}*/
+				flog::critical("RELEASING {}", Name::GetName(prey));
+				flog::critical("Is prey persistent? {}", prey->IsPersistent());
+
 			} else {
 				prey->MoveTo(pred);
 			}
-		}
-
-		Funcs::SetAlpha(prey, (show) ? 1.0f : 0.0f, false);
-		Funcs::SetGhost(prey, !show);
-		Funcs::SetAlpha(prey, (show) ? 1.0f : 0.0f, false);
-		Funcs::SetRestrained(prey, !show);
-		//???????
-		//test if this persists between save/load
-		//prey->SetCollision(show);
-		//prey->SetActivationBlocked(!show);
-		if (!prey->IsPlayerRef()) {
-			prey->EnableAI(show);
 		}
 	}
 
@@ -216,6 +228,11 @@ namespace Vore::Core
 					}
 				} else {
 					SetPreyVisibility(preyA, pred, false, false);
+				}
+
+				// don't delete a prey if we're planning on using them
+				if (VoreGlobals::delete_queue.contains(preyId)) {
+					VoreGlobals::delete_queue.erase(preyId);
 				}
 
 				//inset prey
@@ -307,6 +324,7 @@ namespace Vore::Core
 		for (RE::FormID prey : preys) {
 			flog::info("Prey {}", Name::GetName(prey));
 			if (!VoreData::IsPrey(prey)) {
+				flog::warn("ERASING BAD PREY");
 				predData.prey.erase(prey);
 				preysToErase.push_back(prey);
 				continue;
@@ -494,7 +512,7 @@ namespace Vore::Core
 	static void UpdateSliderGoals(RE::FormID pred)
 	{
 		if (!VoreData::IsValid(pred)) {
-			flog::error("Attempting to update slider goal for invalid pred: {}!", Name::GetName(pred));
+			flog::error("Attempting to update slider goal for invalid character: {}!", Name::GetName(pred));
 			return;
 		}
 		VoreDataEntry& predData = VoreData::Data[pred];
@@ -629,6 +647,8 @@ namespace Vore::Core
 				}
 				if (val.pyLocus == lStomach && val.pyDigestProgress > 30) {
 					MoveToLocus(val.pred, key, Locus::lBowel);
+					/*RE::TESObjectREFR* stomachDeadCell = RE::TESForm::LookupByEditorID<RE::TESObjectREFR>("BellyDMarker");
+					val.get()->MoveTo(stomachDeadCell);*/
 				}
 
 				// weight gain
@@ -730,6 +750,11 @@ namespace Vore::Core
 	//updates live characters
 	static void UpdateFast(const double& delta)
 	{
+		// if (VoreGlobals::_persTest.get()) {
+		// 	flog::debug("{} is persistent {}", Name::GetName(VoreGlobals::_persTest.get().get()), VoreGlobals::_persTest.get().get()->IsPersistent());
+		// } else {
+		// 	flog::debug("NO HANDLE");
+		// }
 		bool needUIUpdate = false;
 		//updates prey only
 		for (auto& [key, val] : VoreData::Data) {

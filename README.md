@@ -50,18 +50,21 @@ You can fix this in 2 ways
 * Proper damage and death handling
 * Assault (Combat) on vore
 * Wait/Sleep/Travel/Timescale/Global time multiplier support
+* A better way to hide actors during vore (needs testing)
+* Disposal skeleton (for humanoids)
+* Prey persistence (needs testing)
 ### Plans
 #### Currently working on
-* A better way to hide actors during vore
 * INI settings
 * Basic reformation
 * Item/Object vore
 * Acid levels
 * Fix menu disappearing on cell change
+* Fix broken prey size on reload
 #### For the future
 * Add size gain
-* Disposal skeleton
 * Fix Talk to prey/pred
+* Add dragon soul on digestion
 * Basic dialogue
 * Basic Animations
 * Basic Sounds

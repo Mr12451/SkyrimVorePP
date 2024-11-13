@@ -74,18 +74,6 @@ namespace Vore
 		if (UI::VoreMenu::NeedUpdate) {
 			UI::VoreMenu::Update();
 		}
-		else if (UI::VoreMenu::_menuMode == UI::kSwallow && VoreSettings::ui_show_time) {
-			auto thisMenu = UI::VoreMenu::GetVoreMenu();
-			if (!thisMenu) {
-				flog::critical("Cannot switch menu states - no menu found!");
-				return;
-			}
-			std::string text{ "" };
-			text += std::format("\n\n{:.4f}, {:.4f}", *Time::RealTimeDelta(), realTimeElapsed);
-			text += std::format("\n{:.4f}, {:.4f}", *Time::WorldTimeDelta(), worldTimeElapsed);
-			text += std::format("\n{:.4f}", *Time::GetTimeMultiplier());
-			thisMenu->SetText(text);
-		}
 		for (auto& el : timers) {
 			el.Process(*WorldTimeDelta());
 		}
