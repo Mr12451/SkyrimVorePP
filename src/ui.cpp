@@ -1,11 +1,11 @@
 ﻿#include "headers/ui.h"
 #include "headers/nutils.h"
 #include "headers/settings.h"
+#include "headers/times.h"
 #include "headers/util.h"
 #include "headers/voredata.h"
 #include "headers/voremain.h"
 #include "headers/vutils.h"
-#include "headers/times.h"
 
 namespace Vore::UI
 {
@@ -76,7 +76,6 @@ namespace Vore::UI
 		}
 		VoreDataEntry& pyData = VoreData::Data[prey];
 		if (writeName) {
-
 			text += "\n";
 			if (countIndex && VoreMenu::_charIndex == VoreMenu::_lastCharCount) {
 				text += "--> ";
@@ -114,9 +113,18 @@ namespace Vore::UI
 			return;
 		}
 
+		if (!_exists) {
+			if (_loadedOnce) {
+				Show();
+			} else {
+				flog::critical("Cannot update menu - no menu found!");
+				return;
+			}
+		}
+
 		auto thisMenu = GetVoreMenu();
 		if (!thisMenu) {
-			flog::critical("Cannot switch menu states - no menu found!");
+			flog::critical("Cannot update menu - no menu found!");
 			return;
 		}
 
@@ -181,6 +189,11 @@ namespace Vore::UI
 					}
 					text += "\nIndigestion:";
 					for (auto& lInd : playerData.pdIndigestion) {
+						text += " ";
+						text += std::to_string(static_cast<int>(lInd));
+					}
+					text += "\nAcid levels:";
+					for (auto& lInd : playerData.pdAcid) {
 						text += " ";
 						text += std::to_string(static_cast<int>(lInd));
 					}
@@ -268,12 +281,15 @@ namespace Vore::UI
 					if (charId != playerId) {
 						// char is player's prey
 						if (actorData.pred == playerId) {
-							text += "\nTalk [";
-							text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_1);
-							text += "]\nSwitch Lethality [";
-							text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_2);
+							if (actorData.aAlive) {
+								text += "\nTalk [";
+								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_1);
+								text += "]\nSwitch Lethality [";
+								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_2);
+								text += "]";
+							}
 							if (Core::CanBeRegurgitated(actorData)) {
-								text += "]\nRelease [";
+								text += "\nRelease [";
 								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_3);
 								_iAllowReg = true;
 							}
@@ -293,11 +309,13 @@ namespace Vore::UI
 								text += "]";
 								_iMode = kPred;
 							} else if (VoreData::Data[playerId].pred == actorData.pred && actorData.pred) {
-								text += "\nTalk [";
-								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_1);
-								text += "]\nTry To swallow [";
-								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_2);
-								text += "]";
+								if (actorData.aAlive) {
+									text += "\nTalk [";
+									text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_1);
+									text += "]\nTry To swallow [";
+									text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_2);
+									text += "]";
+								}
 								_iMode = kSameLocus;
 							}
 						}
@@ -361,9 +379,13 @@ namespace Vore::UI
 			return;
 		}
 		if (!_exists) {
-			_setModeAfterShow = mode;
-			Show();
-			return;
+			if (_loadedOnce) {
+				Show();
+			} else {
+				_setModeAfterShow = mode;
+				Show();
+				return;
+			}
 		}
 		auto thisMenu = GetVoreMenu();
 		if (!thisMenu) {
@@ -520,20 +542,27 @@ namespace Vore::UI
 				case InfoMode::kPrey:
 					switch (action) {
 					case (MenuAction::kMenuA1):
-						TalkToA(_infoTarget.get().get()->As<RE::Actor>());
-						SetMenuMode(kDefault);
+						if (VoreData::IsValid(_infoTarget.get().get()->GetFormID())) {
+							VoreDataEntry& preyData = VoreData::Data[_infoTarget.get().get()->GetFormID()];
+							if (preyData.aAlive) {
+								TalkToA(preyData.get()->As<RE::Actor>());
+								SetMenuMode(kDefault);
+							}
+						}
 						break;
 					case (MenuAction::kMenuA2):
 						{
 							if (VoreData::IsValid(_infoTarget.get().get()->GetFormID())) {
 								VoreDataEntry& preyData = VoreData::Data[_infoTarget.get().get()->GetFormID()];
-								if (preyData.pyDigestion == VoreState::hLethal) {
-									Core::SwitchToDigestion(RE::PlayerCharacter::GetSingleton()->GetFormID(), preyData.pyLocus, VoreState::hSafe, true);
-								} else {
-									Core::SwitchToDigestion(RE::PlayerCharacter::GetSingleton()->GetFormID(), preyData.pyLocus, VoreState::hLethal, true);
+								if (preyData.aAlive) {
+									if (preyData.pyDigestion == VoreState::hLethal) {
+										Core::SwitchToDigestion(RE::PlayerCharacter::GetSingleton()->GetFormID(), preyData.pyLocus, VoreState::hSafe, true);
+									} else {
+										Core::SwitchToDigestion(RE::PlayerCharacter::GetSingleton()->GetFormID(), preyData.pyLocus, VoreState::hLethal, true);
+									}
+									Update();
 								}
 							}
-							Update();
 							break;
 						}
 					case (MenuAction::kMenuA3):
@@ -557,12 +586,22 @@ namespace Vore::UI
 				case InfoMode::kSameLocus:
 					switch (action) {
 					case (MenuAction::kMenuA1):
-						TalkToA(_infoTarget.get().get()->As<RE::Actor>());
-						SetMenuMode(kDefault);
+						if (VoreData::IsValid(_infoTarget.get().get()->GetFormID())) {
+							VoreDataEntry& preyData = VoreData::Data[_infoTarget.get().get()->GetFormID()];
+							if (preyData.aAlive) {
+								TalkToA(preyData.get()->As<RE::Actor>());
+								SetMenuMode(kDefault);
+							}
+						}
 						break;
 					case (MenuAction::kMenuA2):
-						Core::Swallow(RE::PlayerCharacter::GetSingleton(), _infoTarget.get().get(), PlayerPrefs::voreLoc, PlayerPrefs::voreType, false);
-						SetMenuMode(kDefault);
+						if (VoreData::IsValid(_infoTarget.get().get()->GetFormID())) {
+							VoreDataEntry& preyData = VoreData::Data[_infoTarget.get().get()->GetFormID()];
+							if (preyData.aAlive) {
+								Core::Swallow(RE::PlayerCharacter::GetSingleton(), preyData.get(), PlayerPrefs::voreLoc, PlayerPrefs::voreType, false);
+								SetMenuMode(kDefault);
+							}
+						}
 						break;
 					}
 					break;
@@ -656,18 +695,17 @@ namespace Vore::UI
 		flog::info("Menu opened");
 		if (_setModeAfterShow != kNone) {
 			SetMenuMode(_setModeAfterShow);
-		} else {
+			_setModeAfterShow = kNone;
+		} else if (!_loadedOnce) {
 			VoreMenu::SetMenuVisibilityMode(false);
 		}
+		_loadedOnce = true;
 	}
 
 	void VoreMenu::OnClose()
 	{
 		_exists = false;
 		flog::info("Menu closed");
-		_menuMode = kNone;
-		_setModeAfterShow = kNone;
-		_infoTarget = {};
 	}
 
 	void VoreMenu::SetMenuVisibilityMode(bool a_mode)

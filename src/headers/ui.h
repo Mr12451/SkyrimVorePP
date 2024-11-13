@@ -58,6 +58,8 @@ namespace Vore::UI
 		static inline int _lastCharCount { 0 };
 		static inline int _charIndex { 0 };
 		static inline VoreMenuMode _menuMode{ VoreMenuMode::kNone };
+		static inline VoreMenuMode _setModeAfterShow{ kNone };
+		static inline RE::ObjectRefHandle _infoTarget;
 	private:
 
 		enum InfoMode : uint8_t
@@ -69,14 +71,13 @@ namespace Vore::UI
 		};
 
 		static inline InfoMode _iMode = kNeutral;
-		static inline RE::ObjectRefHandle _infoTarget;
 		static inline bool _iAllowReg = false;
 		static inline bool _iFullTour = false;
 		bool _visible = true;
 		static inline bool _exists { false };
+		static inline bool _loadedOnce { false };
 		static inline bool _firstInfoUpdate { false };
 
-		static inline VoreMenuMode _setModeAfterShow{ kNone };
 
 		void WriteSwallowMenu();
 

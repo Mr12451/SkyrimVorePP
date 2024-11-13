@@ -122,10 +122,12 @@ namespace Vore
 					flog::warn("Trying to kill a deleted prey: {}", Name::GetName(actorData.get()));
 					return RE::BSEventNotifyControl::kContinue;
 				}
-
-				actorData.pyDigestProgress = 0.0;
-				actorData.pyElimLocus = actorData.pyLocus;
-				actorData.pyLocusMovement = mStill;
+				if (actorData.pred) {
+					Core::SwitchToDigestion(actorData.pred, actorData.pyLocus, VoreState::hSafe, false);
+					actorData.pyDigestProgress = 0.0;
+					actorData.pyElimLocus = actorData.pyLocus;
+					actorData.pyLocusMovement = mStill;
+				}
 			}
 		}
 		return RE::BSEventNotifyControl::kContinue;

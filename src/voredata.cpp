@@ -280,6 +280,15 @@ namespace Vore
 				flog::info("Locus {}: {}", i, locus);
 				s = s && a_intfc->WriteRecordData(&locus, sizeof(locus));
 			}
+			//save list of loci acid levels
+			size = vde.pdAcid.size();
+			flog::info("Saving List of loci acid levels, size: {} (should be 6)", size);
+			s = s && a_intfc->WriteRecordData(&size, sizeof(size));
+			for (int8_t i = 0; i < Locus::NUMOFLOCI; i++) {
+				double locus = vde.pdAcid[i];
+				flog::info("Locus {}: {}", i, locus);
+				s = s && a_intfc->WriteRecordData(&locus, sizeof(locus));
+			}
 			//save list of loci struggle
 			size = vde.pdIndigestion.size();
 			flog::info("Saving List of loci struggle process, size: {} (should be 6)", size);
@@ -291,7 +300,7 @@ namespace Vore
 			}
 			// save body part growth
 			size = vde.pdGrowthLocus.size();
-			flog::info("Saving List of growt per body part, size: {} (should be {})", size, (uint8_t)(4));
+			flog::info("Saving List of growt per body part, size: {} (should be 4)", size, (uint8_t)(4));
 			s = s && a_intfc->WriteRecordData(&size, sizeof(size));
 			for (int8_t i = 0; i < 4; i++) {
 				double locus = vde.pdGrowthLocus[i];
@@ -299,8 +308,11 @@ namespace Vore
 				s = s && a_intfc->WriteRecordData(&locus, sizeof(locus));
 			}
 
+			// save size, important
+			s = s && a_intfc->WriteRecordData(&vde.aSize, sizeof(vde.aSize));
+
 			//universal stats, not saved
-			flog::info("Char type: {}, player {}, alive {}", (int)vde.aCharType, vde.aIsPlayer, vde.aAlive);
+			flog::info("Char type: {}, player {}, alive {}, size {}", (int)vde.aCharType, vde.aIsPlayer, vde.aAlive, vde.aSize);
 
 			//save pred stats
 			flog::info("Pred");
@@ -466,6 +478,17 @@ namespace Vore
 						flog::info("Locus {} {}", i, (int)locus);
 					}
 
+					size_t sizeLocAcid;
+					a_intfc->ReadRecordData(sizeLocAcid);
+					flog::info("List of Loci acid, size: {}", sizeLocAcid);
+					for (int i = 0; i < sizeLocAcid; i++) {
+						double locus = 0;
+						a_intfc->ReadRecordData(locus);
+						entry.pdAcid[i] = locus;
+						flog::info("Locus {} {}", i, locus);
+					}
+
+
 					size_t sizeLocStruggle;
 					a_intfc->ReadRecordData(sizeLocStruggle);
 					flog::info("List of Loci Struggle process, size: {}", sizeLocStruggle);
@@ -486,7 +509,14 @@ namespace Vore
 						flog::info("Growth {} {}", i, growth);
 					}
 
-					flog::info("Char type: {}, is player: {}, alive {}", (int)entry.aCharType, entry.aIsPlayer, entry.aAlive);
+					if (entry.aSize == 1.0) {
+						a_intfc->ReadRecordData(entry.aSize);
+					} else {
+						double oldSize = 0;
+						a_intfc->ReadRecordData(oldSize);
+					}
+
+					flog::info("Char type: {}, is player: {}, alive {}, size {}", (int)entry.aCharType, entry.aIsPlayer, entry.aAlive, entry.aSize);
 
 					flog::info("Pred");
 					a_intfc->ReadRecordData(entry.pdFat);
@@ -528,6 +558,9 @@ namespace Vore
 	{
 		PlayerPrefs::clear();
 		VoreGlobals::delete_queue.clear();
+		UI::VoreMenu::_menuMode = UI::kNone;
+		UI::VoreMenu::_setModeAfterShow = UI::kNone;
+		UI::VoreMenu::_infoTarget = {};
 		flog::info("reverting, clearing data");
 		Data.clear();
 	}

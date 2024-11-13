@@ -53,14 +53,13 @@ You can fix this in 2 ways
 * A better way to hide actors during vore (needs testing)
 * Disposal skeleton (for humanoids)
 * Prey persistence (needs testing)
+* Acid levels (maybe make switching digestion dependent on acid level)
 ### Plans
 #### Currently working on
 * INI settings
 * Basic reformation
 * Item/Object vore
-* Acid levels
-* Fix menu disappearing on cell change
-* Fix broken prey size on reload
+* Change how prey size is calculated using bounds
 #### For the future
 * Add size gain
 * Fix Talk to prey/pred
@@ -89,3 +88,4 @@ You can fix this in 2 ways
 * Spells/Perks/Vore leveling
 * Become your killer
 * MCM
+* Fix menu disappearing on cell change

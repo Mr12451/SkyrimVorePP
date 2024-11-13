@@ -94,6 +94,7 @@ namespace Vore
 		hReformation = 3,
 		*/
 		std::array<VoreState, Locus::NUMOFLOCI> pdLoci = { VoreState::hNone };
+		std::array<double, Locus::NUMOFLOCI> pdAcid = { 0 };
 
 		//struggle process per locus
 		std::array<double, Locus::NUMOFLOCI> pdIndigestion = { 0 };
@@ -136,6 +137,7 @@ namespace Vore
 		//not saved
 
 		//current slider values
+
 		std::array<float, LocusSliders::NUMOFSLIDERS> pdSliders = { 0 };
 		//slider goals
 		std::array<float, LocusSliders::NUMOFSLIDERS> pdGoal = { 0 };
@@ -159,6 +161,7 @@ namespace Vore
 
 		// REF HANDLE !!!
 		RE::ObjectRefHandle me;
+		// PAPYRUS OBJECT FOR PERSISTENCY !!!
 		RE::BSTSmartPointer<RE::BSScript::Object> meVm = nullptr;
 
 		RE::TESObjectREFR* get() const;

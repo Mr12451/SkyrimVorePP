@@ -39,6 +39,7 @@ namespace Vore
 		static inline bool digest_protected = true;
 		static inline bool digest_essential = true;
 
+		// update speed
 		static inline double slow_update = 5;
 		static inline double fast_update = 0.2;
 		static inline float belly_fast_update = 0.05f;
@@ -47,12 +48,14 @@ namespace Vore
 		//full tour speed
 		static inline double locus_process_speed = 5;
 
-		static inline double acid_damage = 50;
+		static inline double acid_damage = 25;
 		//static inline double digestion_amount_base = 0.03;
 		static inline double digestion_amount_base = 20.0;
 		static inline double struggle_amount = 5;
 		static inline double struggle_stamina = 15;
 		static inline double indigestion_loss = 1;
+		static inline double acid_gain = 2;
+		static inline double acid_loss = 0.5;
 
 		//wg
 		static inline double wg_fattemp = 0.02;
