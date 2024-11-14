@@ -8,6 +8,11 @@ namespace Vore
 	{
 		//settings will be loaded here
 	public:
+		// update speed
+		static inline double slow_update = 5;
+		static inline double fast_update = 0.2;
+		static inline float belly_fast_update = 0.05f;
+
 		// keycodes: look here https://ck.uesp.net/wiki/Input_Script
 
 		// main
@@ -27,35 +32,33 @@ namespace Vore
 
 		static inline uint32_t k_test = 87;
 
-		// ui
+		// ui debug
 
 		static inline bool ui_show_struggle_sliders = false;
 		static inline bool ui_show_wg = true;
+		static inline bool ui_show_more = true;
 		
 		
 		// main
 
-		static inline bool dual_boobs = false;
+		static inline bool dual_boobs = true;
 		static inline bool digest_protected = true;
 		static inline bool digest_essential = true;
+		static inline bool swallow_auto = true;
 
-		// update speed
-		static inline double slow_update = 5;
-		static inline double fast_update = 0.2;
-		static inline float belly_fast_update = 0.05f;
 
-		//change this to a lower value, about ~0.1
-		//full tour speed
-		static inline double locus_process_speed = 5;
-
-		static inline double acid_damage = 25;
 		//static inline double digestion_amount_base = 0.03;
-		static inline double digestion_amount_base = 20.0;
+		static inline double digestion_amount_base = 1.0;
 		static inline double struggle_amount = 5;
 		static inline double struggle_stamina = 15;
-		static inline double indigestion_loss = 1;
+		static inline double indigestion_loss = 0.5;
+		static inline double acid_damage = 25;
 		static inline double acid_gain = 2;
 		static inline double acid_loss = 0.5;
+		static inline double swallow_auto_speed = 30;
+		static inline double swallow_decrease_speed = 20;
+		//full tour speed
+		static inline double locus_process_speed = 1;
 
 		//wg
 		static inline double wg_fattemp = 0.02;
@@ -77,10 +80,6 @@ namespace Vore
 		static inline double wg_loss_locus = 0.00001;
 		static inline double wg_loss_size = 0.00001;
 
-		//enabling this disables qte for swallow
-		static inline bool swallow_auto = true;
-		static inline double swallow_auto_speed = 30;
-		static inline double swallow_decrease_speed = 20;
 
 		//sliders
 
@@ -121,7 +120,7 @@ namespace Vore
 		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 		// !!!!!!!!!!!!!!!!!!!!!!!!! one person size for sliders in the belly group should be equal
-		static inline std::array<std::vector<std::tuple<const char*, float, float>>, LocusSliders::NUMOFSLIDERS> sliders_bodypart_female = { {
+		static inline std::array<std::vector<std::tuple<std::string, float, float>>, LocusSliders::NUMOFSLIDERS> sliders_bodypart_female = { {
 			// gr1 (belly)
 			{ { "Vore prey belly", 0.7f, 10.0f }, { "Giant belly up", 0.4f, 0.4f } },
 			{ { "Giant belly (coldsteelj)", 1.0f, 5.0f } },
@@ -144,7 +143,7 @@ namespace Vore
 			{ { "SSBBW2 body", 1.0f, 4.0f } },
 			{ { "SSBBW2 body", 1.0f, 4.0f } } } };
 
-		static inline std::array<std::vector<std::tuple<const char*, float, float>>, LocusSliders::NUMOFSLIDERS> sliders_bodypart_male = { { // gr1 (belly)
+		static inline std::array<std::vector<std::tuple<std::string, float, float>>, LocusSliders::NUMOFSLIDERS> sliders_bodypart_male = { { // gr1 (belly)
 			{ { "Vore prey belly", 0.7f, 10.0f }, { "Giant belly up", 0.4f, 0.4f } },
 			{ { "Giant belly (coldsteelj)", 1.0f, 5.0f } },
 			{ { "Vore prey belly", 0.7f, 10.0f } },
@@ -166,7 +165,7 @@ namespace Vore
 			{ { "SSBBW2 body", 1.0f, 4.0f } },
 			{ { "SSBBW2 body", 1.0f, 4.0f } } } };
 
-		static inline std::array<std::vector<std::tuple<const char*, float, float>>, LocusSliders::NUMOFSLIDERS> sliders_bodypart_creature = { {// gr1 (belly)
+		static inline std::array<std::vector<std::tuple<std::string, float, float>>, LocusSliders::NUMOFSLIDERS> sliders_bodypart_creature = { { // gr1 (belly)
 			{ { "Vore prey belly", 0.7f, 10.0f } },
 			{ { "Vore prey belly", 0.7f, 10.0f } },
 			{ { "Vore prey belly", 0.7f, 10.0f } },
@@ -186,7 +185,7 @@ namespace Vore
 			{},
 			{} } };
 
-		static inline std::array<std::vector<std::tuple<const char*, float, float>>, Locus::NUMOFLOCI> struggle_sliders = { { { { "StruggleSlider1", 1.0f, 5.0f }, { "StruggleSlider2", 1.0f, 5.0f }, { "StruggleSlider3", 1.0f, 5.0f } },
+		static inline std::array<std::vector<std::tuple<std::string, float, float>>, Locus::NUMOFLOCI> struggle_sliders = { { { { "StruggleSlider1", 1.0f, 5.0f }, { "StruggleSlider2", 1.0f, 5.0f }, { "StruggleSlider3", 1.0f, 5.0f } },
 			{ { "StruggleSlider1", 1.0f, 5.0f }, { "StruggleSlider2", 1.0f, 5.0f }, { "StruggleSlider3", 1.0f, 5.0f } },
 			{ { "BVoreStruggleL1", 1.0f, 5.0f }, { "BVoreStruggleL2", 1.0f, 5.0f }, { "BVoreStruggleL3", 1.0f, 5.0f } },
 			{ { "BVoreStruggleR1", 1.0f, 5.0f }, { "BVoreStruggleR2", 1.0f, 5.0f }, { "BVoreStruggleR3", 1.0f, 5.0f } },
@@ -215,6 +214,8 @@ namespace Vore
 			{ 0.0, 0.0, 1.0, 0.0 },
 			{ 0.0, 0.5, 0.5, 0.0 },
 			{ 0.0, 0.1, 0.1, 0.5 } } };
+
+		static void LoadIniSettings();
 	};
 
 	class VoreGlobals
@@ -294,7 +295,7 @@ namespace Vore
 			}
 		}
 
-		static std::string_view GetLocStr(Locus& loc)
+		static std::string_view GetLocStr(Locus loc)
 		{
 			switch (loc) {
 			case Locus::lStomach:

@@ -174,7 +174,7 @@ namespace Vore::Core
 				AV::DamageAV(bones, RE::ActorValue::kHealth, AV::GetAV(bones, RE::ActorValue::kHealth));
 				bones->KillImpl(nullptr, (float)AV::GetAV(bones, RE::ActorValue::kHealth), true, true);
 				auto items = prey->GetInventory();
-				bones->SetSize(static_cast<float>(preySize / 100 + 1));
+				bones->SetSize(static_cast<float>(preySize / VoreSettings::slider_one));
 				for (auto& [i, j] : items) {
 					prey->RemoveItem(i, j.first, RE::ITEM_REMOVE_REASON::kStoreInContainer, nullptr, bones);
 				}
@@ -238,7 +238,7 @@ namespace Vore::Core
 						Regurgitate(VoreData::Data[oldPred].get()->As<RE::Actor>(), preyId, RegType::rTransfer);
 					}
 				} else {
-					SetPreyVisibility(preyA, pred, false, false, preyData.pdSizegrowth);
+					SetPreyVisibility(preyA, pred, false, false, preyData.aSize);
 				}
 
 				// don't delete a prey if we're planning on using them
@@ -370,13 +370,14 @@ namespace Vore::Core
 				preyData.pyStruggle = VoreState::sStill;
 				preyData.pyLocusMovement = VoreState::mStill;
 
-				preyData.pyDigestProgress = 0;
 				preyData.pySwallowProcess = 0;
 				preyData.pyLocusProcess = 0;
 
 				if (rtype == RegType::rTransfer) {
+					preyData.pyDigestProgress = 0;
 					flog::info("prey transfer");
 				} else if (topPred) {
+					preyData.pyDigestProgress = 0;
 					preysToSwallow.push_back(preyData.get());
 				} else {
 					preyData.pred = 0;
@@ -402,7 +403,8 @@ namespace Vore::Core
 		// regurgitation
 		for (auto& [prey, pData] : preysToDelete) {
 			RE::Actor* preyA = skyrim_cast<RE::Actor*>(prey);
-			SetPreyVisibility(preyA, pred, true, pData->pyDigestProgress == 100, pData->pdSizegrowth);
+			SetPreyVisibility(preyA, pred, true, pData->pyDigestProgress == 100, pData->aSize);
+			pData->pyDigestProgress = 0;
 		}
 
 		predData.pdUpdateGoal = true;
@@ -647,9 +649,9 @@ namespace Vore::Core
 				//calculate speed -> (100 - val.pyDigestProgress) / VoreSettings::digestion_amount_base * 100 / val.aSize
 				//get actual digestion time
 				// multiply it by speed
-				double toDigest = (100 - val.pyDigestProgress) * val.aSize / 100;
+				double toDigest = (100 - val.pyDigestProgress) * val.aSize / VoreSettings::slider_one;
 				const double& newBase = digestBase > toDigest ? toDigest : digestBase;
-				val.pyDigestProgress = val.pyDigestProgress + newBase * 100 / val.aSize;
+				val.pyDigestProgress = val.pyDigestProgress + newBase * VoreSettings::slider_one / val.aSize;
 				if (val.pyDigestProgress >= 100) {
 					val.pyDigestProgress = 100;
 					FinishDigestion(key, val);
@@ -787,11 +789,15 @@ namespace Vore::Core
 			//swallow process
 
 			if (val.pySwallowProcess < 100) {
+				needUIUpdate = true;
+				if (delta > 10) {
+					val.pySwallowProcess = 100;
+				}
 				if (VoreSettings::swallow_auto) {
-					val.pySwallowProcess += VoreSettings::swallow_auto_speed * delta;
+					val.pySwallowProcess += VoreSettings::swallow_auto_speed * VoreSettings::slider_one / val.aSize * delta;
 					predData.pdUpdateGoal = true;
 				} else {
-					val.pySwallowProcess -= VoreSettings::swallow_decrease_speed * delta;
+					val.pySwallowProcess -= VoreSettings::swallow_decrease_speed * VoreSettings::slider_one / val.aSize * delta;
 					predData.pdUpdateGoal = true;
 				}
 
@@ -806,10 +812,11 @@ namespace Vore::Core
 					Regurgitate(predData.get()->As<RE::Actor>(), key, RegType::rAll);
 				}
 
-			} else if (asActor) {
+			}
+			if (val.pySwallowProcess == 100 && asActor) {
 				//process digestion
 				if (val.pyDigestion == VoreState::hLethal) {
-					
+					needUIUpdate = true;
 					// calculate if the actor escapes or dies during long digestion
 					if (delta > 10 && val.pyStruggle != sStill) {
 						//can the prey struggle out while he lives
@@ -853,7 +860,7 @@ namespace Vore::Core
 							//asActor->KillImmediate();
 							HandlePreyDeathImmidiate(val);
 						}
-						needUIUpdate = true;
+						
 						predData.pdUpdateStruggleGoal = true;
 						continue;
 						//
@@ -861,12 +868,14 @@ namespace Vore::Core
 						AV::DamageAV(asActor, RE::ActorValue::kHealth, VoreSettings::acid_damage * delta * acidMulti);
 					}
 				} else if (val.pyDigestion == VoreState::hReformation) {
+					needUIUpdate = true;
 					AV::DamageAV(asActor, RE::ActorValue::kHealth, -VoreSettings::acid_damage * delta);
 				}
 				// handle crime and aggro ????????????????????????
 
 				// handle struggle
 				if (val.pyStruggle == VoreState::sStruggling) {
+					needUIUpdate = true;
 					if (AV::GetAV(asActor, RE::ActorValue::kStamina) > 0) {
 						//damage prey's stamina and pred's struggle bar for this locus
 						AV::DamageAV(asActor, RE::ActorValue::kStamina, VoreSettings::struggle_stamina * delta);
@@ -884,6 +893,7 @@ namespace Vore::Core
 					}
 
 				} else if (val.pyStruggle == VoreState::sExhausted) {
+					needUIUpdate = true;
 					//restore stamina
 					AV::DamageAV(asActor, RE::ActorValue::kStamina, -AV::GetAV(asActor, RE::ActorValue::kStaminaRate) * AV::GetAV(asActor, RE::ActorValue::kStaminaRateMult) / 100.0 * delta);
 					if (AV::GetPercentageAV(asActor, RE::ActorValue::kStamina) >= 0.9) {
@@ -891,7 +901,6 @@ namespace Vore::Core
 					}
 				}
 			}
-			needUIUpdate = true;
 		}
 		//updates top preds
 		for (auto const& [key, val] : VoreData::Data) {

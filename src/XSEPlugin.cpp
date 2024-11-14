@@ -32,6 +32,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 	switch (a_msg->type) {
 	case SKSE::MessagingInterface::kPostLoad:
 		flog::trace("All plugins loaded");
+		Vore::VoreSettings::LoadIniSettings();
 		break;
 	case SKSE::MessagingInterface::kPostPostLoad:
 		{

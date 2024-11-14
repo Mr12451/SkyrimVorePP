@@ -21,7 +21,7 @@ However, you can build it from source yourself.
 * `git clone https://github.com/Mr12451/SkyrimVorePP --recursive`
 * make a new empty mod in your mod manager
 * Set the SamplePluginOutputDir to your new mod in CMakePresets.json
-* manually copy `Interface` folder to your new mod
+* manually copy the contents of `Dist` folder to your new mod
 * switch build preset to ALL-WITH-AUTO-DEPLOYMENT
 * build
 * run game
@@ -54,9 +54,9 @@ You can fix this in 2 ways
 * Disposal skeleton (for humanoids)
 * Prey persistence (needs testing)
 * Acid levels (maybe make switching digestion dependent on acid level)
+* INI settings
 ### Plans
 #### Currently working on
-* INI settings
 * Basic reformation
 * Item/Object vore
 * Change how prey size is calculated using bounds

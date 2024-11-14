@@ -198,10 +198,10 @@ namespace Vore
 							finalval = max;
 						}
 						//flog::warn("{}, {}", name, finalval);
-						if (slidervalues.contains(name)) {
-							slidervalues[name] += finalval;
+						if (slidervalues.contains(name.c_str())) {
+							slidervalues[name.c_str()] += finalval;
 						} else {
-							slidervalues[name] = finalval;
+							slidervalues[name.c_str()] = finalval;
 						}
 					}
 				}
@@ -254,10 +254,10 @@ namespace Vore
 						if (std::abs(finalval) > std::abs(max) && finalval * max > 0) {
 							finalval = max;
 						}
-						if (slidervalues.contains(name)) {
-							slidervalues[name] += finalval;
+						if (slidervalues.contains(name.c_str())) {
+							slidervalues[name.c_str()] += finalval;
 						} else {
-							slidervalues[name] = finalval;
+							slidervalues[name.c_str()] = finalval;
 						}
 					}
 				}
