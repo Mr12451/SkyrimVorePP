@@ -174,10 +174,50 @@ namespace Vore
 		cini::get_value(ini, slider_one, section5, "Default prey size", ";Size of an average human. Used for slider scaling and digestion/swallow speed multipliers. The default value is good enough");
 		cini::get_value(ini, slider_maxstep, section5, "Slider max step", ";Max slider change per second when slider goal - current value = Default prey size. Speed scales with diff");
 
+		int pad0 = 0;
+		cini::get_value(ini, pad0, section5, "pad0", ";pad values don't do anything, they're for inserting comments\n;Below is a list of all sliders for each body and slider type\n;Each slider has 3 values: Name (same as in the Outfit studio, not the one from Bodyslide), One (value for one default-sized prey), Max (max value)\n;Values here are divided by 100 compared to Bodyslide and outfit studio\n;You can add as many sliders as you want, but it will reduce performance");
+
 		ReadLocusSliders(sliders_bodypart_female, "Female ", ini);
 		ReadLocusSliders(sliders_bodypart_male, "Male ", ini);
 		ReadLocusSliders(sliders_bodypart_creature, "Creature ", ini);
 		ReadLocusSliders(struggle_sliders, "Struggle ", ini);
+
+
+		int pad1 = 0;
+		cini::get_value(ini, pad1, section5, "pad1", ";WG coefficient for different body parts from different vore types.\n;In order: Belly, Ass, Breasts, Cock\n;If prey died in one organ, but then was moved to a different one, the original one is used.");
+
+		for (uint8_t i = 0; i < Locus::NUMOFLOCI; i++) {
+			std::vector<std::string> lSliders = {};
+			for (uint8_t j = 0; j < 4; j++) {
+				lSliders.push_back(std::format("{:6f}", voretypes_partgain[i][j]));
+			}
+			std::string lName = "WG Parts ";
+
+			lName += PlayerPrefs::GetLocStr((Locus)i);
+
+			cini::get_value(ini, lSliders, section5, lName.c_str(), "; ");
+
+			std::array<double, 4> newLSliders = {};
+
+
+			if (lSliders.size() == 4) {
+				for (uint8_t j = 0; j < 4; j++) {
+					newLSliders[j] = std::stod(lSliders[j]);
+				}
+				voretypes_partgain[i] = newLSliders;
+			}
+		}
+		bool allowLog = false;
+		if (allowLog) {
+			int i = 0;
+			for (auto& loc : voretypes_partgain) {
+				flog::info("Loc {}", i);
+				for (auto& el : loc) {
+					flog::info("{}", el);
+				}
+				i++;
+			}
+		}
 
 		(void)ini.SaveFile(path);
 	}

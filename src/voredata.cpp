@@ -126,7 +126,7 @@ namespace Vore
 				VM::GetSingleton()->CreateObject2("Actor", value.meVm);
 				VM::GetSingleton()->BindObject(value.meVm, GetHandle(character), false);
 			}
-			value.aSize = std::max(character->GetHeight(), 1.0f);
+			value.aSize = (double)GetObjectSize(character);
 			value.me = character->GetHandle();
 		
 			for (auto& el : value.pdLoci) {
@@ -509,7 +509,7 @@ namespace Vore
 						flog::info("Growth {} {}", i, growth);
 					}
 
-					if (entry.aSize == 1.0) {
+					if (entry.aSize <= 1.0) {
 						a_intfc->ReadRecordData(entry.aSize);
 					} else {
 						double oldSize = 0;

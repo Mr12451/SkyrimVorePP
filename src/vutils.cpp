@@ -84,7 +84,83 @@ namespace Vore::Log
 }
 namespace Vore
 {
+	//static RE::NiPoint3 GetBoxBounds(RE::TESObjectREFR* target)
+	//{
+	//	if (!target) {
+	//		flog::warn("Can't find bound box for no target");
+	//		return RE::NiPoint3(1.0f, 1.0f, 1.0f);
+	//	}
+	//	if (!target->Is3DLoaded()) {
+	//		flog::warn("No 3d for {}", target->GetDisplayFullName());
+	//		return RE::NiPoint3(1.0f, 1.0f, 1.0f); // default actor box
+	//		//RE::NiPoint3(22.0f, 14.0f, 64.0f);
+	//	}
+	//	auto model = target->Get3D1(false);
+	//	if (model) {
+	//		auto bbx = model->GetExtraData("BBX");
+	//		/*auto col = model->GetCollisionObject(); 
+	//		if (col) {
+	//			auto rgb = col->GetRigidBody();
+	//			RE::hkReferencedObject* hkp_rigidbody_ref = rgb->referencedObject.get();
+	//			RE::hkpRigidBody* hkp_rigidbody = skyrim_cast<RE::hkpRigidBody*>(hkp_rigidbody_ref);
+	//			auto shape = hkp_rigidbody->GetShape();
+	//			flog::info("col shape {}", (int)shape->type);
+	//			return RE::NiPoint3(1.0f, 1.0f, 1.0f);
+	//		}*/
+	//		if (bbx) {
+	//			return static_cast<RE::BSBound*>(bbx)->extents;
+	//		}
+	//	}
+	//	flog::warn("Can't find bound box for {}", target->GetDisplayFullName());
+	//	return RE::NiPoint3(1.0f, 1.0f, 1.0f);
+	//}
 
+	float GetObjectSize(RE::TESObjectREFR* target)
+	{
+		// possible preys - actors, furniture, plants, dropped items
+		// if you can't target smt, you shouldn't eat it
+		// test random skulls?
+		// actor - use height?
+		if (!target->Is3DLoaded()) {
+			return 1.0f;
+		}
+		auto model = target->Get3D1(false);
+		if (!model) {
+			return 1.0f;
+		}
+		float totalSize = 0.0f;
+
+		RE::BSVisit::TraverseScenegraphCollision(model, [&](RE::bhkNiCollisionObject* a_col) -> RE::BSVisit::BSVisitControl {
+			if (auto hkpBody = a_col->body ? static_cast<RE::hkpRigidBody*>(a_col->body->referencedObject.get()) : nullptr) {
+				
+				const RE::hkpShape* shape = hkpBody->GetShape();  //mass += hkpBody->motion.GetMass();
+				if (shape->type == RE::hkpShapeType::kCapsule) {
+					const RE::hkpCapsuleShape* capsuleShape = static_cast<const RE::hkpCapsuleShape*>(shape);
+					float length = capsuleShape->vertexA.GetDistance3(capsuleShape->vertexB);
+					/*union
+					{
+						__m128 v;
+						float a[4];
+					} converter{};
+					converter.v = capsuleShape->vertexA.quad;
+					flog::info("\n\nVERTA {:.2f} {:.2f} {:.2f} {:.2f}", converter.a[0], converter.a[1], converter.a[2], converter.a[3]);
+					converter.v = capsuleShape->vertexB.quad;
+					flog::info("VERTB {:.2f} {:.2f} {:.2f} {:.2f}", converter.a[0], converter.a[1], converter.a[2], converter.a[3]);
+					flog::info("Length {}", length);
+					flog::info("Radius {}", capsuleShape->radius);
+					*/
+					totalSize += 3.14159f * capsuleShape->radius * capsuleShape->radius * (4.0f / 3.0f * capsuleShape->radius + length);
+				}
+			}
+			return RE::BSVisit::BSVisitControl::kContinue;
+		});
+		return totalSize / 0.1538f * 100.0f;
+		
+		/*RE::NiPoint3 bounds = target->GetBoundMax() - target->GetBoundMin();
+		float volume = std::pow(bounds.x * bounds.y * bounds.z, 0.5f);
+		flog::trace("{} bbx {:.2f} {:.2f} {:.2f}", target->GetDisplayFullName(), bounds.x, bounds.y, bounds.z);
+		return volume;*/
+	}
 	std::vector<RE::FormID> FilterPrey(RE::FormID pred, Locus locus, bool noneIsAny)
 	{
 		std::vector<RE::FormID> preys = {};

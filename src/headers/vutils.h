@@ -4,11 +4,12 @@
 namespace Vore::Log
 {
 	void PrintVoreData(RE::FormID voreNpc = 0);
-	
+
 }
 
 namespace Vore
 {
+	float GetObjectSize(RE::TESObjectREFR* target);
 	std::vector<RE::FormID> FilterPrey(RE::FormID pred, Vore::Locus locus, bool noneIsAny);
 	float randfloat(float min, float max);
 	//update visuals for all necessary character

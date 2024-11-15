@@ -221,8 +221,19 @@ namespace Vore::UI
 					return;
 				}
 				_firstInfoUpdate = false;
-				if (target->GetFormType() != RE::FormType::ActorCharacter) {
-					std::string text{ "Target is not a Character." };
+				if (target->GetFormType() == RE::FormType::Reference) {
+					std::string text{ "Object Info:\n\n" };
+					text.reserve(512);
+					text += "Name: ";
+					text += target->GetDisplayFullName();
+					text += "\nSize: ";
+
+					text += std::format("{:.4f}", GetObjectSize(target));
+
+					thisMenu->SetText(text);
+					return;
+				} else if (target->GetFormType() != RE::FormType::ActorCharacter) {
+					std::string text{ "Incorrect form type!" };
 					thisMenu->SetText(text);
 					return;
 				}
@@ -243,7 +254,7 @@ namespace Vore::UI
 					text += "\nAlive: ";
 					text += actorData.aAlive ? "true" : "false";
 					text += "\nSize: ";
-					text += std::format("{:.2f}", actorData.aSize);
+					text += std::format("{:.4f}", actorData.aSize);
 
 					if (VoreData::IsPrey(charId)) {
 						WritePreyData(text, charId, false, false);
@@ -327,9 +338,7 @@ namespace Vore::UI
 					text += "\nAlive: ";
 					text += actr->IsDead() ? "false" : "true";
 					text += "\nSize: ";
-					text += std::format("{:.2f}", actr->GetHeight());
-					text += " Weight: ";
-					text += std::format("{:.2f}", actr->GetWeight());
+					text += std::format("{:.4f}", GetObjectSize(actr));
 
 					WriteStats(text, actr);
 					text += "\n";
@@ -421,7 +430,7 @@ namespace Vore::UI
 				// get target or player
 				if (!ignoreInfoCrosshair) {
 					RE::TESObjectREFR* target = Utils::GetCrosshairObject();
-					if (!target || target->GetFormType() != RE::FormType::ActorCharacter) {
+					if (!target) {
 						target = RE::PlayerCharacter::GetSingleton();
 					}
 					_infoTarget = target->GetHandle();

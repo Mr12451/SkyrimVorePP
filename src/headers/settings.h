@@ -86,7 +86,7 @@ namespace Vore
 		//changes the graph of the function from cubic volume to linear slider increase
 		static inline float slider_pow = 0.5f;
 		//weight of a single person
-		static inline float slider_one = 120.0f;
+		static inline float slider_one = 100.0f;
 		//max slider step per second
 		static inline float slider_maxstep = 150.0f;
 
@@ -208,7 +208,7 @@ namespace Vore
 		uFatCock,
 
 		*/
-		static inline std::array<std::array<double, 4>, Locus::NUMOFLOCI> voretypes_partgain = { { { 0.7, 0.05, 0.05, 0.0 },
+		static inline std::array<std::array<double, 4>, Locus::NUMOFLOCI> voretypes_partgain = { { { 0.6, 0.2, 0.2, 0.0 },
 			{ 0.2, 0.5, 0.5, 0.0 },
 			{ 0.0, 0.0, 1.0, 0.0 },
 			{ 0.0, 0.0, 1.0, 0.0 },
