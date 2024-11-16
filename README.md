@@ -55,15 +55,15 @@ You can fix this in 2 ways
 * Prey persistence (needs testing)
 * Acid levels (maybe make switching digestion dependent on acid level)
 * INI settings
-* Prey size is calculation using havok data (idk how to calculate kMOPP and kConvexVertices, so I use bounds instead)
+* Prey size calculation using havok data (idk how to calculate kMOPP and kConvexVertices, so I use bounds instead)
 ### Plans
 #### Currently working on
 * Basic reformation
 * Item/Object vore
-#### For the future
-* Add size gain
-* Fix Talk to prey/pred
 * Add dragon soul on digestion
+* Add size gain
+#### For the future
+* Fix Talk to prey/pred
 * Basic dialogue
 * Basic Animations
 * Basic Sounds
