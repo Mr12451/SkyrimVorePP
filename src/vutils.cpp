@@ -90,6 +90,7 @@ namespace Vore
 		// if you can't target smt, you shouldn't eat it
 		// test random skulls?
 		// actor - use height?
+		//target->CanBeMoved();
 		if (!target->Is3DLoaded()) {
 			return 1.0f;
 		}
@@ -98,15 +99,17 @@ namespace Vore
 			return 1.0f;
 		}
 		float totalSize = 0.0f;
+		bool useBounds = false;
 
 		RE::BSVisit::TraverseScenegraphCollision(model, [&](RE::bhkNiCollisionObject* a_col) -> RE::BSVisit::BSVisitControl {
 			if (auto hkpBody = a_col->body ? static_cast<RE::hkpRigidBody*>(a_col->body->referencedObject.get()) : nullptr) {
-				
 				const RE::hkpShape* shape = hkpBody->GetShape();  //mass += hkpBody->motion.GetMass();
-				if (shape->type == RE::hkpShapeType::kCapsule) {
-					const RE::hkpCapsuleShape* capsuleShape = static_cast<const RE::hkpCapsuleShape*>(shape);
-					float length = capsuleShape->vertexA.GetDistance3(capsuleShape->vertexB);
-					/*union
+				switch (shape->type) {
+				case (RE::hkpShapeType::kCapsule):
+					{
+						const RE::hkpCapsuleShape* capsuleShape = static_cast<const RE::hkpCapsuleShape*>(shape);
+						float length = capsuleShape->vertexA.GetDistance3(capsuleShape->vertexB);
+						/*union
 					{
 						__m128 v;
 						float a[4];
@@ -118,11 +121,94 @@ namespace Vore
 					flog::info("Length {}", length);
 					flog::info("Radius {}", capsuleShape->radius);
 					*/
-					totalSize += 3.14159f * capsuleShape->radius * capsuleShape->radius * (4.0f / 3.0f * capsuleShape->radius + length);
+						totalSize += 3.14159f * capsuleShape->radius * capsuleShape->radius * (4.0f / 3.0f * capsuleShape->radius + length);
+						break;
+					}
+				case (RE::hkpShapeType::kBox):
+					{
+						const RE::hkpBoxShape* cShape = static_cast<const RE::hkpBoxShape*>(shape);
+						flog::trace("Shape: box");
+						union
+						{
+							__m128 v;
+							float a[4];
+						} converter{};
+						converter.v = cShape->halfExtents.quad;
+						totalSize += converter.a[0] * converter.a[1] * converter.a[2] * 8.0f;
+						break;
+					}
+				case (RE::hkpShapeType::kConvexVertices):
+					{
+						//const RE::hkpConvexShape* cShape = static_cast<const RE::hkpConvexShape*>(shape);
+						flog::trace("Shape: convex");
+						useBounds = true;
+						//idk how to do this properly, so I'll leave it at this
+						//totalSize += 4.0f / 3.0f * 3.14159f * std::pow(cShape->radius, 3.0f);
+						/*RE::hkAabb aabb{};
+						model->AsBhkRigidBody()->GetAabbWorldspace(aabb);
+						auto cords = aabb.max - aabb.min;
+						union
+						{
+							__m128 v;
+							float a[4];
+						} converter{};
+						converter.v = cords.quad;
+						flog::info("VERT {:.2f} {:.2f} {:.2f} {:.2f}", converter.a[0], converter.a[1], converter.a[2], converter.a[3]);
+						totalSize += converter.a[0] * converter.a[1] * converter.a[2];*/
+						break;
+					}
+				case (RE::hkpShapeType::kMOPP):
+					{
+						//const RE::hkpMoppBvTreeShape* cShape = static_cast<const RE::hkpMoppBvTreeShape*>(shape);
+						flog::trace("Shape: MOPP");
+						useBounds = true;
+						/*RE::hkTransform trans{};
+						RE::hkAabb aabb{};
+						cShape->;
+						auto cords = aabb.max - aabb.min;
+						union
+						{
+							__m128 v;
+							float a[4];
+						} converter{};
+						converter.v = cords.quad;
+						flog::info("VERT {:.2f} {:.2f} {:.2f} {:.2f}", converter.a[0], converter.a[1], converter.a[2], converter.a[3]);
+						totalSize += converter.a[0] * converter.a[1] * converter.a[2];*/
+						break;
+					}
+				case (RE::hkpShapeType::kList):
+					{
+						const RE::hkpListShape* cShape = static_cast<const RE::hkpListShape*>(shape);
+						flog::trace("Shape: list");
+						union
+						{
+							__m128 v;
+							float a[4];
+						} converter{};
+						converter.v = cShape->aabbHalfExtents.quad;
+						totalSize += converter.a[0] * converter.a[1] * converter.a[2] * 8.0f;
+						break;
+					}
+				case (RE::hkpShapeType::kSphere):
+					{
+						const RE::hkpSphereShape* cShape = static_cast<const RE::hkpSphereShape*>(shape);
+						totalSize += 4.0f / 3.0f * 3.14159f * std::pow(cShape->radius, 3.0f);
+						flog::trace("Shape: sphere");
+						break;
+					}
+				default:
+					flog::error("Found an unknown shape type: {}", (int)shape->type);
+					break;
 				}
 			}
 			return RE::BSVisit::BSVisitControl::kContinue;
 		});
+		if (useBounds) {
+			RE::NiPoint3 bounds = target->GetBoundMax() - target->GetBoundMin();
+			flog::trace("Using bound {:.4f} {:.4f} {:.4f}", bounds.x, bounds.y, bounds.z);
+			//bounds / 70 = shape measurements
+			totalSize = bounds.x * bounds.y * bounds.z / 343000.0f;
+		}
 		totalSize = totalSize / 0.1538f * 100.0f;
 
 		if (totalSize > VoreSettings::size_softcap) {
@@ -130,7 +216,7 @@ namespace Vore
 		}
 
 		return totalSize;
-		
+
 		/*RE::NiPoint3 bounds = target->GetBoundMax() - target->GetBoundMin();
 		float volume = std::pow(bounds.x * bounds.y * bounds.z, 0.5f);
 		flog::trace("{} bbx {:.2f} {:.2f} {:.2f}", target->GetDisplayFullName(), bounds.x, bounds.y, bounds.z);
@@ -192,7 +278,6 @@ namespace Vore
 					}
 					float diff = val.pdGoal[i] - val.pdSliders[i];
 					float step = (float)delta * val.pdGoalStep[i];
-
 
 					if (diff > 0) {
 						if (diff <= step) {
@@ -314,7 +399,6 @@ namespace Vore
 				}
 			}
 			if (val.get()->Is3DLoaded()) {
-
 				//commit all sliders to skee
 				for (auto& [sname, svalue] : slidervalues) {
 					//flog::trace("Setting slider: char {}, slider {}, value {}", Name::GetName(val.get()), sname, svalue);

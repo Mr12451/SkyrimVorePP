@@ -55,11 +55,11 @@ You can fix this in 2 ways
 * Prey persistence (needs testing)
 * Acid levels (maybe make switching digestion dependent on acid level)
 * INI settings
+* Prey size is calculation using havok data (idk how to calculate kMOPP and kConvexVertices, so I use bounds instead)
 ### Plans
 #### Currently working on
 * Basic reformation
 * Item/Object vore
-* Change how prey size is calculated using havok data
 #### For the future
 * Add size gain
 * Fix Talk to prey/pred
