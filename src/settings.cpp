@@ -143,6 +143,8 @@ namespace Vore
 		cini::get_value(ini, digest_protected, section2, "Digest protected", ";Protected NPCs can be digested");
 		cini::get_value(ini, digest_essential, section2, "Digest essential", ";Essential NPCs can be digested. Fun, but can softlock the game");
 		cini::get_value(ini, swallow_auto, section2, "Auto swallow", ";Disables swallow minigame. DON'T DISABLE, SWALLOW MINIGAME IS NOT IMPLEMENTED YET!");
+		cini::get_value(ini, size_softcap, section2, "Size softcap", ";Default human size is 100\n;NPCs whose size is bigger than the softcap will have their size reduced exponentially");
+		cini::get_value(ini, size_softcap_power, section2, "Size softcap power", ";Power for size softcap. The lower this is, the harder the softcap is. Set to 1 to disable\n;If this is disabled, the size of a dragon will be 300 times that of a human, which isn't good for the gameplay");
 
 		static const char* section3 = "Process";
 
@@ -171,7 +173,6 @@ namespace Vore
 		static const char* section5 = "Sliders";
 
 		cini::get_value(ini, slider_pow, section5, "Size to volume power", ";Power for turning linear sum of prey sizes into volume. The default value looks good enough");
-		cini::get_value(ini, slider_one, section5, "Default prey size", ";Size of an average human. Used for slider scaling and digestion/swallow speed multipliers. The default value is good enough");
 		cini::get_value(ini, slider_maxstep, section5, "Slider max step", ";Max slider change per second when slider goal - current value = Default prey size. Speed scales with diff");
 
 		int pad0 = 0;

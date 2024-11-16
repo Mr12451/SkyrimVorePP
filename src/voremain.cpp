@@ -174,7 +174,7 @@ namespace Vore::Core
 				AV::DamageAV(bones, RE::ActorValue::kHealth, AV::GetAV(bones, RE::ActorValue::kHealth));
 				bones->KillImpl(nullptr, (float)AV::GetAV(bones, RE::ActorValue::kHealth), true, true);
 				auto items = prey->GetInventory();
-				bones->SetSize(static_cast<float>(preySize / VoreSettings::slider_one));
+				bones->SetSize(static_cast<float>(preySize / VoreGlobals::slider_one));
 				for (auto& [i, j] : items) {
 					prey->RemoveItem(i, j.first, RE::ITEM_REMOVE_REASON::kStoreInContainer, nullptr, bones);
 				}
@@ -488,7 +488,7 @@ namespace Vore::Core
 				for (int j = 0; j < ssliders[i].size(); j++) {
 					//the id of this slider in predData
 					int sliderId = i * Locus::NUMOFLOCI + j;
-					predData.pdStruggleGoalStep[sliderId] = 100.0f;
+					predData.pdStruggleGoalStep[sliderId] = predData.pdStruggleSliders[sliderId];
 					predData.pdStruggleGoal[sliderId] = 0.0f;
 				}
 				continue;
@@ -510,7 +510,7 @@ namespace Vore::Core
 						predData.pdStruggleGoal[sliderId] = randfloat(maxValue / 2.0f, maxValue);
 					}
 
-					predData.pdStruggleGoalStep[sliderId] = VoreSettings::slider_maxstep * std::pow(std::abs(predData.pdStruggleGoal[sliderId] - predData.pdStruggleSliders[sliderId]) / VoreSettings::slider_one, 0.75f);
+					predData.pdStruggleGoalStep[sliderId] = VoreSettings::slider_maxstep * std::pow(std::abs(predData.pdStruggleGoal[sliderId] - predData.pdStruggleSliders[sliderId]) / VoreGlobals::slider_one, 0.75f);
 				}
 				// i got brain damage when writing this lol
 			}
@@ -593,7 +593,7 @@ namespace Vore::Core
 		predData.pdGoal[LocusSliders::uGrowthHigh] = static_cast<float>((predData.pdFatgrowth >= 0) ? predData.pdFatgrowth : 0);
 
 		for (uint8_t i = 0; i < LocusSliders::NUMOFSLIDERS; i++) {
-			predData.pdGoalStep[i] = VoreSettings::slider_maxstep * std::pow(std::abs(predData.pdGoal[i] - predData.pdSliders[i]) / VoreSettings::slider_one, 0.75f);
+			predData.pdGoalStep[i] = VoreSettings::slider_maxstep * std::pow(std::abs(predData.pdGoal[i] - predData.pdSliders[i]) / VoreGlobals::slider_one, 0.75f);
 		}
 
 		//size growth
@@ -649,9 +649,10 @@ namespace Vore::Core
 				//calculate speed -> (100 - val.pyDigestProgress) / VoreSettings::digestion_amount_base * 100 / val.aSize
 				//get actual digestion time
 				// multiply it by speed
-				double toDigest = (100 - val.pyDigestProgress) * val.aSize / VoreSettings::slider_one;
+				double digestMod = 1 / std::max(std::pow(val.aSize / VoreGlobals::slider_one, 0.5), 0.6);
+				double toDigest = (100 - val.pyDigestProgress) / digestMod;
 				const double& newBase = digestBase > toDigest ? toDigest : digestBase;
-				val.pyDigestProgress = val.pyDigestProgress + newBase * VoreSettings::slider_one / val.aSize;
+				val.pyDigestProgress += newBase * digestMod;
 				if (val.pyDigestProgress >= 100) {
 					val.pyDigestProgress = 100;
 					FinishDigestion(key, val);
@@ -794,10 +795,10 @@ namespace Vore::Core
 					val.pySwallowProcess = 100;
 				}
 				if (VoreSettings::swallow_auto) {
-					val.pySwallowProcess += VoreSettings::swallow_auto_speed * VoreSettings::slider_one / val.aSize * delta;
+					val.pySwallowProcess += VoreSettings::swallow_auto_speed * 1 / std::max(std::pow(val.aSize / VoreGlobals::slider_one, 0.3), 0.7) * delta;
 					predData.pdUpdateGoal = true;
 				} else {
-					val.pySwallowProcess -= VoreSettings::swallow_decrease_speed * VoreSettings::slider_one / val.aSize * delta;
+					val.pySwallowProcess -= VoreSettings::swallow_decrease_speed * delta;
 					predData.pdUpdateGoal = true;
 				}
 

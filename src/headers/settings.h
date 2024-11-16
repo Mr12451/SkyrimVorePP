@@ -45,7 +45,8 @@ namespace Vore
 		static inline bool digest_protected = true;
 		static inline bool digest_essential = true;
 		static inline bool swallow_auto = true;
-
+		static inline float size_softcap = 700.0f;
+		static inline float size_softcap_power = 0.45f;
 
 		//static inline double digestion_amount_base = 0.03;
 		static inline double digestion_amount_base = 1.0;
@@ -86,7 +87,7 @@ namespace Vore
 		//changes the graph of the function from cubic volume to linear slider increase
 		static inline float slider_pow = 0.5f;
 		//weight of a single person
-		static inline float slider_one = 100.0f;
+		
 		//max slider step per second
 		static inline float slider_maxstep = 150.0f;
 
@@ -222,7 +223,8 @@ namespace Vore
 	{
 		//probably a shitty way to do this
 	public:
-		static inline const char* MORPH_KEY = "SkyrimVorePP.esp";
+		constexpr static inline float slider_one = 100.0f;
+		constexpr static inline const char* MORPH_KEY = "SkyrimVorePP.esp";
 		static inline IBodyMorphInterface* body_morphs = nullptr;
 		//static inline std::mt19937 randomMT;
 		static inline const std::array<Locus, Locus::NUMOFLOCI> locus_transfer_destination = { Locus::lBowel,

@@ -59,7 +59,7 @@ You can fix this in 2 ways
 #### Currently working on
 * Basic reformation
 * Item/Object vore
-* Change how prey size is calculated using bounds
+* Change how prey size is calculated using havok data
 #### For the future
 * Add size gain
 * Fix Talk to prey/pred

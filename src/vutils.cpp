@@ -84,37 +84,6 @@ namespace Vore::Log
 }
 namespace Vore
 {
-	//static RE::NiPoint3 GetBoxBounds(RE::TESObjectREFR* target)
-	//{
-	//	if (!target) {
-	//		flog::warn("Can't find bound box for no target");
-	//		return RE::NiPoint3(1.0f, 1.0f, 1.0f);
-	//	}
-	//	if (!target->Is3DLoaded()) {
-	//		flog::warn("No 3d for {}", target->GetDisplayFullName());
-	//		return RE::NiPoint3(1.0f, 1.0f, 1.0f); // default actor box
-	//		//RE::NiPoint3(22.0f, 14.0f, 64.0f);
-	//	}
-	//	auto model = target->Get3D1(false);
-	//	if (model) {
-	//		auto bbx = model->GetExtraData("BBX");
-	//		/*auto col = model->GetCollisionObject(); 
-	//		if (col) {
-	//			auto rgb = col->GetRigidBody();
-	//			RE::hkReferencedObject* hkp_rigidbody_ref = rgb->referencedObject.get();
-	//			RE::hkpRigidBody* hkp_rigidbody = skyrim_cast<RE::hkpRigidBody*>(hkp_rigidbody_ref);
-	//			auto shape = hkp_rigidbody->GetShape();
-	//			flog::info("col shape {}", (int)shape->type);
-	//			return RE::NiPoint3(1.0f, 1.0f, 1.0f);
-	//		}*/
-	//		if (bbx) {
-	//			return static_cast<RE::BSBound*>(bbx)->extents;
-	//		}
-	//	}
-	//	flog::warn("Can't find bound box for {}", target->GetDisplayFullName());
-	//	return RE::NiPoint3(1.0f, 1.0f, 1.0f);
-	//}
-
 	float GetObjectSize(RE::TESObjectREFR* target)
 	{
 		// possible preys - actors, furniture, plants, dropped items
@@ -154,7 +123,13 @@ namespace Vore
 			}
 			return RE::BSVisit::BSVisitControl::kContinue;
 		});
-		return totalSize / 0.1538f * 100.0f;
+		totalSize = totalSize / 0.1538f * 100.0f;
+
+		if (totalSize > VoreSettings::size_softcap) {
+			totalSize = std::pow(totalSize / VoreSettings::size_softcap, VoreSettings::size_softcap_power) * VoreSettings::size_softcap;
+		}
+
+		return totalSize;
 		
 		/*RE::NiPoint3 bounds = target->GetBoundMax() - target->GetBoundMin();
 		float volume = std::pow(bounds.x * bounds.y * bounds.z, 0.5f);
@@ -257,7 +232,7 @@ namespace Vore
 						}
 					}
 					if (totalG1 > 0) {
-						volumeG1 = std::pow(totalG1 / VoreSettings::slider_one, VoreSettings::slider_pow) * VoreSettings::slider_one;
+						volumeG1 = std::pow(totalG1 / VoreGlobals::slider_one, VoreSettings::slider_pow) * VoreGlobals::slider_one;
 					}
 				}
 
@@ -265,10 +240,10 @@ namespace Vore
 					//move sliders towards the goal
 					//convert volume to slider value
 					float sliderValue = (i < 4 && totalG1 > 0) ? val.pdSliders[i] * volumeG1 / totalG1 :
-					                                             std::pow(val.pdSliders[i] / VoreSettings::slider_one, VoreSettings::slider_pow) * VoreSettings::slider_one;
+					                                             std::pow(val.pdSliders[i] / VoreGlobals::slider_one, VoreSettings::slider_pow) * VoreGlobals::slider_one;
 					//update sliders
 					for (auto& [name, one, max] : voresliders[i]) {
-						float finalval = sliderValue * one / VoreSettings::slider_one;
+						float finalval = sliderValue * one / VoreGlobals::slider_one;
 						// final val is more that max and they have the same sign
 						if (std::abs(finalval) > std::abs(max) && finalval * max > 0.0f) {
 							finalval = max;
@@ -323,10 +298,10 @@ namespace Vore
 							continue;
 						}
 
-						float sliderValue = std::pow(val.pdStruggleSliders[sliderId] / VoreSettings::slider_one, VoreSettings::slider_pow) * VoreSettings::slider_one;
+						float sliderValue = std::pow(val.pdStruggleSliders[sliderId] / VoreGlobals::slider_one, VoreSettings::slider_pow) * VoreGlobals::slider_one;
 
 						auto& [name, one, max] = ssliders[i][j];
-						float finalval = sliderValue * one / VoreSettings::slider_one;
+						float finalval = sliderValue * one / VoreGlobals::slider_one;
 						if (std::abs(finalval) > std::abs(max) && finalval * max > 0) {
 							finalval = max;
 						}
