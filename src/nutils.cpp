@@ -221,3 +221,19 @@ namespace Vore::Name
 		}
 	}
 }
+
+float Vore::Math::randfloat(float min, float max)
+{
+	static bool first = true;
+	if (first) {
+		srand((unsigned int)time(NULL));
+		first = false;
+	}
+	if (min > max) {
+		flog::warn("trying to generate a random number where min > max");
+		return 0.0f;
+	} else if (min == max) {
+		return min;
+	}
+	return min + (float)rand() / ((float)RAND_MAX / (max - min));
+}

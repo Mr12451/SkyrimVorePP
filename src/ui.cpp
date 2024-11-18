@@ -83,7 +83,9 @@ namespace Vore::UI
 			text += Name::GetName(pyData.get());
 		}
 
-		WriteStats(text, pyData.get()->As<RE::Actor>());
+		if (pyData.aIsChar) {
+			WriteStats(text, pyData.get()->As<RE::Actor>());
+		}
 		text += "\n";
 		text += PlayerPrefs::GetLocStr(pyData.pyLocus);
 		text += ", ";

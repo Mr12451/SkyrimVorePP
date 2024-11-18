@@ -100,22 +100,21 @@ namespace Vore
 		}
 	}
 
-	RE::FormID VoreData::MakeData(RE::TESObjectREFR* character)
+	RE::FormID VoreData::MakeData(RE::TESObjectREFR* target)
 	{
-		if (!character) {
+		if (!target) {
 			flog::warn("Trying to make data for null character");
 			return 0;
 		}
 		VoreDataEntry value = {};
-		RE::FormID chid = character->GetFormID();
+		RE::FormID chid = target->GetFormID();
 		if (Data.contains(chid)) {
-			flog::trace("Using existing entry for {}", Name::GetName(character));
+			flog::trace("Using existing entry for {}", Name::GetName(target));
 		} else {
-			value.aCharType = character->GetFormType();
-			if (value.aCharType == RE::FormType::ActorCharacter) {
-				RE::Actor* asActor = character->As<RE::Actor>();
+			value.aIsChar = target->GetFormType() == RE::FormType::ActorCharacter;
+			if (value.aIsChar) {
+				RE::Actor* asActor = target->As<RE::Actor>();
 
-				//RE::REF
 				//character->ref
 				value.aIsPlayer = asActor->IsPlayerRef();
 				value.aAlive = !(asActor->IsDead());
@@ -124,15 +123,18 @@ namespace Vore
 				value.aProtected = asActor->IsProtected();
 
 				VM::GetSingleton()->CreateObject2("Actor", value.meVm);
-				VM::GetSingleton()->BindObject(value.meVm, GetHandle(character), false);
+				VM::GetSingleton()->BindObject(value.meVm, GetHandle(target), false);
+			} else {
+				VM::GetSingleton()->CreateObject2("ObjectReference", value.meVm);
+				VM::GetSingleton()->BindObject(value.meVm, GetHandle(target), false);
 			}
-			value.aSize = (double)GetObjectSize(character);
-			value.me = character->GetHandle();
+			value.aSize = (double)GetObjectSize(target);
+			value.me = target->GetHandle();
 		
 			for (auto& el : value.pdLoci) {
 				el = VoreState::hSafe;
 			}
-			flog::trace("Making new vore data entry for {}", Name::GetName(character));
+			flog::trace("Making new vore data entry for {}", Name::GetName(target));
 			Data.insert(std::make_pair(chid, value));
 		}
 		return chid;
@@ -312,7 +314,7 @@ namespace Vore
 			s = s && a_intfc->WriteRecordData(&vde.aSize, sizeof(vde.aSize));
 
 			//universal stats, not saved
-			flog::info("Char type: {}, player {}, alive {}, size {}", (int)vde.aCharType, vde.aIsPlayer, vde.aAlive, vde.aSize);
+			flog::info("Char type: {}, player {}, alive {}, size {}", (int)vde.aIsChar, vde.aIsPlayer, vde.aAlive, vde.aSize);
 
 			//save pred stats
 			flog::info("Pred");
@@ -516,7 +518,7 @@ namespace Vore
 						a_intfc->ReadRecordData(oldSize);
 					}
 
-					flog::info("Char type: {}, is player: {}, alive {}, size {}", (int)entry.aCharType, entry.aIsPlayer, entry.aAlive, entry.aSize);
+					flog::info("Char type: {}, is player: {}, alive {}, size {}", (int)entry.aIsChar, entry.aIsPlayer, entry.aAlive, entry.aSize);
 
 					flog::info("Pred");
 					a_intfc->ReadRecordData(entry.pdFat);

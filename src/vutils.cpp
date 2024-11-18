@@ -9,10 +9,10 @@ namespace Vore::Log
 		flog::info("\n");
 		flog::info("Entry {}, Name {}, Type {}, Is Player {}, Alive {}, Size {}",
 			std::format("{:x}", voreNpc),
-			Name::GetName(voreNpc), (int)entry.aCharType,
+			Name::GetName(voreNpc), (int)entry.aIsChar,
 			entry.aIsPlayer, entry.aAlive,
 			entry.aSize);
-		if (entry.aCharType == RE::FormType::ActorCharacter) {
+		if (entry.aIsChar) {
 			RE::Actor* entryActor = entry.get()->As<RE::Actor>();
 			flog::info("Stats: H {}/{}, S {}/{}, M {}/{}",
 				AV::GetAV(entryActor, RE::ActorValue::kHealth), AV::GetMaxAV(entryActor, RE::ActorValue::kHealth),
@@ -233,26 +233,11 @@ namespace Vore
 		return preys;
 	}
 
-	float randfloat(float min, float max)
-	{
-		static bool first = true;
-		if (first) {
-			srand((unsigned int)time(NULL));
-			first = false;
-		}
-		if (min > max) {
-			flog::warn("trying to generate a random number where min > max");
-			return 0.0f;
-		} else if (min == max) {
-			return min;
-		}
-		return min + (float)rand() / ((float)RAND_MAX / (max - min));
-	}
 
 	void UpdateBelly(const double& delta)
 	{
 		for (auto& [key, val] : VoreData::Data) {
-			if (val.aCharType != RE::FormType::ActorCharacter || !val.pdUpdateSlider && !val.pdUpdateStruggleSlider) {
+			if (!val.aIsChar || !(val.pdUpdateSlider || val.pdUpdateStruggleSlider) || !val.get()->Is3DLoaded()) {
 				continue;
 			}
 			std::map<const char*, float> slidervalues = {};
@@ -398,12 +383,12 @@ namespace Vore
 					}
 				}
 			}
-			if (val.get()->Is3DLoaded()) {
-				//commit all sliders to skee
-				for (auto& [sname, svalue] : slidervalues) {
-					//flog::trace("Setting slider: char {}, slider {}, value {}", Name::GetName(val.get()), sname, svalue);
-					VoreGlobals::body_morphs->SetMorph(val.get(), sname, VoreGlobals::MORPH_KEY, svalue);
-				}
+			//commit all sliders to skee
+			for (auto& [sname, svalue] : slidervalues) {
+				//flog::trace("Setting slider: char {}, slider {}, value {}", Name::GetName(val.get()), sname, svalue);
+				VoreGlobals::body_morphs->SetMorph(val.get(), sname, VoreGlobals::MORPH_KEY, svalue);
+			}
+			if (!slidervalues.empty()) {
 				VoreGlobals::body_morphs->UpdateModelWeight(val.get());
 			}
 		}

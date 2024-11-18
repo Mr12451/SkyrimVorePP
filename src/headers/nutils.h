@@ -38,4 +38,8 @@ namespace Vore
 		std::string_view GetName(RE::TESObjectREFR* form);
 		std::string_view GetName(RE::FormID form);
 	}
+	namespace Math
+	{
+		float randfloat(float min, float max);
+	}
 }

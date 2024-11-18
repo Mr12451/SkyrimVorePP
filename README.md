@@ -56,10 +56,10 @@ You can fix this in 2 ways
 * Acid levels (maybe make switching digestion dependent on acid level)
 * INI settings
 * Prey size calculation using havok data (idk how to calculate kMOPP and kConvexVertices, so I use bounds instead)
+* Item vore (very unoptimized and untested)
 ### Plans
 #### Currently working on
 * Basic reformation
-* Item/Object vore
 * Add dragon soul on digestion
 * Add size gain
 #### For the future

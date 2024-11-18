@@ -103,7 +103,7 @@ namespace Vore
 		std::array<double, 4> pdGrowthLocus = { 0 };
 
 		//universal stats
-		RE::FormType aCharType = RE::FormType::None;
+		bool aIsChar = false;
 		bool aIsPlayer = false;
 		bool aAlive = false;
 		bool aEssential = false;

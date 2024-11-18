@@ -37,8 +37,7 @@ namespace Vore
 		static inline bool ui_show_struggle_sliders = false;
 		static inline bool ui_show_wg = true;
 		static inline bool ui_show_more = true;
-		
-		
+
 		// main
 
 		static inline bool dual_boobs = true;
@@ -81,13 +80,12 @@ namespace Vore
 		static inline double wg_loss_locus = 0.00001;
 		static inline double wg_loss_size = 0.00001;
 
-
 		//sliders
 
 		//changes the graph of the function from cubic volume to linear slider increase
 		static inline float slider_pow = 0.5f;
 		//weight of a single person
-		
+
 		//max slider step per second
 		static inline float slider_maxstep = 150.0f;
 
@@ -121,8 +119,7 @@ namespace Vore
 		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 		// !!!!!!!!!!!!!!!!!!!!!!!!! one person size for sliders in the belly group should be equal
-		static inline std::array<std::vector<std::tuple<std::string, float, float>>, LocusSliders::NUMOFSLIDERS> sliders_bodypart_female = { {
-			// gr1 (belly)
+		static inline std::array<std::vector<std::tuple<std::string, float, float>>, LocusSliders::NUMOFSLIDERS> sliders_bodypart_female = { { // gr1 (belly)
 			{ { "Vore prey belly", 0.7f, 10.0f }, { "Giant belly up", 0.4f, 0.4f } },
 			{ { "Giant belly (coldsteelj)", 1.0f, 5.0f } },
 			{ { "Vore prey belly", 0.7f, 10.0f } },
@@ -223,8 +220,20 @@ namespace Vore
 	{
 		//probably a shitty way to do this
 	public:
-		constexpr static inline float slider_one = 100.0f;
-		constexpr static inline const char* MORPH_KEY = "SkyrimVorePP.esp";
+		static constexpr float slider_one = 100.0f;
+		static constexpr const char* MORPH_KEY = "SkyrimVorePP.esp";
+		static const inline std::set<RE::FormType> allowed_pickup{
+			RE::FormType::Scroll,
+			RE::FormType::Armor,
+			RE::FormType::Book,
+			RE::FormType::Ingredient,
+			RE::FormType::Misc,
+			RE::FormType::Weapon,
+			RE::FormType::Ammo,
+			RE::FormType::AlchemyItem,
+			//RE::FormType::Note,
+			RE::FormType::SoulGem
+		};
 		static inline IBodyMorphInterface* body_morphs = nullptr;
 		//static inline std::mt19937 randomMT;
 		static inline const std::array<Locus, Locus::NUMOFLOCI> locus_transfer_destination = { Locus::lBowel,
@@ -234,9 +243,9 @@ namespace Vore
 			Locus::lStomach,
 			Locus::lStomach };
 
-		static inline std::set<RE::FormID> delete_queue {};
+		static inline std::set<RE::FormID> delete_queue{};
 
-		static inline std::unordered_map<std::string_view, std::string_view> race_remains {
+		static inline std::unordered_map<std::string_view, std::string_view> race_remains{
 			//humans
 			{ "NordRace", "VoreSkeletonHuman" },
 			{ "NordRaceVampire", "VoreSkeletonHuman" },
@@ -279,7 +288,8 @@ namespace Vore
 		static inline Locus regLoc = Locus::lNone;
 		static inline VoreState voreType = VoreState::hSafe;
 
-		static void clear() {
+		static void clear()
+		{
 			voreLoc = Locus::lStomach;
 			regLoc = Locus::lNone;
 			voreType = VoreState::hSafe;
