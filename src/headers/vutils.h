@@ -13,4 +13,6 @@ namespace Vore
 	std::vector<RE::FormID> FilterPrey(RE::FormID pred, Vore::Locus locus, bool noneIsAny);
 	//update visuals for all necessary character
 	void UpdateBelly(const double& delta);
+	float GetModelScale(RE::TESObjectREFR* target);
+	void SetModelScale(RE::TESObjectREFR* target, float scale);
 }

@@ -237,160 +237,38 @@ namespace Vore
 	void UpdateBelly(const double& delta)
 	{
 		for (auto& [key, val] : VoreData::Data) {
-			if (!val.aIsChar || !(val.pdUpdateSlider || val.pdUpdateStruggleSlider) || !val.get()->Is3DLoaded()) {
-				continue;
+			if (val.BellyU && val.get()->Is3DLoaded()) {
+				(val.*(val.BellyU))(delta);
 			}
-			std::map<const char*, float> slidervalues = {};
-			//
+			
+		}
+	}
 
-			// if we need to update main sliders
-			if (val.pdUpdateSlider) {
-				// if we need to update again
-				val.pdUpdateSlider = false;
+	float GetModelScale(RE::TESObjectREFR* target)
+	{
+		if (!target->Is3DLoaded()) {
+			return 0.0f;
+		}
+		auto model = target->Get3D1(false);
+		if (!model) {
+			return 0.0f;
+		}
+		return model->local.scale;
+	}
+	void SetModelScale(RE::TESObjectREFR* target, float scale)
+	{
+		auto model = target->Get3D(false);
+		if (model) {
+			model->local.scale = scale;
+			RE::NiUpdateData ctx;
+			model->UpdateWorldData(&ctx);
+		}
 
-				std::set<uint8_t> slidersToChange = {};
-				// G1 is group 1, aka all belly sliders
-				bool changedG1 = false;
-				float totalG1 = 0.0f;
-				float volumeG1 = 0.0f;
-
-				auto& voresliders = val.aSex == RE::SEX::kFemale ? VoreSettings::sliders_bodypart_female : val.aSex == RE::SEX::kMale ? VoreSettings::sliders_bodypart_male :
-				                                                                                                                        VoreSettings::sliders_bodypart_creature;
-				//change
-				for (uint8_t i = 0; i < LocusSliders::NUMOFSLIDERS; i++) {
-					if (val.pdGoalStep[i] == 0.0f) {
-						continue;
-					}
-					float diff = val.pdGoal[i] - val.pdSliders[i];
-					float step = (float)delta * val.pdGoalStep[i];
-
-					if (diff > 0) {
-						if (diff <= step) {
-							val.pdSliders[i] += diff;
-							val.pdGoalStep[i] = 0.0f;
-						} else {
-							val.pdSliders[i] += step;
-							val.pdUpdateSlider = true;
-						}
-						slidersToChange.insert(i);
-						if (i < 4) {
-							changedG1 = true;
-						}
-					} else if (diff < 0) {
-						if (-diff <= step) {
-							val.pdSliders[i] += diff;
-							val.pdGoalStep[i] = 0.0f;
-						} else {
-							val.pdSliders[i] += -step;
-							val.pdUpdateSlider = true;
-						}
-						slidersToChange.insert(i);
-						if (i < 4) {
-							changedG1 = true;
-						}
-					} else {
-						val.pdGoalStep[i] = 0.0f;
-						continue;
-					}
-				}
-
-				if (changedG1) {
-					for (uint8_t i = 0; i < 4; i++) {
-						if (val.pdSliders[i] > 0) {
-							totalG1 += val.pdSliders[i];
-							slidersToChange.insert(i);
-						}
-					}
-					if (totalG1 > 0) {
-						volumeG1 = std::pow(totalG1 / VoreGlobals::slider_one, VoreSettings::slider_pow) * VoreGlobals::slider_one;
-					}
-				}
-
-				for (const uint8_t& i : slidersToChange) {
-					//move sliders towards the goal
-					//convert volume to slider value
-					float sliderValue = (i < 4 && totalG1 > 0) ? val.pdSliders[i] * volumeG1 / totalG1 :
-					                                             std::pow(val.pdSliders[i] / VoreGlobals::slider_one, VoreSettings::slider_pow) * VoreGlobals::slider_one;
-					//update sliders
-					for (auto& [name, one, max] : voresliders[i]) {
-						float finalval = sliderValue * one / VoreGlobals::slider_one;
-						// final val is more that max and they have the same sign
-						if (std::abs(finalval) > std::abs(max) && finalval * max > 0.0f) {
-							finalval = max;
-						}
-						//flog::warn("{}, {}", name, finalval);
-						if (slidervalues.contains(name.c_str())) {
-							slidervalues[name.c_str()] += finalval;
-						} else {
-							slidervalues[name.c_str()] = finalval;
-						}
-					}
-				}
-			}
-			//update struggle sliders
-			if (val.pdUpdateStruggleSlider) {
-				val.pdUpdateStruggleSlider = false;
-
-				auto& ssliders = VoreSettings::struggle_sliders;
-
-				for (uint8_t i = 0; i < Locus::NUMOFLOCI; i++) {
-					//skip sliders that are not defined by user
-
-					for (int j = 0; j < ssliders[i].size(); j++) {
-						//the id of this slider in predData
-						int sliderId = i * Locus::NUMOFLOCI + j;
-
-						if (val.pdStruggleGoalStep[sliderId] == 0.0f) {
-							continue;
-						}
-
-						float diff = val.pdStruggleGoal[sliderId] - val.pdStruggleSliders[sliderId];
-						float step = (float)delta * val.pdStruggleGoalStep[sliderId];
-						if (diff > 0) {
-							if (diff <= step) {
-								val.pdStruggleSliders[sliderId] += diff;
-								val.pdStruggleGoalStep[sliderId] = 0.0f;
-							} else {
-								val.pdStruggleSliders[sliderId] += step;
-								val.pdUpdateStruggleSlider = true;
-							}
-
-						} else if (diff < 0) {
-							if (-diff <= step) {
-								val.pdStruggleSliders[sliderId] += diff;
-								val.pdStruggleGoalStep[sliderId] = 0.0f;
-							} else {
-								val.pdStruggleSliders[sliderId] += -step;
-								val.pdUpdateStruggleSlider = true;
-							}
-						} else {
-							val.pdStruggleGoalStep[sliderId] = 0.0f;
-							continue;
-						}
-
-						float sliderValue = std::pow(val.pdStruggleSliders[sliderId] / VoreGlobals::slider_one, VoreSettings::slider_pow) * VoreGlobals::slider_one;
-
-						auto& [name, one, max] = ssliders[i][j];
-						float finalval = sliderValue * one / VoreGlobals::slider_one;
-						if (std::abs(finalval) > std::abs(max) && finalval * max > 0) {
-							finalval = max;
-						}
-						if (slidervalues.contains(name.c_str())) {
-							slidervalues[name.c_str()] += finalval;
-						} else {
-							slidervalues[name.c_str()] = finalval;
-						}
-					}
-				}
-			}
-			//commit all sliders to skee
-			for (auto& [sname, svalue] : slidervalues) {
-				//flog::trace("Setting slider: char {}, slider {}, value {}", Name::GetName(val.get()), sname, svalue);
-				VoreGlobals::body_morphs->SetMorph(val.get(), sname, VoreGlobals::MORPH_KEY, svalue);
-			}
-			if (!slidervalues.empty()) {
-				VoreGlobals::body_morphs->UpdateModelWeight(val.get());
-			}
+		auto first_model = target->Get3D(true);
+		if (first_model) {
+			first_model->local.scale = scale;
+			RE::NiUpdateData ctx;
+			model->UpdateWorldData(&ctx);
 		}
 	}
 }

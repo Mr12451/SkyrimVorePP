@@ -163,19 +163,26 @@ namespace Vore::Funcs
 	}
 
 	///from gts plugin, DOESN'T WORK!!!!!!!!!!!!
-	void ApplyDamage([[maybe_unused]] Actor* giant, Actor* tiny, float damage)
+	void ApplyDamage([[maybe_unused]] RE::Actor* giant, RE::Actor* tiny, float damage)
 	{  // applies correct amount of damage and kills actors properly
-		typedef void (*DefApplyDamage)(Actor* a_this, float dmg, Actor* aggressor, HitData* maybe_hitdata, TESObjectREFR* damageSrc);
+		typedef void (*DefApplyDamage)(RE::Actor* a_this, float dmg, RE::Actor* aggressor, RE::HitData* maybe_hitdata, RE::TESObjectREFR* damageSrc);
 		REL::Relocation<DefApplyDamage> Skyrim_ApplyDamage{ RELOCATION_ID(36345, 37335) };  // 5D6300 (SE)
-		Skyrim_ApplyDamage(tiny, damage, giant, nullptr, nullptr);
+		Skyrim_ApplyDamage(tiny, damage, nullptr, nullptr, nullptr);
 	}
 
-	void DealDamage(RE::Actor* a_this, RE::Actor* a_target, RE::Projectile* a_sourceProjectile, bool a_bLeftHand)
+	void Attacked(RE::Actor* victim, RE::Actor* agressor)
 	{
-		typedef void (*DeDealDamage)(RE::Actor* a_this, RE::Actor* a_target, RE::Projectile* a_sourceProjectile, bool a_bLeftHand);
-		REL::Relocation<DeDealDamage> Skyrim_DealDamage{ RELOCATION_ID(37673, 38627) };  // 5D6300 (SE)
-		Skyrim_DealDamage(a_this, a_target, a_sourceProjectile, a_bLeftHand);
+		typedef void (*DefAttacked)(RE::Actor* victim, RE::Actor* agressor);
+		REL::Relocation<DefAttacked> SkyrimAttacked{ RELOCATION_ID(37672, 38626) };  // 6285A0 (SE) ; 64EE60 (AE)
+		SkyrimAttacked(victim, agressor);
 	}
+
+	//void DealDamage(RE::Actor* a_this, RE::Actor* a_target, RE::Projectile* a_sourceProjectile, bool a_bLeftHand)
+	//{
+	//	typedef void (*DeDealDamage)(RE::Actor* a_this, RE::Actor* a_target, RE::Projectile* a_sourceProjectile, bool a_bLeftHand);
+	//	REL::Relocation<DeDealDamage> Skyrim_DealDamage{ RELOCATION_ID(37673, 38627) };  // 5D6300 (SE)
+	//	Skyrim_DealDamage(a_this, a_target, a_sourceProjectile, a_bLeftHand);
+	//}
 
 	void SetRestrained(RE::Actor* actor, bool param)
 	{

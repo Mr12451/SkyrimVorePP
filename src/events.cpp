@@ -118,7 +118,7 @@ namespace Vore
 					Core::RegurgitateAll(asActor, lNone, Core::rAll);
 				}
 
-				if (std::find(VoreGlobals::delete_queue.begin(), VoreGlobals::delete_queue.end(), aId) != VoreGlobals::delete_queue.end()) {
+				if (VoreGlobals::delete_queue.contains(aId)) {
 					flog::warn("Trying to kill a deleted prey: {}", Name::GetName(actorData.get()));
 					return RE::BSEventNotifyControl::kContinue;
 				}
@@ -127,6 +127,15 @@ namespace Vore
 					actorData.pyDigestProgress = 0.0;
 					actorData.pyElimLocus = actorData.pyLocus;
 					actorData.pyLocusMovement = mStill;
+					//
+					if (actorData.get()->IsDragon() && actorData.pred == RE::PlayerCharacter::GetSingleton()->GetFormID()) {
+						AV::ModAV(RE::PlayerCharacter::GetSingleton(), RE::ActorValue::kDragonSouls, 1.0);
+					}
+					//TODO dragon quest progression?
+					//idk what's that
+					actorData.CalcFast();
+					actorData.CalcSlow();
+
 				}
 			}
 		}

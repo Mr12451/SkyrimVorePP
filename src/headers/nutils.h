@@ -26,8 +26,10 @@ namespace Vore
 		void SetGhost(RE::Actor* actor, bool param);
 		void SendAssaultAlarm(RE::Actor* actor);
 		void StartCombat(RE::Actor* agressor, RE::Actor* victim);
+		
 		void ApplyDamage(RE::Actor* dealer, RE::Actor* receiver, float damage);
-		void DealDamage(RE::Actor* a_this, RE::Actor* a_target, RE::Projectile* a_sourceProjectile, bool a_bLeftHand);
+		void Attacked(RE::Actor* victim, RE::Actor* agressor);
+		//void DealDamage(RE::Actor* a_this, RE::Actor* a_target, RE::Projectile* a_sourceProjectile, bool a_bLeftHand);
 		void SetRestrained(RE::Actor* actor, bool param);
 		void SetAlpha(RE::Actor* actor, float alpha, bool fade);
 		void StopCombat(RE::Actor* actor);

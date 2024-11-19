@@ -2,6 +2,7 @@
 
 namespace Vore
 {
+
 	constexpr int struggle_sliders_per_locus = 5;
 
 	enum Locus : uint8_t
@@ -82,6 +83,7 @@ namespace Vore
 
 	struct VoreDataEntry
 	{
+		using VoreStateFunc = void (Vore::VoreDataEntry::*)(const double&);
 		//saved 
 		// pred
 		RE::FormID pred = 0;
@@ -103,6 +105,7 @@ namespace Vore
 		std::array<double, 4> pdGrowthLocus = { 0 };
 
 		//universal stats
+		float aScaleDefault = 0.0f;
 		bool aIsChar = false;
 		bool aIsPlayer = false;
 		bool aAlive = false;
@@ -166,13 +169,40 @@ namespace Vore
 
 		RE::TESObjectREFR* get() const;
 
+		double GetStomachSpace(uint64_t locus);
+		void HandlePreyDeathImmidiate();
+		void UpdatePredScale();
+		void HandleDamage(const double& delta, RE::Actor* asActor, VoreDataEntry& predData);
+
+		//states
+
+		void Belly(const double& delta);
+		void SlowF(const double& delta);
+		void SlowD(const double& delta);
+		void Struggle(const double& delta, RE::Actor* asActor, VoreDataEntry& predData);
+		void FastLethalW(const double& delta);
+		void FastLethalU(const double& delta);
+		void FastHealW(const double& delta);
+		void FastHealU(const double& delta);
+		void FastEndoU(const double& delta);
+		void Swallow(const double& delta);
+		void PredSlow(const double& delta);
+
+		void CalcFast();
+		void CalcSlow();
+
+		VoreStateFunc FastU = nullptr;
+		VoreStateFunc SlowU = nullptr;
+		VoreStateFunc BellyU = nullptr;
+		VoreStateFunc PredU = nullptr;
+
+
 		void GetSize(double& size);
 		/// <summary>
 		/// not implemented
 		/// </summary>
 		/// <param name="locus"></param>
 		/// <returns></returns>
-		double GetStomachSpace(uint64_t locus);
 	};
 
 	class VoreData

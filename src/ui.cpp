@@ -230,7 +230,7 @@ namespace Vore::UI
 					text += target->GetDisplayFullName();
 					text += "\nSize: ";
 
-					text += std::format("{:.4f}", GetObjectSize(target));
+					text += std::format("{:.4f}, {:.4f}", GetObjectSize(target), GetModelScale(target));
 
 					thisMenu->SetText(text);
 					return;
@@ -340,7 +340,7 @@ namespace Vore::UI
 					text += "\nAlive: ";
 					text += actr->IsDead() ? "false" : "true";
 					text += "\nSize: ";
-					text += std::format("{:.4f}", GetObjectSize(actr));
+					text += std::format("{:.4f}, {:.4f}", GetObjectSize(actr), GetModelScale(actr));
 
 					WriteStats(text, actr);
 					text += "\n";
@@ -642,6 +642,11 @@ namespace Vore::UI
 					{
 						PlayerPrefs::regLoc = PlayerPrefs::LIter(PlayerPrefs::regLoc, true);
 						thisMenu->WriteSwallowMenu();
+						break;
+					}
+				case (MenuAction::kMenuA4):
+					{
+						SetModelScale(RE::PlayerCharacter::GetSingleton(), 2.0f);
 						break;
 					}
 				}
