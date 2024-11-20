@@ -86,24 +86,25 @@ namespace Vore
 {
 	float GetObjectSize(RE::TESObjectREFR* target)
 	{
-		// possible preys - actors, furniture, plants, dropped items
-		// if you can't target smt, you shouldn't eat it
-		// test random skulls?
-		// actor - use height?
-		//target->CanBeMoved();
+
 		if (!target->Is3DLoaded()) {
-			return 1.0f;
+			return 0.0f;
 		}
 		auto model = target->Get3D1(false);
 		if (!model) {
-			return 1.0f;
+			return 0.0f;
 		}
 		float totalSize = 0.0f;
 		bool useBounds = false;
 
+		bool isChar = target->GetFormType() == RE::FormType::ActorCharacter;
+
 		RE::BSVisit::TraverseScenegraphCollision(model, [&](RE::bhkNiCollisionObject* a_col) -> RE::BSVisit::BSVisitControl {
 			if (auto hkpBody = a_col->body ? static_cast<RE::hkpRigidBody*>(a_col->body->referencedObject.get()) : nullptr) {
 				const RE::hkpShape* shape = hkpBody->GetShape();  //mass += hkpBody->motion.GetMass();
+				if (isChar && shape->type != RE::hkpShapeType::kCapsule) {
+					return RE::BSVisit::BSVisitControl::kContinue;
+				}
 				switch (shape->type) {
 				case (RE::hkpShapeType::kCapsule):
 					{
@@ -127,7 +128,7 @@ namespace Vore
 				case (RE::hkpShapeType::kBox):
 					{
 						const RE::hkpBoxShape* cShape = static_cast<const RE::hkpBoxShape*>(shape);
-						flog::trace("Shape: box");
+						//flog::trace("Shape: box");
 						union
 						{
 							__m128 v;
@@ -140,7 +141,7 @@ namespace Vore
 				case (RE::hkpShapeType::kConvexVertices):
 					{
 						//const RE::hkpConvexShape* cShape = static_cast<const RE::hkpConvexShape*>(shape);
-						flog::trace("Shape: convex");
+						//flog::trace("Shape: convex");
 						useBounds = true;
 						//idk how to do this properly, so I'll leave it at this
 						//totalSize += 4.0f / 3.0f * 3.14159f * std::pow(cShape->radius, 3.0f);
@@ -160,7 +161,7 @@ namespace Vore
 				case (RE::hkpShapeType::kMOPP):
 					{
 						//const RE::hkpMoppBvTreeShape* cShape = static_cast<const RE::hkpMoppBvTreeShape*>(shape);
-						flog::trace("Shape: MOPP");
+						//flog::trace("Shape: MOPP");
 						useBounds = true;
 						/*RE::hkTransform trans{};
 						RE::hkAabb aabb{};
@@ -179,7 +180,7 @@ namespace Vore
 				case (RE::hkpShapeType::kList):
 					{
 						const RE::hkpListShape* cShape = static_cast<const RE::hkpListShape*>(shape);
-						flog::trace("Shape: list");
+						//flog::trace("Shape: list");
 						union
 						{
 							__m128 v;
@@ -193,7 +194,7 @@ namespace Vore
 					{
 						const RE::hkpSphereShape* cShape = static_cast<const RE::hkpSphereShape*>(shape);
 						totalSize += 4.0f / 3.0f * 3.14159f * std::pow(cShape->radius, 3.0f);
-						flog::trace("Shape: sphere");
+						//flog::trace("Shape: sphere");
 						break;
 					}
 				default:
@@ -205,7 +206,7 @@ namespace Vore
 		});
 		if (useBounds) {
 			RE::NiPoint3 bounds = target->GetBoundMax() - target->GetBoundMin();
-			flog::trace("Using bound {:.4f} {:.4f} {:.4f}", bounds.x, bounds.y, bounds.z);
+			//flog::trace("Using bound {:.4f} {:.4f} {:.4f}", bounds.x, bounds.y, bounds.z);
 			//bounds / 70 = shape measurements
 			totalSize = bounds.x * bounds.y * bounds.z / 343000.0f;
 		}
@@ -216,12 +217,8 @@ namespace Vore
 		}
 
 		return totalSize;
-
-		/*RE::NiPoint3 bounds = target->GetBoundMax() - target->GetBoundMin();
-		float volume = std::pow(bounds.x * bounds.y * bounds.z, 0.5f);
-		flog::trace("{} bbx {:.2f} {:.2f} {:.2f}", target->GetDisplayFullName(), bounds.x, bounds.y, bounds.z);
-		return volume;*/
 	}
+
 	std::vector<RE::FormID> FilterPrey(RE::FormID pred, Locus locus, bool noneIsAny)
 	{
 		std::vector<RE::FormID> preys = {};

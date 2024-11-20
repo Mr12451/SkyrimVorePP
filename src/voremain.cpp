@@ -704,19 +704,10 @@ namespace Vore::Core
 	}
 
 
-	static void FinishDigestion([[maybe_unused]] const RE::FormID& prey, VoreDataEntry& preyData)
-	{
-		//play some sound
-		//(possibly) turn into bones?
-		flog::info("{} was fully digested", Name::GetName(preyData.get()));
-		//RE::Actor* preyA = preyData.get()->As<RE::Actor>();
-		//preyA->SetCollision
-	}
-
 	//updates dead characters and idle preds
 	static void UpdateSlow(const double& delta)
 	{
-		double digestBase = VoreSettings::digestion_amount_base * delta;
+		//double digestBase = VoreSettings::digestion_amount_base * delta;
 
 		//process prey
 		for (auto& [key, val] : VoreData::Data) {
@@ -727,8 +718,8 @@ namespace Vore::Core
 
 		//updates all preds
 		for (auto& [key, val] : VoreData::Data) {
-			if (!val.aAlive && val.aIsChar) {
-				continue;
+			if (val.PredU) {
+				(val.*(val.PredU))(delta);
 			}
 			
 		}

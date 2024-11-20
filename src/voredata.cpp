@@ -27,12 +27,21 @@ namespace Vore
 		}
 		if (!aScaleDefault) {
 			aScaleDefault = GetModelScale(get());
-			if (pdSizegrowth > 0) {
-				SetModelScale(get(), aScaleDefault + (float)pdSizegrowth);
+			if (!aScaleDefault || pdSizegrowth <= 0) {
+				return;
 			}
-		} else {
-			SetModelScale(get(), aScaleDefault + (float)pdSizegrowth);
+		} 
+		float sizeConv = (float)std::pow(pdSizegrowth, VoreSettings::slider_pow) / VoreGlobals::slider_one;
+		// get final scale
+		sizeConv += aScaleDefault;
+		if (!(sizeConv)) {
+			return;
 		}
+		SetModelScale(get(), sizeConv);
+		aSizeScale = std::pow(aScaleDefault / sizeConv, 1 / VoreSettings::slider_pow);
+		aSize = aSizeDefault * aSizeScale;
+		//flog::info("SIZE SCALE {}", this->aSizeScale);
+
 	}
 
 
@@ -106,6 +115,7 @@ namespace Vore
 	{
 		std::map<const char*, float> slidervalues = {};
 		//
+		float scaleScale = aSizeScale ? aSizeScale : 1.0f;
 
 		// if we need to update main sliders
 		if (pdUpdateSlider) {
@@ -177,7 +187,7 @@ namespace Vore
 				                                             std::pow(pdSliders[i] / VoreGlobals::slider_one, VoreSettings::slider_pow) * VoreGlobals::slider_one;
 				//update sliders
 				for (auto& [name, one, max] : voresliders[i]) {
-					float finalval = sliderValue * one / VoreGlobals::slider_one;
+					float finalval = sliderValue * scaleScale * one / VoreGlobals::slider_one;
 					// final val is more that max and they have the same sign
 					if (std::abs(finalval) > std::abs(max) && finalval * max > 0.0f) {
 						finalval = max;
@@ -235,7 +245,7 @@ namespace Vore
 					float sliderValue = std::pow(pdStruggleSliders[sliderId] / VoreGlobals::slider_one, VoreSettings::slider_pow) * VoreGlobals::slider_one;
 
 					auto& [name, one, max] = ssliders[i][j];
-					float finalval = sliderValue * one / VoreGlobals::slider_one;
+					float finalval = sliderValue * scaleScale * one / VoreGlobals::slider_one;
 					if (std::abs(finalval) > std::abs(max) && finalval * max > 0) {
 						finalval = max;
 					}
@@ -255,7 +265,7 @@ namespace Vore
 		if (!slidervalues.empty()) {
 			VoreGlobals::body_morphs->UpdateModelWeight(get());
 		}
-		if (!(pdUpdateStruggleSlider || pdUpdateStruggleSlider)) {
+		if (!(pdUpdateSlider || pdUpdateStruggleSlider)) {
 			BellyU = nullptr;
 		}
 	}
@@ -440,7 +450,7 @@ namespace Vore
 
 	void VoreDataEntry::PredSlow(const double& delta)
 	{
-		//RE::Actor* asActor = val.get()->As<RE::Actor>();
+		//flog::info("pred slow");
 		bool doGoalUpdate = false;
 		bool stopSlow = true;
 		//reduce wg
@@ -457,8 +467,8 @@ namespace Vore
 		if (pdSizegrowth > 0) {
 			pdSizegrowth = std::max(pdFat - VoreSettings::wg_loss_size * delta, 0.0);
 			stopSlow = false;
-			UpdatePredScale();
 			// DO SIZE UPDATE
+			UpdatePredScale();
 		}
 		for (auto& el : pdGrowthLocus) {
 			if (el > 0) {
@@ -492,6 +502,10 @@ namespace Vore
 		//calculate next state
 		if (!pred) {
 			FastU = nullptr;
+			return;
+		}
+		if (pySwallowProcess < 100) {
+			FastU = &VoreDataEntry::Swallow;
 			return;
 		}
 		if (aAlive) {
@@ -652,7 +666,26 @@ namespace Vore
 				VM::GetSingleton()->CreateObject2("ObjectReference", value.meVm);
 				VM::GetSingleton()->BindObject(value.meVm, GetHandle(target), false);
 			}
-			value.aSize = (double)GetObjectSize(target);
+			float mySize = GetObjectSize(target);
+			// this might happen when vore happens outside of render distance?
+			// idk how 3d and actor processing is connected
+			// still, better have a fallback algorithm
+			// size should never be 0, because we divide by it
+			if (!mySize) {
+				if (!value.aIsChar) {
+					value.aSizeDefault = 5.0;
+				} else {
+					if (target->IsDragon()) {
+						value.aSizeDefault = 3000.0;
+					} else {
+						value.aSizeDefault = 100.0;
+					}
+				}
+			} else {
+				value.aSizeDefault = (double)mySize;
+			}
+			value.aSize = value.aSizeDefault;
+
 			value.me = target->GetHandle();
 
 			for (auto& el : value.pdLoci) {
@@ -714,7 +747,7 @@ namespace Vore
 			Data.erase(el);
 		}
 
-		// Setup bellies
+		// Setup vore data
 		for (auto& [key, val] : Data) {
 			if (val.pred) {
 				val.CalcFast();
@@ -722,6 +755,7 @@ namespace Vore
 			}
 			if (IsPred(key, false)) {
 				val.PredU = &VoreDataEntry::PredSlow;
+				val.UpdatePredScale();
 			}
 			if (val.get() && val.get()->Is3DLoaded()) {
 				VoreGlobals::body_morphs->ClearBodyMorphKeys(val.get(), VoreGlobals::MORPH_KEY);
@@ -842,7 +876,7 @@ namespace Vore
 			}
 
 			// save size, important
-			s = s && a_intfc->WriteRecordData(&vde.aSize, sizeof(vde.aSize));
+			s = s && a_intfc->WriteRecordData(&vde.aSizeDefault, sizeof(vde.aSizeDefault));
 
 			//universal stats, not saved
 			flog::info("Char type: {}, player {}, alive {}, size {}", (int)vde.aIsChar, vde.aIsPlayer, vde.aAlive, vde.aSize);
@@ -1041,8 +1075,10 @@ namespace Vore
 						flog::info("Growth {} {}", i, growth);
 					}
 
-					if (entry.aSize <= 1.0) {
-						a_intfc->ReadRecordData(entry.aSize);
+					// default values that are assigned when character's 3d is not loaded
+					if (entry.aSizeDefault == 5.0 || entry.aSizeDefault == 100.0 || entry.aSizeDefault == 0.0 || entry.aSizeDefault == 3000.0) {
+						a_intfc->ReadRecordData(entry.aSizeDefault);
+						entry.aSize = entry.aSizeDefault;
 					} else {
 						double oldSize = 0;
 						a_intfc->ReadRecordData(oldSize);

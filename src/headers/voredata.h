@@ -114,6 +114,9 @@ namespace Vore
 		RE::SEX aSex = RE::SEX::kNone;
 		// how big this character is. changes stomach size
 		double aSize = 0;
+		double aSizeDefault = 0;
+		// used for scaling sliders for big sizes
+		float aSizeScale = 0;
 
 		//pred stats
 		//temp wg

@@ -64,11 +64,8 @@ namespace Vore
 		static inline double wg_fattemp = 0.02;
 		static inline double wg_fatlong = 0.005;
 		static inline double wg_locusgrowth = 0.008;
-		static inline double wg_sizegrowth = 0.005;
-		/*static inline double wg_fattemp = 1.0;
-		static inline double wg_fatlong = 0;
-		static inline double wg_locusgrowth = 0;
-		static inline double wg_sizegrowth = 0;*/
+		static inline double wg_sizegrowth = 0.0001;
+
 
 		// 6 humans/hour
 		// 120
@@ -78,7 +75,7 @@ namespace Vore
 		static inline double wg_loss_temp = 0.0001;
 		static inline double wg_loss_long = 0.00001;
 		static inline double wg_loss_locus = 0.00001;
-		static inline double wg_loss_size = 0.00001;
+		static inline double wg_loss_size = 0.000002;
 
 		//sliders
 

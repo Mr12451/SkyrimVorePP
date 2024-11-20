@@ -164,7 +164,7 @@ namespace Vore
 		cini::get_value(ini, wg_fattemp, section4, "Temp weight gain", ";All values in this category are PER SECOND\n;Short-term weight gain");
 		cini::get_value(ini, wg_fatlong, section4, "Long-term weight gain", ";");
 		cini::get_value(ini, wg_locusgrowth, section4, "Body part WG", ";Weight gain for a specific body part (depends on vore type)");
-		cini::get_value(ini, wg_sizegrowth, section4, "Size gain", ";Pred height increase (DOESN'T WORK YET)");
+		cini::get_value(ini, wg_sizegrowth, section4, "Size gain", ";Pred height increase.");
 		cini::get_value(ini, wg_loss_temp, section4, "Weight loss (temp)", ";");
 		cini::get_value(ini, wg_loss_long, section4, "Weight loss (long)", ";");
 		cini::get_value(ini, wg_loss_locus, section4, "Weight loss (body part)", ";");
