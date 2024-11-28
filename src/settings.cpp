@@ -146,6 +146,12 @@ namespace Vore
 		cini::get_value(ini, size_softcap, section2, "Size softcap", ";Default human size is 100\n;NPCs whose size is bigger than the softcap will have their size reduced exponentially");
 		cini::get_value(ini, size_softcap_power, section2, "Size softcap power", ";Power for size softcap. The lower this is, the harder the softcap is. Set to 1 to disable\n;If this is disabled, the size of a dragon will be 300 times that of a human, which isn't good for the gameplay");
 
+		static const char* sectionS = "Sound";
+		cini::get_value(ini, enable_sound, sectionS, "Enable Sound", ";Enables sounds. Works only if you have devourment dummy plugin installed, otherwise does nothing");
+		cini::get_value(ini, play_scream, sectionS, "Play Scream", ";Plays prey scream when they die. Loud and off-putting, not recommended. The screamless version is much better");
+		cini::get_value(ini, burp_rate, sectionS, "Burp Rate", ";Chance to burp each slow update with human-sized prey inside stomach.");
+		cini::get_value(ini, gurgle_rate, sectionS, "Gurgle Rate", ";Same as above");
+
 		static const char* section3 = "Process";
 
 		cini::get_value(ini, digestion_amount_base, section3, "Digestion speed", ";All values in this category are PER SECOND\n;Base digestion speed for dead prey. Actual speed scales with prey size");

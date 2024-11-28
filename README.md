@@ -8,6 +8,7 @@ Currently in pre-alpha state. Lacks some essential functionality and shouldn't b
 No releases are currently provided, because the mod is not release-ready yet.
 However, you can build it from source yourself.
 
+
 ## Building from source
 ### Requirements
 * Visual Studio 2022
@@ -27,7 +28,6 @@ However, you can build it from source yourself.
 * run game
 
 ### Bugs
-
 #### Sliders freeze/stop changing
 This happens with certain sliders, like SSBBW3 body/SSBBW2 body
 Once the bug happens, all sliders, not just these, stop changing
@@ -35,7 +35,16 @@ Once the bug happens, all sliders, not just these, stop changing
 You can fix this in 2 ways
 1. Change the problematic sliders to different ones
 2. Set `MemoryManager` and `ScaleformAllocator` to false in `EngineFixes.toml`
-	
+
+#### Vore expressions not working
+Download Expressive Facial Animation [Female Version](https://www.nexusmods.com/skyrimspecialedition/mods/19181) [Male Version](https://www.nexusmods.com/skyrimspecialedition/mods/19532)
+
+
+## Plugins
+### Devourment Dummy Plugin
+A version of Devourment with all the features and scripts removed. Does nothing on it's own. Will be used as a dependency for some other plugins in the future.
+
+Has sound files from Devourment in it. When loaded alongside SkyrimVore++, my mod will use them. The code that plays the sounds is my own, obviously, only the sound files are from Devourment. They're better then nothing, so they'll serve as a placeholder for the time being.
 
 ## Development roadmap
 ### Implemented
@@ -57,16 +66,16 @@ You can fix this in 2 ways
 * INI settings
 * Prey size calculation using havok data (idk how to calculate kMOPP and kConvexVertices, so I use bounds instead)
 * Item vore (very unoptimized and untested)
+* Add size gain
+* Add dragon soul on digestion (look into dragon quest)
+* Sounds (plugin)
 ### Plans
 #### Currently working on
 * Basic reformation
-* Add dragon soul on digestion
-* Add size gain
 #### For the future
 * Fix Talk to prey/pred
 * Basic dialogue
 * Basic Animations
-* Basic Sounds
 * Basic VFX
 * Limit WG to certain NPC categories
 * Player-as-prey internal view
@@ -78,7 +87,7 @@ You can fix this in 2 ways
 * Compatibility with futa mods
 * Compatibility with needs mods
 * Compatibility with survival mods
-* Compatibility with ostim
+* Compatibility with ostim?
 * Compatibility with devourment sound mod
 * Better WG (food, sprint, etc. should affect WG/Loss)
 * NPC Vore in combat
@@ -86,6 +95,7 @@ You can fix this in 2 ways
 * Vore personalities and preferences for NPCs
 * Capacity limits
 * Spells/Perks/Vore leveling
+* Vore gives stats/skill xp
 * Become your killer
 * MCM
 * Fix menu disappearing on cell change

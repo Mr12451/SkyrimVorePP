@@ -7,6 +7,7 @@
 #include "headers/voredata.h"
 #include "headers/voremain.h"
 #include "headers/vutils.h"
+#include "headers/sounds.h"
 
 namespace Vore
 {
@@ -102,15 +103,14 @@ namespace Vore
 			return RE::BSEventNotifyControl::kContinue;
 		if (event->dead && event->actorDying && event->actorDying.get()) {
 			RE::FormID aId = event->actorDying->GetFormID();
-			if (VoreData::IsValid(aId)) {
-				VoreDataEntry& actorData = VoreData::Data[aId];
+			if (VoreDataEntry* actorData = VoreData::IsValidGet(aId)) {
 				RE::Actor* asActor = event->actorDying->As<RE::Actor>();
-				actorData.aAlive = false;
+				actorData->aAlive = false;
 
-				if (actorData.aEssential) {
+				if (actorData->aEssential) {
 					asActor->GetActorBase()->actorData.actorBaseFlags.set(RE::ACTOR_BASE_DATA::Flag::kEssential);
 				}
-				if (actorData.aProtected) {
+				if (actorData->aProtected) {
 					asActor->GetActorBase()->actorData.actorBaseFlags.set(RE::ACTOR_BASE_DATA::Flag::kProtected);
 				}
 
@@ -119,22 +119,25 @@ namespace Vore
 				}
 
 				if (VoreGlobals::delete_queue.contains(aId)) {
-					flog::warn("Trying to kill a deleted prey: {}", Name::GetName(actorData.get()));
+					flog::warn("Trying to kill a deleted prey: {}", Name::GetName(actorData->get()));
 					return RE::BSEventNotifyControl::kContinue;
 				}
-				if (actorData.pred) {
-					Core::SwitchToDigestion(actorData.pred, actorData.pyLocus, VoreState::hSafe, false);
-					actorData.pyDigestProgress = 0.0;
-					actorData.pyElimLocus = actorData.pyLocus;
-					actorData.pyLocusMovement = mStill;
+				if (actorData->pred) {
+					Core::SwitchToDigestion(actorData->pred, actorData->pyLocus, VoreState::hSafe, false);
+					actorData->pyDigestProgress = 0.0;
+					actorData->pyElimLocus = actorData->pyLocus;
+					actorData->pyLocusMovement = mStill;
 					//
-					if (actorData.get()->IsDragon() && actorData.pred == RE::PlayerCharacter::GetSingleton()->GetFormID()) {
+					if (actorData->get()->IsDragon() && actorData->pred == RE::PlayerCharacter::GetSingleton()->GetFormID()) {
 						AV::ModAV(RE::PlayerCharacter::GetSingleton(), RE::ActorValue::kDragonSouls, 1.0);
 					}
 					//TODO dragon quest progression?
 					//idk what's that
-					actorData.CalcFast();
-					actorData.CalcSlow();
+					if (VoreDataEntry* predData = VoreData::IsValidGet(actorData->pred)) {
+						predData->PlayScream(actorData);
+					}
+					actorData->CalcFast();
+					actorData->CalcSlow();
 
 				}
 			}
@@ -192,4 +195,26 @@ namespace Vore
 	EventProcessor::~EventProcessor(){};
 	EventProcessor::EventProcessor(const EventProcessor&){};
 	EventProcessor::EventProcessor(EventProcessor&&){};
+
+	void VEventProcessor::Hook()
+	{
+		flog::info("Hooking impact event");
+		REL::Relocation<std::uintptr_t> Vtbl{ RE::VTABLE_BGSImpactManager[0] };
+		_ProcessEvent = Vtbl.write_vfunc(0x01, ProcessEvent);
+	}
+
+	RE::BSEventNotifyControl VEventProcessor::ProcessEvent(RE::BGSImpactManager* a_this, const RE::BGSFootstepEvent* a_event, RE::BSTEventSource<RE::BGSFootstepEvent>* a_eventSource)
+	{
+		//flog::info("Footstep event {}", a_event->actor.get()->GetDisplayFullName());
+		if (a_event->tag == "FootRight") {
+			if (VoreDataEntry* predData = VoreData::IsValidGet(a_event->actor.get()->GetFormID())) {;
+				if (predData->pdFullBurden > 30.0f) {
+					predData->PlaySound(Sounds::FootstepSlosh, std::min(predData->pdFullBurden / 100.0f, 1.0f));
+				}
+			} 
+		}
+
+		auto result = _ProcessEvent(a_this, a_event, a_eventSource);
+		return result;
+	}
 }

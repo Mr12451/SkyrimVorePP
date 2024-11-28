@@ -81,10 +81,20 @@ namespace Vore
 		mDecrease = 2
 	};
 
-	struct VoreDataEntry
+	struct SoundHandles
 	{
+		RE::BSSoundHandle swallowHandle{};
+		RE::BSSoundHandle digestHandle{};
+		RE::BSSoundHandle struggleHandle{};
+		RE::SEX preySex = RE::SEX::kNone;
+		//RE::BSSoundHandle swallowHandle {};
+	};
+
+	class VoreDataEntry
+	{
+	public:
 		using VoreStateFunc = void (Vore::VoreDataEntry::*)(const double&);
-		//saved 
+		//saved
 		// pred
 		RE::FormID pred = 0;
 		//set of prey
@@ -155,14 +165,18 @@ namespace Vore
 		std::array<float, Locus::NUMOFLOCI * struggle_sliders_per_locus> pdStruggleGoalStep = { 0 };
 		std::array<float, LocusSliders::NUMOFSLIDERS> pdAccumStruggle = { 0 };
 
-
 		bool pdUpdateGoal = false;
 		bool pdUpdateSlider = false;
 		bool pdUpdateStruggleGoal = 0;
 
 		bool pdUpdateStruggleSlider = false;
-		//this is float to count the amount of preys, including stamina or health% (idk)
-		double pdFullBurden = 0.0;
+
+		//this is to count the size of preys for sounds and slow effect
+		float pdFullBurden = 0.0f;
+		//used for struggle sounds
+		RE::SEX pdStrugglePreySex = RE::SEX::kNone;
+		//used for stomach ambient sounds
+		bool pdHasDigestion = false;
 
 
 		// REF HANDLE !!!
@@ -170,35 +184,46 @@ namespace Vore
 		// PAPYRUS OBJECT FOR PERSISTENCY !!!
 		RE::BSTSmartPointer<RE::BSScript::Object> meVm = nullptr;
 
-		RE::TESObjectREFR* get() const;
-
-		double GetStomachSpace(uint64_t locus);
-		void HandlePreyDeathImmidiate();
-		void UpdatePredScale();
-		void HandleDamage(const double& delta, RE::Actor* asActor, VoreDataEntry& predData);
-
-		//states
-
-		void Belly(const double& delta);
-		void SlowF(const double& delta);
-		void SlowD(const double& delta);
-		void Struggle(const double& delta, RE::Actor* asActor, VoreDataEntry& predData);
-		void FastLethalW(const double& delta);
-		void FastLethalU(const double& delta);
-		void FastHealW(const double& delta);
-		void FastHealU(const double& delta);
-		void FastEndoU(const double& delta);
-		void Swallow(const double& delta);
-		void PredSlow(const double& delta);
-
-		void CalcFast();
-		void CalcSlow();
-
+		//sound handles
+	private:
 		VoreStateFunc FastU = nullptr;
 		VoreStateFunc SlowU = nullptr;
 		VoreStateFunc BellyU = nullptr;
 		VoreStateFunc PredU = nullptr;
+		SoundHandles soundHandles{};
 
+	public:
+		RE::TESObjectREFR* get() const;
+		void UpdatePredScale();
+		double GetStomachSpace(uint64_t locus);
+
+		void CalcFast(bool forceStop = false);
+		void CalcSlow(bool forceStop = false);
+		void SetBellyUpdate(bool doUpdate);
+		void SetPredUpdate(bool doUpdate);
+		void ClearAllUpdates();
+
+		void UpdateStruggleGoals();
+		void UpdateSliderGoals();
+
+		const VoreStateFunc& Fast() const { return FastU; }
+		const VoreStateFunc& Slow() const { return SlowU; }
+		const VoreStateFunc& Belly() const { return BellyU; }
+		const VoreStateFunc& Predd() const { return PredU; }
+
+		//sounds
+		void PlaySound(RE::BGSSoundDescriptorForm* sound, float volume = 1.0f) const;
+		void PlayRegurgitation(bool ass) const;
+		void PlayScream(const VoreDataEntry* prey) const;
+		void PlaySwallow();
+		void PlayBurpRandom() const;
+		void PlayGurgleRandom() const;
+		void PlayStomachSounds();
+
+		void StopAllSounds();
+
+		//emotes
+		void EmoteSmile(int duration_ms) const;
 
 		void GetSize(double& size);
 		/// <summary>
@@ -206,6 +231,24 @@ namespace Vore
 		/// </summary>
 		/// <param name="locus"></param>
 		/// <returns></returns>
+	private:
+		void HandlePreyDeathImmidiate();
+
+		void HandleDamage(const double& delta, RE::Actor* asActor, VoreDataEntry* predData);
+
+		//states
+
+		void BellyUpdate(const double& delta);
+		void SlowF(const double& delta);
+		void SlowD(const double& delta);
+		void Struggle(const double& delta, RE::Actor* asActor, VoreDataEntry* predData);
+		void FastLethalW(const double& delta);
+		void FastLethalU(const double& delta);
+		void FastHealW(const double& delta);
+		void FastHealU(const double& delta);
+		void FastEndoU(const double& delta);
+		void Swallow(const double& delta);
+		void PredSlow(const double& delta);
 	};
 
 	class VoreData
@@ -215,6 +258,7 @@ namespace Vore
 		static inline std::unordered_map<RE::FormID, Vore::VoreDataEntry> Data;
 
 		static bool IsValid(RE::FormID character);
+		static VoreDataEntry* IsValidGet(RE::FormID character);
 		static bool IsPred(RE::FormID character, bool onlyActive);
 		static bool IsPrey(RE::FormID character);
 
@@ -227,7 +271,6 @@ namespace Vore
 		static void OnSave(SKSE::SerializationInterface* a_intfc);
 		static void OnLoad(SKSE::SerializationInterface* a_intfc);
 		static void OnRevert(SKSE::SerializationInterface* a_intfc);
-
 	};
 
 }

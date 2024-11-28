@@ -234,8 +234,8 @@ namespace Vore
 	void UpdateBelly(const double& delta)
 	{
 		for (auto& [key, val] : VoreData::Data) {
-			if (val.BellyU && val.get()->Is3DLoaded()) {
-				(val.*(val.BellyU))(delta);
+			if (val.Belly() && val.get()->Is3DLoaded()) {
+				(val.*(val.Belly()))(delta);
 			}
 			
 		}

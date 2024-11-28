@@ -70,42 +70,43 @@ namespace Vore::UI
 
 	static void WritePreyData(std::string& text, RE::FormID prey, bool countIndex, bool writeName)
 	{
-		if (!VoreData::IsValid(prey)) {
+		if (VoreDataEntry* pyData = VoreData::IsValidGet(prey)) {
+			if (writeName) {
+				text += "\n";
+				if (countIndex && VoreMenu::_charIndex == VoreMenu::_lastCharCount) {
+					text += "--> ";
+				}
+				text += Name::GetName(pyData->get());
+			}
+
+			if (pyData->aIsChar) {
+				WriteStats(text, pyData->get()->As<RE::Actor>());
+			}
+			text += "\n";
+			text += PlayerPrefs::GetLocStr(pyData->pyLocus);
+			text += ", ";
+			text += PlayerPrefs::GetTypeStr(pyData->pyDigestion);
+			text += ", ";
+			text += (pyData->pyStruggle == VoreState::sStill) ? "Willing" : "Unwilling";
+			if (pyData->pySwallowProcess != 100) {
+				text += "\nSwallow process: ";
+				text += std::format("{:.2f}", pyData->pySwallowProcess);
+			}
+			if (!pyData->aAlive) {
+				text += "\nDigestion: ";
+				text += std::format("{:.2f}", pyData->pyDigestProgress);
+			} else if (pyData->pyLocusMovement != VoreState::mStill) {
+				text += "\nFULL TOUR";
+			}
+
+			if (countIndex) {
+				VoreMenu::_lastCharCount++;
+			}
+		} else {
 			flog::critical("Found an illigal prey {}", Name::GetName(prey));
 			return;
 		}
-		VoreDataEntry& pyData = VoreData::Data[prey];
-		if (writeName) {
-			text += "\n";
-			if (countIndex && VoreMenu::_charIndex == VoreMenu::_lastCharCount) {
-				text += "--> ";
-			}
-			text += Name::GetName(pyData.get());
-		}
-
-		if (pyData.aIsChar) {
-			WriteStats(text, pyData.get()->As<RE::Actor>());
-		}
-		text += "\n";
-		text += PlayerPrefs::GetLocStr(pyData.pyLocus);
-		text += ", ";
-		text += PlayerPrefs::GetTypeStr(pyData.pyDigestion);
-		text += ", ";
-		text += (pyData.pyStruggle == VoreState::sStill) ? "Willing" : "Unwilling";
-		if (pyData.pySwallowProcess != 100) {
-			text += "\nSwallow process: ";
-			text += std::format("{:.2f}", pyData.pySwallowProcess);
-		}
-		if (!pyData.aAlive) {
-			text += "\nDigestion: ";
-			text += std::format("{:.2f}", pyData.pyDigestProgress);
-		} else if (pyData.pyLocusMovement != VoreState::mStill) {
-			text += "\nFULL TOUR";
-		}
-
-		if (countIndex) {
-			VoreMenu::_lastCharCount++;
-		}
+		
 	}
 
 	void VoreMenu::Update()
@@ -250,13 +251,12 @@ namespace Vore::UI
 				text += actr->GetRace()->GetFullName();
 				RE::FormID charId = actr->GetFormID();
 
-				if (VoreData::IsValid(charId)) {
-					VoreDataEntry& actorData = VoreData::Data[charId];
+				if (VoreDataEntry* actorData = VoreData::IsValidGet(charId)) {
 					text += "\nHas vore data: true";
 					text += "\nAlive: ";
-					text += actorData.aAlive ? "true" : "false";
+					text += actorData->aAlive ? "true" : "false";
 					text += "\nSize: ";
-					text += std::format("{:.4f}", actorData.aSize);
+					text += std::format("{:.4f}", actorData->aSize);
 
 					if (VoreData::IsPrey(charId)) {
 						WritePreyData(text, charId, false, false);
@@ -264,11 +264,11 @@ namespace Vore::UI
 						WriteStats(text, actr);
 					}
 
-					if (actorData.prey.size() > 0) {
+					if (actorData->prey.size() > 0) {
 						text += "\n\nPreys: ";
-						for (auto& el : actorData.prey) {
-							if (VoreData::IsValid(el)) {
-								text += Name::GetName(VoreData::Data[el].get());
+						for (auto& el : actorData->prey) {
+							if (VoreDataEntry* pyData = VoreData::IsValidGet(el)) {
+								text += Name::GetName(pyData->get());
 								text += " ";
 							} else {
 								flog::critical("Found an illegal prey {}", Name::GetName(el));
@@ -279,13 +279,13 @@ namespace Vore::UI
 						if (VoreSettings::ui_show_struggle_sliders) {
 							text += "\nStruggle sliders\n";
 							for (uint8_t stSlId = 0; stSlId < 5; stSlId++) {
-								text += std::format("{:.1f}, {:.1f}\n", actorData.pdStruggleSliders[stSlId], actorData.pdStruggleGoal[stSlId]);
+								text += std::format("{:.1f}, {:.1f}\n", actorData->pdStruggleSliders[stSlId], actorData->pdStruggleGoal[stSlId]);
 							}
 						}
 						if (VoreSettings::ui_show_wg) {
 							text += "\nStruggle sliders\n";
-							text += std::format("WG {:.2f}, PERMA {:.2f}, SIZE {:.2f}\n", actorData.pdFat, actorData.pdFatgrowth, actorData.pdSizegrowth);
-							text += std::format("{:.2f}, {:.2f}, {:.2f}, {:.2f}\n", actorData.pdGrowthLocus[0], actorData.pdGrowthLocus[1], actorData.pdGrowthLocus[2], actorData.pdGrowthLocus[3]);
+							text += std::format("WG {:.2f}, PERMA {:.2f}, SIZE {:.2f}\n", actorData->pdFat, actorData->pdFatgrowth, actorData->pdSizegrowth);
+							text += std::format("{:.2f}, {:.2f}, {:.2f}, {:.2f}\n", actorData->pdGrowthLocus[0], actorData->pdGrowthLocus[1], actorData->pdGrowthLocus[2], actorData->pdGrowthLocus[3]);
 						}
 					}
 
@@ -293,20 +293,20 @@ namespace Vore::UI
 
 					if (charId != playerId) {
 						// char is player's prey
-						if (actorData.pred == playerId) {
-							if (actorData.aAlive) {
+						if (actorData->pred == playerId) {
+							if (actorData->aAlive) {
 								text += "\nTalk [";
 								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_1);
 								text += "]\nSwitch Lethality [";
 								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_2);
 								text += "]";
 							}
-							if (Core::CanBeRegurgitated(actorData)) {
+							if (Core::CanBeRegurgitated(*actorData)) {
 								text += "\nRelease [";
 								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_3);
 								_iAllowReg = true;
 							}
-							if (actorData.aAlive && actorData.pyLocus == lStomach && Core::CanMoveToLocus(playerId, charId, lBowel, lStomach)) {
+							if (actorData->aAlive && actorData->pyLocus == lStomach && Core::CanMoveToLocus(playerId, charId, lBowel, lStomach)) {
 								text += "]\nFull tour [";
 								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_sw_menu);
 								_iFullTour = true;
@@ -321,8 +321,8 @@ namespace Vore::UI
 								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_2);
 								text += "]";
 								_iMode = kPred;
-							} else if (VoreData::Data[playerId].pred == actorData.pred && actorData.pred) {
-								if (actorData.aAlive) {
+							} else if (VoreData::Data[playerId].pred == actorData->pred && actorData->pred) {
+								if (actorData->aAlive) {
 									text += "\nTalk [";
 									text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_1);
 									text += "]\nTry To swallow [";
@@ -486,31 +486,30 @@ namespace Vore::UI
 						std::vector<RE::FormID> allCharsWithPlayer = {};
 
 						RE::FormID playerId = RE::PlayerCharacter::GetSingleton()->GetFormID();
-						if (!VoreData::IsValid(playerId)) {
-							return;
-						}
-						VoreDataEntry& playerData = VoreData::Data[RE::PlayerCharacter::GetSingleton()->GetFormID()];
-						if (VoreData::IsPrey(playerId)) {
-							allCharsWithPlayer.push_back(playerData.pred);
-							std::vector<RE::FormID> otherPrey = FilterPrey(playerData.pred, playerData.pyLocus, false);
-							if (otherPrey.size() > 1) {
-								for (RE::FormID& prey : otherPrey) {
-									if (prey != playerId) {
-										allCharsWithPlayer.push_back(prey);
+						if (VoreDataEntry* playerData = VoreData::IsValidGet(playerId)) {
+							if (VoreData::IsPrey(playerId)) {
+								allCharsWithPlayer.push_back(playerData->pred);
+								std::vector<RE::FormID> otherPrey = FilterPrey(playerData->pred, playerData->pyLocus, false);
+								if (otherPrey.size() > 1) {
+									for (RE::FormID& prey : otherPrey) {
+										if (prey != playerId) {
+											allCharsWithPlayer.push_back(prey);
+										}
 									}
 								}
 							}
-						}
-						if ((VoreData::IsPred(playerId, true))) {
-							for (auto& prey : playerData.prey) {
-								allCharsWithPlayer.push_back(prey);
+							if ((VoreData::IsPred(playerId, true))) {
+								for (auto& prey : playerData->prey) {
+									allCharsWithPlayer.push_back(prey);
+								}
 							}
-						}
 
-						if (_charIndex < allCharsWithPlayer.size()) {
-							_infoTarget = VoreData::Data[allCharsWithPlayer[_charIndex]].get()->GetHandle();
-						}
-						SetMenuMode(kInfo, true);
+							if (_charIndex < allCharsWithPlayer.size()) {
+								_infoTarget = VoreData::Data[allCharsWithPlayer[_charIndex]].get()->GetHandle();
+							}
+							SetMenuMode(kInfo, true);
+
+						} 
 						return;
 					}
 				case (MenuAction::kMenuA3):
@@ -537,12 +536,11 @@ namespace Vore::UI
 						break;
 					case (MenuAction::kMenuA2):
 						{
-							if (VoreData::IsValid(RE::PlayerCharacter::GetSingleton()->GetFormID())) {
-								VoreDataEntry& playerData = VoreData::Data[RE::PlayerCharacter::GetSingleton()->GetFormID()];
-								if (playerData.pyStruggle == VoreState::sStill) {
-									playerData.pyStruggle = sStruggling;
+							if (VoreDataEntry* playerData = VoreData::IsValidGet(RE::PlayerCharacter::GetSingleton()->GetFormID())) {
+								if (playerData->pyStruggle == VoreState::sStill) {
+									playerData->pyStruggle = sStruggling;
 								} else {
-									playerData.pyStruggle = sStill;
+									playerData->pyStruggle = sStill;
 								}
 							}
 							Update();
@@ -553,23 +551,21 @@ namespace Vore::UI
 				case InfoMode::kPrey:
 					switch (action) {
 					case (MenuAction::kMenuA1):
-						if (VoreData::IsValid(_infoTarget.get().get()->GetFormID())) {
-							VoreDataEntry& preyData = VoreData::Data[_infoTarget.get().get()->GetFormID()];
-							if (preyData.aAlive) {
-								TalkToA(preyData.get()->As<RE::Actor>());
+						if (VoreDataEntry* preyData = VoreData::IsValidGet(_infoTarget.get().get()->GetFormID())) {
+							if (preyData->aAlive) {
+								TalkToA(preyData->get()->As<RE::Actor>());
 								SetMenuMode(kDefault);
 							}
 						}
 						break;
 					case (MenuAction::kMenuA2):
 						{
-							if (VoreData::IsValid(_infoTarget.get().get()->GetFormID())) {
-								VoreDataEntry& preyData = VoreData::Data[_infoTarget.get().get()->GetFormID()];
-								if (preyData.aAlive) {
-									if (preyData.pyDigestion == VoreState::hLethal) {
-										Core::SwitchToDigestion(RE::PlayerCharacter::GetSingleton()->GetFormID(), preyData.pyLocus, VoreState::hSafe, true);
+							if (VoreDataEntry* preyData = VoreData::IsValidGet(_infoTarget.get().get()->GetFormID())) {
+								if (preyData->aAlive) {
+									if (preyData->pyDigestion == VoreState::hLethal) {
+										Core::SwitchToDigestion(RE::PlayerCharacter::GetSingleton()->GetFormID(), preyData->pyLocus, VoreState::hSafe, true);
 									} else {
-										Core::SwitchToDigestion(RE::PlayerCharacter::GetSingleton()->GetFormID(), preyData.pyLocus, VoreState::hLethal, true);
+										Core::SwitchToDigestion(RE::PlayerCharacter::GetSingleton()->GetFormID(), preyData->pyLocus, VoreState::hLethal, true);
 									}
 									Update();
 								}
@@ -584,10 +580,9 @@ namespace Vore::UI
 						break;
 					case (MenuAction::kMenuA4):
 						if (_iFullTour) {
-							if (VoreData::IsValid(_infoTarget.get().get()->GetFormID())) {
-								VoreDataEntry& preyData = VoreData::Data[_infoTarget.get().get()->GetFormID()];
+							if (VoreDataEntry* preyData = VoreData::IsValidGet(_infoTarget.get().get()->GetFormID())) {
 								Core::MoveToLocus(RE::PlayerCharacter::GetSingleton()->GetFormID(), _infoTarget.get().get()->GetFormID(), lBowel, lStomach);
-								preyData.pyLocusMovement = mDecrease;
+								preyData->pyLocusMovement = mDecrease;
 								Update();
 							}
 						}
@@ -597,19 +592,17 @@ namespace Vore::UI
 				case InfoMode::kSameLocus:
 					switch (action) {
 					case (MenuAction::kMenuA1):
-						if (VoreData::IsValid(_infoTarget.get().get()->GetFormID())) {
-							VoreDataEntry& preyData = VoreData::Data[_infoTarget.get().get()->GetFormID()];
-							if (preyData.aAlive) {
-								TalkToA(preyData.get()->As<RE::Actor>());
+						if (VoreDataEntry* preyData = VoreData::IsValidGet(_infoTarget.get().get()->GetFormID())) {
+							if (preyData->aAlive) {
+								TalkToA(preyData->get()->As<RE::Actor>());
 								SetMenuMode(kDefault);
 							}
 						}
 						break;
 					case (MenuAction::kMenuA2):
-						if (VoreData::IsValid(_infoTarget.get().get()->GetFormID())) {
-							VoreDataEntry& preyData = VoreData::Data[_infoTarget.get().get()->GetFormID()];
-							if (preyData.aAlive) {
-								Core::Swallow(RE::PlayerCharacter::GetSingleton(), preyData.get(), PlayerPrefs::voreLoc, PlayerPrefs::voreType, false);
+						if (VoreDataEntry* preyData = VoreData::IsValidGet(_infoTarget.get().get()->GetFormID())) {
+							if (preyData->aAlive) {
+								Core::Swallow(RE::PlayerCharacter::GetSingleton(), preyData->get(), PlayerPrefs::voreLoc, PlayerPrefs::voreType, false);
 								SetMenuMode(kDefault);
 							}
 						}

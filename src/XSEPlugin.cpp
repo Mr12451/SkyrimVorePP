@@ -6,6 +6,7 @@
 #include "headers/racemenu.h"
 #include "headers/settings.h"
 #include "headers/ui.h"
+#include "headers/sounds.h"
 
 const SKSE::MessagingInterface* g_messaging;
 
@@ -23,6 +24,8 @@ inline void InitializeEvents()
 	RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::TESSleepStartEvent>(&eventProcessor);
 	RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::TESSleepStopEvent>(&eventProcessor);
 	RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::TESFastTravelEndEvent>(&eventProcessor);
+	//RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::BGSFootstepEvent>(&eventProcessor);
+	Vore::VEventProcessor::Hook();
 	flog::trace("End event initialization");
 }
 
@@ -74,6 +77,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 		flog::trace("Data loaded");
 		InitializeEvents();
 		Vore::UI::VoreMenu::Register();
+		Vore::Sounds::InitSounds();
 		break;
 	}
 }

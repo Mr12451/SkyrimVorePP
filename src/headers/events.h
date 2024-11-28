@@ -65,4 +65,14 @@ namespace Vore
 		EventProcessor& operator=(const EventProcessor&) = delete;
 		EventProcessor& operator=(EventProcessor&&) = delete;
 	};
+
+	class VEventProcessor
+	{
+	public:
+		static void Hook();
+
+	private:
+		static RE::BSEventNotifyControl ProcessEvent(RE::BGSImpactManager* a_this, const RE::BGSFootstepEvent* a_event, RE::BSTEventSource<RE::BGSFootstepEvent>* a_eventSource);
+		static inline REL::Relocation<decltype(ProcessEvent)> _ProcessEvent;
+	};
 }

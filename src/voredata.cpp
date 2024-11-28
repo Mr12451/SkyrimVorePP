@@ -2,9 +2,14 @@
 #include "headers/nutils.h"
 #include "headers/papyrusUtil.h"
 #include "headers/settings.h"
+#include "headers/sounds.h"
 #include "headers/ui.h"
 #include "headers/voremain.h"
 #include "headers/vutils.h"
+
+#include <chrono>
+//#include <future>
+#include <thread>
 
 namespace Vore
 {
@@ -16,10 +21,12 @@ namespace Vore
 		pyElimLocus = pyLocus;
 		pyLocusMovement = mStill;
 		CalcSlow();
+
+		if (VoreDataEntry* predData = VoreData::IsValidGet(pred)) {
+			predData->EmoteSmile(5000);
+		}
 	}
 
-	
-		
 	void VoreDataEntry::UpdatePredScale()
 	{
 		if (!get()->Is3DLoaded()) {
@@ -30,7 +37,7 @@ namespace Vore
 			if (!aScaleDefault || pdSizegrowth <= 0) {
 				return;
 			}
-		} 
+		}
 		float sizeConv = (float)std::pow(pdSizegrowth, VoreSettings::slider_pow) / VoreGlobals::slider_one;
 		// get final scale
 		sizeConv += aScaleDefault;
@@ -41,30 +48,27 @@ namespace Vore
 		aSizeScale = std::pow(aScaleDefault / sizeConv, 1 / VoreSettings::slider_pow);
 		aSize = aSizeDefault * aSizeScale;
 		//flog::info("SIZE SCALE {}", this->aSizeScale);
-
 	}
 
-
-	void VoreDataEntry::HandleDamage(const double& delta, RE::Actor* asActor, VoreDataEntry& predData)
+	void VoreDataEntry::HandleDamage(const double& delta, RE::Actor* asActor, VoreDataEntry* predData)
 	{
-		if (!predData.PredU) {
-			predData.PredU = &VoreDataEntry::PredSlow;
-		}
+		predData->SetPredUpdate(true);
 		if (delta > 10 && pyStruggle != sStill) {
 			//can the prey struggle out while he lives
 			//this is not entirely accurate because it doesn't account for the struggles of other prey,
 			//and acid damage increase
 			//but it also doesn't account stamina drain and regen, so it's fine for the time being
 
-			predData.pdAcid[pyLocus] = 100;
+			predData->pdAcid[pyLocus] = 100;
 			double ttl = AV::GetAV(asActor, RE::ActorValue::kHealth) / VoreSettings::acid_damage;
-			if (ttl <= delta && predData.pdIndigestion[pyLocus] + VoreSettings::struggle_amount * ttl > 100) {
-				Core::Regurgitate(predData.get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
+			if (ttl <= delta && predData->pdIndigestion[pyLocus] + VoreSettings::struggle_amount * ttl > 100) {
+				Core::Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
 				return;
 			}
 		}
-		predData.pdAcid[pyLocus] = std::min(predData.pdAcid[pyLocus] + VoreSettings::acid_gain * delta, 100.0);
-		double acidMulti = predData.pdAcid[pyLocus] / 100.0;
+		predData->pdAcid[pyLocus] = std::min(predData->pdAcid[pyLocus] + VoreSettings::acid_gain * delta, 100.0);
+		predData->pdHasDigestion = true;
+		double acidMulti = predData->pdAcid[pyLocus] / 100.0;
 		if (AV::GetAV(asActor, RE::ActorValue::kHealth) - VoreSettings::acid_damage * delta <= 0) {
 			// LATER implement entrapment for essential/protected instead of regurgitation NPCs
 
@@ -76,7 +80,7 @@ namespace Vore
 					//this is necessary for long deltas to work
 					HandlePreyDeathImmidiate();
 				} else {
-					Regurgitate(predData.get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
+					Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
 				}
 			} else if (asActor->IsProtected()) {
 				if (VoreSettings::digest_protected) {
@@ -85,7 +89,7 @@ namespace Vore
 					//this is necessary for long deltas to work
 					HandlePreyDeathImmidiate();
 				} else {
-					Regurgitate(predData.get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
+					Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
 				}
 			} else {
 				AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth));
@@ -93,7 +97,7 @@ namespace Vore
 				HandlePreyDeathImmidiate();
 			}
 
-			predData.pdUpdateStruggleGoal = true;
+			predData->pdUpdateStruggleGoal = true;
 			return;
 			//
 		} else {
@@ -111,7 +115,7 @@ namespace Vore
 		return this->me.get().get();
 	}
 
-	void VoreDataEntry::Belly(const double& delta)
+	void VoreDataEntry::BellyUpdate(const double& delta)
 	{
 		std::map<const char*, float> slidervalues = {};
 		//
@@ -129,7 +133,7 @@ namespace Vore
 			float volumeG1 = 0.0f;
 
 			auto& voresliders = aSex == RE::SEX::kFemale ? VoreSettings::sliders_bodypart_female : aSex == RE::SEX::kMale ? VoreSettings::sliders_bodypart_male :
-			                                                                                                                        VoreSettings::sliders_bodypart_creature;
+			                                                                                                                VoreSettings::sliders_bodypart_creature;
 			//change
 			for (uint8_t i = 0; i < LocusSliders::NUMOFSLIDERS; i++) {
 				if (pdGoalStep[i] == 0.0f) {
@@ -272,14 +276,17 @@ namespace Vore
 
 	void VoreDataEntry::SlowF(const double& delta)
 	{
-		VoreDataEntry& predData = VoreData::Data[pred];
+		VoreDataEntry* predData = VoreData::IsValidGet(pred);
+		if (!predData) {
+			return;
+		}
 		if (pyLocusMovement == VoreState::mIncrease) {
 			pyLocusProcess += VoreSettings::locus_process_speed * delta;
 		} else if (pyLocusMovement == VoreState::mDecrease) {
 			pyLocusProcess -= VoreSettings::locus_process_speed * delta;
 		}
 		if (pyLocusMovement != VoreState::mStill) {
-			predData.pdUpdateGoal = true;
+			predData->pdUpdateGoal = true;
 		}
 		if (pyLocusProcess >= 100) {
 			pyLocusProcess = 100;
@@ -292,7 +299,6 @@ namespace Vore
 		}
 	}
 
-	
 	static void FinishDigestion([[maybe_unused]] const RE::FormID& prey, VoreDataEntry* preyData)
 	{
 		//play some sound
@@ -304,8 +310,11 @@ namespace Vore
 
 	void VoreDataEntry::SlowD(const double& delta)
 	{
+		VoreDataEntry* predData = VoreData::IsValidGet(pred);
+		if (!predData) {
+			return;
+		}
 		double digestBase = VoreSettings::digestion_amount_base * delta;
-		VoreDataEntry& predData = VoreData::Data[pred];
 		//aWeight can increase / decrease digestion time
 		//calculate speed -> (100 - val.pyDigestProgress) / VoreSettings::digestion_amount_base * 100 / val.aSize
 		//get actual digestion time
@@ -324,8 +333,7 @@ namespace Vore
 		}
 		if (pyLocus == lStomach && pyDigestProgress > 30) {
 			Core::MoveToLocus(pred, get()->GetFormID(), Locus::lBowel);
-			/*RE::TESObjectREFR* stomachDeadCell = RE::TESForm::LookupByEditorID<RE::TESObjectREFR>("BellyDMarker");
-					val.get()->MoveTo(stomachDeadCell);*/
+			predData->PlaySound(Sounds::Gurgle);
 		}
 
 		// weight gain
@@ -335,38 +343,39 @@ namespace Vore
 		// fat growth
 		// height (size) increase; (for me) check gts for info
 		for (uint8_t i = 0; i < 4; i++) {
-			predData.pdGrowthLocus[i] += newBase * VoreSettings::voretypes_partgain[pyElimLocus][i] * VoreSettings::wg_locusgrowth;
+			predData->pdGrowthLocus[i] += newBase * VoreSettings::voretypes_partgain[pyElimLocus][i] * VoreSettings::wg_locusgrowth;
 		}
 
-		predData.pdFat += newBase * VoreSettings::wg_fattemp;
-		predData.pdFatgrowth += newBase * VoreSettings::wg_fatlong;
-		predData.pdSizegrowth += newBase * VoreSettings::wg_sizegrowth;
-		predData.pdUpdateGoal = true;
-		if (!predData.PredU) {
-			predData.PredU = &VoreDataEntry::PredSlow;
-		}
+		predData->pdFat += newBase * VoreSettings::wg_fattemp;
+		predData->pdFatgrowth += newBase * VoreSettings::wg_fatlong;
+		predData->pdSizegrowth += newBase * VoreSettings::wg_sizegrowth;
+		predData->pdUpdateGoal = true;
+		predData->pdHasDigestion = true;
+		predData->SetPredUpdate(true);
 	}
 
-	void VoreDataEntry::Struggle(const double& delta, RE::Actor* asActor, VoreDataEntry& predData)
+	void VoreDataEntry::Struggle(const double& delta, RE::Actor* asActor, VoreDataEntry* predData)
 	{
 		if (pyStruggle == VoreState::sStruggling) {
 			if (AV::GetAV(asActor, RE::ActorValue::kStamina) > 0) {
 				//damage prey's stamina and pred's struggle bar for this locus
 				AV::DamageAV(asActor, RE::ActorValue::kStamina, VoreSettings::struggle_stamina * delta);
-				predData.pdIndigestion[pyLocus] += VoreSettings::struggle_amount * delta;
+				predData->pdIndigestion[pyLocus] += VoreSettings::struggle_amount * delta;
 
-				if (predData.pdIndigestion[pyLocus] >= 100) {
-					Core::RegurgitateAll(predData.get()->As<RE::Actor>(), pyLocus);
+				if (predData->pdIndigestion[pyLocus] >= 100) {
+					Core::RegurgitateAll(predData->get()->As<RE::Actor>(), pyLocus);
 				}
 			} else {
 				pyStruggle = VoreState::sExhausted;
 			}
 			//pred is top pred
-			if (!predData.pred) {
-				predData.pdUpdateStruggleGoal = true;
+			if (!predData->pred) {
+				predData->pdUpdateStruggleGoal = true;
 			}
-			if (!predData.PredU) {
-				predData.PredU = &VoreDataEntry::PredSlow;
+			predData->SetBellyUpdate(true);
+			predData->SetPredUpdate(true);
+			if (aSex != RE::SEX::kNone) {
+				predData->pdStrugglePreySex = aSex;
 			}
 
 		} else if (pyStruggle == VoreState::sExhausted) {
@@ -381,69 +390,83 @@ namespace Vore
 	void VoreDataEntry::FastLethalW(const double& delta)
 	{
 		RE::Actor* asActor = get()->As<RE::Actor>();
-		VoreDataEntry& predData = VoreData::Data[pred];
-		HandleDamage(delta, asActor, predData);
+		if (VoreDataEntry* predData = VoreData::IsValidGet(pred)) {
+			HandleDamage(delta, asActor, predData);
+		}
 	}
 
 	void VoreDataEntry::FastLethalU(const double& delta)
 	{
 		RE::Actor* asActor = get()->As<RE::Actor>();
-		VoreDataEntry& predData = VoreData::Data[pred];
-		HandleDamage(delta, asActor, predData);
-		Struggle(delta, asActor, predData);
+		if (VoreDataEntry* predData = VoreData::IsValidGet(pred)) {
+			HandleDamage(delta, asActor, predData);
+			Struggle(delta, asActor, predData);
+		}
 	}
 
 	void VoreDataEntry::FastHealW(const double& delta)
 	{
 		RE::Actor* asActor = get()->As<RE::Actor>();
-		AV::DamageAV(asActor, RE::ActorValue::kHealth, -VoreSettings::acid_damage * delta);
+		if (VoreDataEntry* predData = VoreData::IsValidGet(pred)) {
+			predData->SetPredUpdate(true);
+			AV::DamageAV(asActor, RE::ActorValue::kHealth, -VoreSettings::acid_damage * delta);
+		}
 	}
 
 	void VoreDataEntry::FastHealU(const double& delta)
 	{
 		RE::Actor* asActor = get()->As<RE::Actor>();
-		VoreDataEntry& predData = VoreData::Data[pred];
-		AV::DamageAV(asActor, RE::ActorValue::kHealth, -VoreSettings::acid_damage * delta);
-		Struggle(delta, asActor, predData);
+		if (VoreDataEntry* predData = VoreData::IsValidGet(pred)) {
+			predData->SetPredUpdate(true);
+			AV::DamageAV(asActor, RE::ActorValue::kHealth, -VoreSettings::acid_damage * delta);
+			Struggle(delta, asActor, predData);
+		}
 	}
 
 	void VoreDataEntry::FastEndoU(const double& delta)
 	{
 		RE::Actor* asActor = get()->As<RE::Actor>();
-		VoreDataEntry& predData = VoreData::Data[pred];
-		Struggle(delta, asActor, predData);
+		if (VoreDataEntry* predData = VoreData::IsValidGet(pred)) {
+			Struggle(delta, asActor, predData);
+		}
 	}
 
 	void VoreDataEntry::Swallow(const double& delta)
 	{
-		VoreDataEntry& predData = VoreData::Data[pred];
+		VoreDataEntry* predData = VoreData::IsValidGet(pred);
+		if (!predData) {
+			return;
+		}
 
 		if (delta > 10) {
 			pySwallowProcess = 100;
 		}
 		if (VoreSettings::swallow_auto) {
 			pySwallowProcess += VoreSettings::swallow_auto_speed * 1 / std::max(std::pow(aSize / VoreGlobals::slider_one, 0.3), 0.7) * delta;
-			predData.pdUpdateGoal = true;
+			predData->PlaySwallow();
+			predData->pdUpdateGoal = true;
 		} else {
 			pySwallowProcess -= VoreSettings::swallow_decrease_speed * delta;
-			predData.pdUpdateGoal = true;
+			predData->pdUpdateGoal = true;
 		}
 
 		//finish swallow
 		if (pySwallowProcess >= 100) {
 			pySwallowProcess = 100;
-			predData.pdUpdateGoal = true;
+			predData->pdUpdateGoal = true;
 
 			CalcFast();
 			if (FastU) {
 				(this->*FastU)(delta);
 			}
+			//UpdateSliderGoals();
+			predData->PlayStomachSounds();
 
 		}
 		//regurgitate prey because they escaped
 		else if (pySwallowProcess < 0) {
 			pySwallowProcess = 0;
-			Core::Regurgitate(predData.get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
+			Core::Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
 			return;
 		}
 	}
@@ -488,19 +511,32 @@ namespace Vore
 				stopSlow = false;
 			}
 		}
-		//only update goal for top preds
-		if (doGoalUpdate && !pred) {
+
+		if (prey.size() > 0) {
+			stopSlow = false;
+		}
+
+		if (get()->Is3DLoaded() && pdFullBurden > 0.0f) {
+			PlayBurpRandom();
+			PlayGurgleRandom();
+		}
+		if (doGoalUpdate) {
 			pdUpdateGoal = true;
 		}
+		PlayStomachSounds();
+		pdHasDigestion = false;
+		pdStrugglePreySex = RE::SEX::kNone;
+
+		//only update goal for top preds
 		if (stopSlow) {
-			PredU = nullptr;
+			SetPredUpdate(false);
 		}
 	}
 
-	void VoreDataEntry::CalcFast()
+	void VoreDataEntry::CalcFast(bool forceStop)
 	{
 		//calculate next state
-		if (!pred) {
+		if (!pred || forceStop) {
 			FastU = nullptr;
 			return;
 		}
@@ -535,9 +571,9 @@ namespace Vore
 		}
 	}
 
-	void VoreDataEntry::CalcSlow()
+	void VoreDataEntry::CalcSlow(bool forceStop)
 	{
-		if (!pred) {
+		if (!pred || forceStop) {
 			SlowU = nullptr;
 			return;
 		}
@@ -551,6 +587,421 @@ namespace Vore
 			SlowU = &VoreDataEntry::SlowD;
 		} else {
 			SlowU = nullptr;
+		}
+	}
+
+	void VoreDataEntry::SetBellyUpdate(bool doUpdate)
+	{
+		if (doUpdate) {
+			BellyU = &VoreDataEntry::BellyUpdate;
+		} else {
+			BellyU = nullptr;
+		}
+	}
+
+	void VoreDataEntry::SetPredUpdate(bool doUpdate)
+	{
+		if (doUpdate) {
+			PredU = &VoreDataEntry::PredSlow;
+		} else {
+			flog::trace("Stopped pred update for {}", get()->GetDisplayFullName());
+			PredU = nullptr;
+			StopAllSounds();
+		}
+	}
+
+	void VoreDataEntry::ClearAllUpdates()
+	{
+		FastU = nullptr;
+		SlowU = nullptr;
+		BellyU = nullptr;
+		PredU = nullptr;
+		StopAllSounds();
+	}
+
+	void VoreDataEntry::UpdateStruggleGoals()
+	{
+		//if fast update happens too slow or slider max step is too big (aka morphing happens too fast), this may break
+		//float deltaMax = std::min(static_cast<float>(VoreSettings::fast_update) * VoreSettings::slider_struggle_maxstep, 100.0f);
+
+		pdUpdateStruggleSlider = true;
+		SetBellyUpdate(true);
+
+		std::array<float, Locus::NUMOFLOCI> accum_struggle = { 0.0f };
+		bool quitStruggle = true;
+
+		for (const RE::FormID& a_prey : prey) {
+			if (VoreDataEntry* preyData = VoreData::IsValidGet(a_prey)) {
+				if (preyData->aAlive && preyData->pyStruggle == VoreState::sStruggling) {
+					accum_struggle[preyData->pyLocus] += static_cast<float>(preyData->aSize * AV::GetPercentageAV(preyData->get()->As<RE::Actor>(), RE::ActorValue::kStamina) / 1.5f);
+					//accum_struggle[preyData.pyLocus] += (float)preyData.aSize;
+				}
+			}
+		}
+
+		auto& ssliders = VoreSettings::struggle_sliders;
+
+		for (uint8_t i = 0; i < Locus::NUMOFLOCI; i++) {
+			//skip sliders that are not defined by user
+
+			if (accum_struggle[i] == 0.0f && pdAccumStruggle[i] == 0.0f) {
+				continue;
+			} else if (accum_struggle[i] == 0.0f) {
+				for (int j = 0; j < ssliders[i].size(); j++) {
+					//the id of this slider in predData
+					int sliderId = i * Locus::NUMOFLOCI + j;
+					pdStruggleGoalStep[sliderId] = pdStruggleSliders[sliderId];
+					pdStruggleGoal[sliderId] = 0.0f;
+				}
+				continue;
+			} else {
+				quitStruggle = false;
+				pdAccumStruggle[i] = accum_struggle[i];
+			}
+
+			for (int j = 0; j < ssliders[i].size(); j++) {
+				//the id of this slider in predData
+				int sliderId = i * Locus::NUMOFLOCI + j;
+
+				// goal diff is reset by updatebelly when slider reaches it's goal
+				if (pdStruggleGoalStep[sliderId] == 0.0f) {
+					float maxValue = accum_struggle[i];
+					if (pdStruggleGoal[sliderId] > maxValue / 2.0f) {
+						pdStruggleGoal[sliderId] = Math::randfloat(0.0, maxValue / 2.0f);
+					} else {
+						pdStruggleGoal[sliderId] = Math::randfloat(maxValue / 2.0f, maxValue);
+					}
+
+					pdStruggleGoalStep[sliderId] = VoreSettings::slider_maxstep * std::pow(std::abs(pdStruggleGoal[sliderId] - pdStruggleSliders[sliderId]) / VoreGlobals::slider_one, 0.75f);
+				}
+				// i got brain damage when writing this lol
+			}
+		}
+
+		if (quitStruggle) {
+			pdUpdateStruggleGoal = false;
+			return;
+		}
+	}
+
+	void VoreDataEntry::UpdateSliderGoals()
+	{
+		pdUpdateGoal = false;
+		pdUpdateSlider = true;
+		SetBellyUpdate(true);
+
+		pdGoal.fill(0.0f);
+
+		pdFullBurden = 0.0f;
+
+		//calculate locus size with switch
+
+		for (const RE::FormID& a_prey : prey) {
+			VoreDataEntry* preyData = VoreData::IsValidGet(a_prey);
+			if (!preyData) {
+				flog::error("Found a broken prey {}", Name::GetName(a_prey));
+				continue;
+			}
+			//calculate prey full size
+			//calculate prey full weight
+			double preySize = 0.0;
+			preyData->GetSize(preySize);
+			pdFullBurden += (float)preySize;
+
+			//unfortunately sliders are floats, while everything else in this mod is a double
+			//doubles can be better for precision at really small wg/digestion steps, that's why I use them
+			//so these casts are necessary
+			switch (preyData->pyLocus) {
+			// for swallowing
+			case Locus::lStomach:
+				pdGoal[LocusSliders::uThroat] += static_cast<float>(preySize * (1 - preyData->pySwallowProcess / 100.0));
+				pdGoal[LocusSliders::uStomach] += static_cast<float>(preySize * preyData->pySwallowProcess / 100.0);
+				break;
+			// for full tour
+			case Locus::lBowel:
+				pdGoal[LocusSliders::uBowel] += static_cast<float>(preySize * (1 - preyData->pyLocusProcess / 100.0));
+				pdGoal[LocusSliders::uStomach] += static_cast<float>(preySize * preyData->pyLocusProcess / 100.0);
+				break;
+			case Locus::lBreastl:
+				pdGoal[LocusSliders::uBreastl] += static_cast<float>(preySize);
+				break;
+			case Locus::lBreastr:
+				pdGoal[LocusSliders::uBreastr] += static_cast<float>(preySize);
+				break;
+			case Locus::lWomb:
+				pdGoal[LocusSliders::uWomb] += static_cast<float>(preySize);
+				break;
+			// for swallowing cv
+			case Locus::lBalls:
+				pdGoal[LocusSliders::uCock] += static_cast<float>(preySize * (1 - preyData->pySwallowProcess / 100.0));
+				pdGoal[LocusSliders::uBalls] += static_cast<float>(preySize * preyData->pySwallowProcess / 100.0);
+				break;
+			}
+		}
+
+		//update other sliders
+
+		// locus fat
+		pdGoal[LocusSliders::uFatBelly] = static_cast<float>(pdGrowthLocus[0]);
+		pdGoal[LocusSliders::uFatAss] = static_cast<float>(pdGrowthLocus[1]);
+		pdGoal[LocusSliders::uFatBreasts] = static_cast<float>(pdGrowthLocus[2]);
+		pdGoal[LocusSliders::uFatCock] = static_cast<float>(pdGrowthLocus[3]);
+
+		//fat and perma fat
+		pdGoal[LocusSliders::uFatLow] = static_cast<float>((pdFat < 0) ? pdFat : 0);
+		pdGoal[LocusSliders::uFatHigh] = static_cast<float>((pdFat >= 0) ? pdFat : 0);
+		pdGoal[LocusSliders::uGrowthLow] = static_cast<float>((pdFatgrowth < 0) ? pdFatgrowth : 0);
+		pdGoal[LocusSliders::uGrowthHigh] = static_cast<float>((pdFatgrowth >= 0) ? pdFatgrowth : 0);
+
+		for (uint8_t i = 0; i < LocusSliders::NUMOFSLIDERS; i++) {
+			pdGoalStep[i] = VoreSettings::slider_maxstep * std::pow(std::abs(pdGoal[i] - pdSliders[i]) / VoreGlobals::slider_one, 0.75f);
+		}
+	}
+
+	void VoreDataEntry::PlaySound(RE::BGSSoundDescriptorForm* sound, float volume) const
+	{
+		if (!Sounds::AllowSounds || !get()->Is3DLoaded()) {
+			//flog::error("Can't play sound!");
+			return;
+		}
+		RE::BSAudioManager* audioManager = RE::BSAudioManager::GetSingleton();
+		RE::BSSoundHandle handle = RE::BSSoundHandle();
+		bool success = audioManager->BuildSoundDataFromDescriptor(handle, sound->soundDescriptor);
+		if (success) {
+			//flog::trace("Playing sound");
+			handle.SetVolume(volume);
+			handle.SetObjectToFollow(get()->GetCurrent3D());
+			handle.Play();
+		} else {
+			flog::error("Cannot build sound! {}", sound->GetFormEditorID());
+		}
+	}
+
+	void VoreDataEntry::PlayRegurgitation(bool ass) const
+	{
+		if (ass) {
+			if (aSex == RE::SEX::kFemale) {
+				PlaySound(Sounds::Poop_F);
+			} else if (aSex == RE::SEX::kMale) {
+				PlaySound(Sounds::Poop_M);
+			} else {
+				PlaySound(Sounds::Poop);
+			}
+		} else {
+			PlaySound(Sounds::Vomit);
+		}
+	}
+
+	void VoreDataEntry::PlayScream(const VoreDataEntry* targetPrey) const
+	{
+		if (VoreSettings::play_scream) {
+			if (targetPrey->aSex == RE::SEX::kFemale) {
+				PlaySound(Sounds::Scream_F);
+			} else if (targetPrey->aSex == RE::SEX::kMale) {
+				PlaySound(Sounds::Scream_M);
+			} else if (targetPrey->get()->IsAnimal()) {
+				PlaySound(Sounds::Scream_A);
+			} else if (targetPrey->get()->HasKeywordByEditorID("ActorTypeUndead")) {
+				PlaySound(Sounds::Scream_U);
+			} else {
+				PlaySound(Sounds::Scream_C);
+			}
+		} else {
+			if (targetPrey->aSex == RE::SEX::kFemale) {
+				PlaySound(Sounds::Screamless_F);
+			} else {
+				PlaySound(Sounds::Screamless_M);
+			}
+		}
+	}
+
+	void VoreDataEntry::PlaySwallow()
+	{
+		if (!Sounds::AllowSounds || !get()->Is3DLoaded()) {
+			//flog::error("Can't play sound!");
+			return;
+		}
+
+		if (soundHandles.swallowHandle.IsPlaying()) {
+			return;
+		}
+
+		RE::BSAudioManager* audioManager = RE::BSAudioManager::GetSingleton();
+		soundHandles.swallowHandle = RE::BSSoundHandle();
+		bool success = audioManager->BuildSoundDataFromDescriptor(soundHandles.swallowHandle, Sounds::Swallow->soundDescriptor);
+		if (success) {
+			//soundHandles.swallowHandle.SetVolume(0.1f);
+			soundHandles.swallowHandle.SetObjectToFollow(get()->GetCurrent3D());
+			soundHandles.swallowHandle.Play();
+		} else {
+			flog::error("Cannot build sound!");
+		}
+	}
+
+	void VoreDataEntry::PlayBurpRandom() const
+	{
+		if (!Sounds::AllowSounds) {
+			return;
+		}
+
+		float burpBurden = pdGoal[0] + pdGoal[1] / 3.0f;
+		burpBurden *= VoreSettings::burp_rate;
+		if (Math::randfloat(0.0f, 100.0f) <= burpBurden) {
+			RE::BSFaceGenAnimationData* fData = get()->As<RE::Actor>()->GetFaceGenAnimationData();
+
+			if (fData && !fData->exprOverride) {
+				PlaySound(Sounds::Burp);
+				fData->SetExpressionOverride(16, 1.0f);
+				//fData->expressionKeyFrame.SetValue(16, 1.0f);
+				fData->exprOverride = true;
+				//fData->phenomeKeyFrame.SetValue(0, 1.0f);
+				//fData->phenomeKeyFrame.SetValue(1, 1.0f);
+				RE::ActorHandle myHandle = get()->As<RE::Actor>()->GetHandle();
+
+				auto t = std::thread([myHandle]() {
+					std::this_thread::sleep_for(std::chrono::milliseconds{ 2000 });
+					SKSE::GetTaskInterface()->AddTask([myHandle]() {
+						if (myHandle) {
+							myHandle.get()->GetFaceGenAnimationData()->ClearExpressionOverride();
+							myHandle.get()->GetFaceGenAnimationData()->exprOverride = false;
+						}
+					});
+				});
+				t.detach();
+			}
+		}
+	}
+
+	void VoreDataEntry::PlayGurgleRandom() const
+	{
+		if (!Sounds::AllowSounds) {
+			return;
+		}
+
+		float gurgleBurden = pdGoal[1] + pdGoal[0] / 3.0f;
+		gurgleBurden *= VoreSettings::gurgle_rate;
+		if (Math::randfloat(0.0f, 100.0f) <= gurgleBurden) {
+			//flog::info("playing gurgle");
+			PlaySound(Sounds::Gurgle);
+			//flog::info("finished gurgle");
+		}
+	}
+
+	void VoreDataEntry::PlayStomachSounds()
+	{
+		if (!Sounds::AllowSounds) {
+			return;
+		}
+		if (get()->Is3DLoaded() && pdFullBurden > 0.0f) {
+			float volume = std::min(pdHasDigestion ? pdFullBurden / 100.0f : pdFullBurden / 200.0f, 1.0f);
+
+			//digestion sounds
+			if (soundHandles.digestHandle.IsPlaying()) {
+				// the sound is already playing, adjust volume based on digestion and prey size
+				soundHandles.digestHandle.SetVolume(volume);
+			} else {
+				flog::info("starting digestion sounds");
+				// start digestion sound
+				RE::BSAudioManager* audioManager = RE::BSAudioManager::GetSingleton();
+				if (soundHandles.digestHandle.IsPlaying()) {
+					soundHandles.digestHandle.Stop();
+				}
+				soundHandles.digestHandle = RE::BSSoundHandle();
+				bool success = audioManager->BuildSoundDataFromDescriptor(soundHandles.digestHandle, Sounds::Stomach->soundDescriptor);
+				if (success) {
+					soundHandles.digestHandle.SetVolume(volume);
+					soundHandles.digestHandle.SetObjectToFollow(get()->GetCurrent3D());
+					soundHandles.digestHandle.Play();
+				} else {
+					flog::error("Cannot build sound!");
+				}
+			}
+			//struggle sounds
+			if (pdStrugglePreySex != RE::SEX::kNone) {
+				// need new sound
+				if (!(soundHandles.struggleHandle.IsPlaying() && pdStrugglePreySex == soundHandles.preySex)) {
+					soundHandles.preySex = pdStrugglePreySex;
+
+					RE::BSAudioManager* audioManager = RE::BSAudioManager::GetSingleton();
+					if (soundHandles.struggleHandle.IsPlaying()) {
+						soundHandles.struggleHandle.Stop();
+					}
+					soundHandles.struggleHandle = RE::BSSoundHandle();
+
+					RE::BGSSoundDescriptorForm* sound = Sounds::Struggling_CF;
+
+					// get the correct sound
+					if (aSex == RE::SEX::kFemale) {
+						if (pdStrugglePreySex == RE::SEX::kFemale) {
+							sound = Sounds::Struggling_FF;
+						} else if (pdStrugglePreySex == RE::SEX::kMale) {
+							sound = Sounds::Struggling_FM;
+						}
+					} else if (aSex == RE::SEX::kMale) {
+						if (pdStrugglePreySex == RE::SEX::kFemale) {
+							sound = Sounds::Struggling_MF;
+						} else if (pdStrugglePreySex == RE::SEX::kMale) {
+							sound = Sounds::Struggling_MM;
+						}
+					} else {
+						if (pdStrugglePreySex == RE::SEX::kFemale) {
+							sound = Sounds::Struggling_CF;
+						} else if (pdStrugglePreySex == RE::SEX::kMale) {
+							sound = Sounds::Struggling_CM;
+						}
+					}
+
+					bool success = audioManager->BuildSoundDataFromDescriptor(soundHandles.struggleHandle, sound->soundDescriptor);
+					if (success) {
+						//soundHandles.struggleHandle.SetVolume(volume);
+						soundHandles.struggleHandle.SetObjectToFollow(get()->GetCurrent3D());
+						soundHandles.struggleHandle.Play();
+					} else {
+						flog::error("Cannot build sound!");
+					}
+				}
+			} else if (soundHandles.struggleHandle.IsPlaying()) {
+				soundHandles.struggleHandle.Stop();
+			}
+		} else {
+			if (soundHandles.digestHandle.IsPlaying()) {
+				soundHandles.digestHandle.Stop();
+				soundHandles.struggleHandle.Stop();
+			}
+		}
+	}
+
+	void VoreDataEntry::StopAllSounds()
+	{
+		soundHandles.swallowHandle.FadeOutAndRelease(1000);
+		soundHandles.digestHandle.FadeOutAndRelease(1000);
+		soundHandles.struggleHandle.FadeOutAndRelease(1000);
+	}
+
+	
+	void VoreDataEntry::EmoteSmile(int duration_ms) const
+	{
+		RE::BSFaceGenAnimationData* fData = get()->As<RE::Actor>()->GetFaceGenAnimationData();
+
+		if (fData && !fData->exprOverride) {
+			flog::info("Smiling");
+			fData->SetExpressionOverride(2, 1.0f);
+			//fData->expressionKeyFrame.SetValue(16, 1.0f);
+			fData->exprOverride = true;
+			//fData->phenomeKeyFrame.SetValue(0, 1.0f);
+			//fData->phenomeKeyFrame.SetValue(1, 1.0f);
+			RE::ActorHandle myHandle = get()->As<RE::Actor>()->GetHandle();
+
+			auto t = std::thread([myHandle, duration_ms]() {
+				std::this_thread::sleep_for(std::chrono::milliseconds{ duration_ms });
+				SKSE::GetTaskInterface()->AddTask([myHandle]() {
+					if (myHandle) {
+						myHandle.get()->GetFaceGenAnimationData()->ClearExpressionOverride();
+						myHandle.get()->GetFaceGenAnimationData()->exprOverride = false;
+					}
+				});
+			});
+			t.detach();
 		}
 	}
 
@@ -569,57 +1020,63 @@ namespace Vore
 		return true;
 	}
 
+	VoreDataEntry* VoreData::IsValidGet(RE::FormID character)
+	{
+		auto it{ VoreData::Data.find(character) };
+		if (it != std::end(VoreData::Data)) {
+			return &(it->second);
+		} else {
+			return nullptr;
+		}
+	}
+
 	bool VoreData::IsPred(RE::FormID character, bool onlyActive)
 	{
-		if (!IsValid(character)) {
-			return false;
-		}
-		uint8_t flag = 0;
-		flag += !Data[character].prey.empty();
-		if (onlyActive) {
-			return flag;
-		}
-
-		flag += Data[character].pdFat > 0;
-		flag += Data[character].pdFatgrowth > 0;
-		flag += Data[character].pdSizegrowth > 0;
-
-		for (auto& el : Data[character].pdGrowthLocus) {
-			if (el > 0) {
-				flag++;
-				break;
+		if (VoreDataEntry* characterData = VoreData::IsValidGet(character)) {
+			uint8_t flag = 0;
+			flag += !characterData->prey.empty();
+			if (onlyActive) {
+				return flag;
 			}
-		}
-		if (flag > 0) {
-			return true;
+
+			flag += characterData->pdFat > 0;
+			flag += characterData->pdFatgrowth > 0;
+			flag += characterData->pdSizegrowth > 0;
+
+			for (auto& el : characterData->pdGrowthLocus) {
+				if (el > 0) {
+					flag++;
+					break;
+				}
+			}
+			if (flag > 0) {
+				return true;
+			}
 		}
 		return false;
 	}
 
 	bool VoreData::IsPrey(RE::FormID character)
 	{
-		if (!IsValid(character)) {
-			return false;
+		if (VoreDataEntry* characterData = VoreData::IsValidGet(character)) {
+			if (VoreDataEntry* predData = VoreData::IsValidGet(characterData->pred)) {
+				if (!predData->prey.contains(character)) {
+					flog::trace("Link between prey {} and pred {} is broken!", Name::GetName(character), Name::GetName(characterData->pred));
+					return false;
+				}
+				if (characterData->pyDigestion == VoreState::hNone) {
+					flog::warn("No digestion type for {}!", Name::GetName(character));
+					return false;
+				} else if (characterData->pyLocus >= Locus::NUMOFLOCI) {
+					flog::warn("Wrong locus for {}!", Name::GetName(character));
+					return false;
+				}
+				return true;
+			}
 		}
-
-		auto& pred = Data[character].pred;
-		if (!IsValid(pred)) {
-			return false;
-		}
-		if (!Data[pred].prey.contains(character)) {
-			flog::trace("Link between prey {} and pred {} is broken!", Name::GetName(character), Name::GetName(pred));
-			return false;
-		}
-
-		if (Data[character].pyDigestion == VoreState::hNone) {
-			flog::warn("No digestion type for {}!", Name::GetName(character));
-			return false;
-		} else if (Data[character].pyLocus >= Locus::NUMOFLOCI) {
-			flog::warn("Wrong locus for {}!", Name::GetName(character));
-			return false;
-		}
-		return true;
+		return false;
 	}
+
 
 	/// <summary>
 	/// calculates the size and weight of a prey, including all the preys inside them
@@ -630,8 +1087,8 @@ namespace Vore
 		double digestionMod = std::max(1 - this->pyDigestProgress / 100.0, 0.2);
 		size += this->aSize * digestionMod;
 		for (const RE::FormID& p : this->prey) {
-			if (VoreData::IsValid(p)) {
-				VoreData::Data[p].GetSize(size);
+			if (VoreDataEntry* pData = VoreData::IsValidGet(p)) {
+				pData->GetSize(size);
 			}
 		}
 	}
@@ -654,7 +1111,11 @@ namespace Vore
 				//character->ref
 				value.aIsPlayer = asActor->IsPlayerRef();
 				value.aAlive = !(asActor->IsDead());
-				value.aSex = asActor->GetActorBase()->GetSex();
+				if (target->IsHumanoid()) {
+					value.aSex = asActor->GetActorBase()->GetSex();
+				} else {
+					value.aSex = RE::SEX::kNone;
+				}
 				value.aEssential = asActor->IsEssential();
 				value.aProtected = asActor->IsProtected();
 
@@ -715,6 +1176,7 @@ namespace Vore
 
 			Data[character].pdGoal.fill(0.0f);
 			Data[character].pdStruggleGoal.fill(0.0f);
+			Data[character].ClearAllUpdates();
 			VoreGlobals::delete_queue.insert(character);
 		}
 	}
@@ -729,6 +1191,7 @@ namespace Vore
 			flog::trace("HARD Deleting character {}", Name::GetName(character));
 			Data[character].pdGoal.fill(0.0f);
 			Data[character].pdStruggleGoal.fill(0.0f);
+			Data[character].ClearAllUpdates();
 			VoreGlobals::delete_queue.insert(character);
 		}
 	}
@@ -754,7 +1217,7 @@ namespace Vore
 				val.CalcSlow();
 			}
 			if (IsPred(key, false)) {
-				val.PredU = &VoreDataEntry::PredSlow;
+				val.SetPredUpdate(true);
 				val.UpdatePredScale();
 			}
 			if (val.get() && val.get()->Is3DLoaded()) {

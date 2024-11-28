@@ -47,6 +47,12 @@ namespace Vore
 		static inline float size_softcap = 700.0f;
 		static inline float size_softcap_power = 0.45f;
 
+		// sound
+		static inline bool enable_sound = true;
+		static inline bool play_scream = false;
+		static inline float burp_rate = 0.5f;
+		static inline float gurgle_rate = 0.5f;
+
 		//static inline double digestion_amount_base = 0.03;
 		static inline double digestion_amount_base = 1.0;
 		static inline double struggle_amount = 5;
@@ -277,6 +283,7 @@ namespace Vore
 			{ "UndeadDragonRace", "VoreSkeletonDragon" }
 		};
 	};
+
 
 	class PlayerPrefs
 	{
