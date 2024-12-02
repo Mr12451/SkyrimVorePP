@@ -11,6 +11,19 @@ namespace
 
 namespace Vore
 {
+	class PapyrusAPI
+	{
+	public:
+		static void TalkToPred();
+		static void TalkToPrey();
+		static void TalkToActor();
+		static void Swallow();
+		static void Regurgitate();
+		static void RegurgitateAll();
+		static void Register();
+	};
+
+
 	inline RE::VMHandle GetHandle(RE::TESForm* a_form)
 	{
 		auto vm = VM::GetSingleton();

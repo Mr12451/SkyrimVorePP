@@ -34,6 +34,7 @@ namespace Vore
 		void SetAlpha(RE::Actor* actor, float alpha, bool fade);
 		void StopCombat(RE::Actor* actor);
 		void StopCombatAlarm(RE::Actor* actor);
+		bool IsInDialogueWithPlayer(RE::Actor* actor);
 	}
 	namespace Name
 	{

@@ -6,6 +6,7 @@
 #include "headers/voredata.h"
 #include "headers/voremain.h"
 #include "headers/vutils.h"
+#include "headers/dialogue.h"
 
 namespace Vore::UI
 {
@@ -453,11 +454,6 @@ namespace Vore::UI
 		}
 	}
 
-	void VoreMenu::TalkToA(RE::Actor* character)
-	{
-		character->InitiateDialogue(RE::PlayerCharacter::GetSingleton(), nullptr, nullptr);
-	}
-
 	void VoreMenu::DoMenuAction(MenuAction action)
 	{
 		if (!_exists || _menuMode == kNone || _menuMode == kDefault) {
@@ -531,7 +527,7 @@ namespace Vore::UI
 				case InfoMode::kPred:
 					switch (action) {
 					case (MenuAction::kMenuA1):
-						TalkToA(_infoTarget.get().get()->As<RE::Actor>());
+						Dialogue::TalkToA(_infoTarget.get().get()->As<RE::Actor>());
 						SetMenuMode(kDefault);
 						break;
 					case (MenuAction::kMenuA2):
@@ -553,7 +549,7 @@ namespace Vore::UI
 					case (MenuAction::kMenuA1):
 						if (VoreDataEntry* preyData = VoreData::IsValidGet(_infoTarget.get().get()->GetFormID())) {
 							if (preyData->aAlive) {
-								TalkToA(preyData->get()->As<RE::Actor>());
+								Dialogue::TalkToA(preyData->get()->As<RE::Actor>());
 								SetMenuMode(kDefault);
 							}
 						}
@@ -594,7 +590,7 @@ namespace Vore::UI
 					case (MenuAction::kMenuA1):
 						if (VoreDataEntry* preyData = VoreData::IsValidGet(_infoTarget.get().get()->GetFormID())) {
 							if (preyData->aAlive) {
-								TalkToA(preyData->get()->As<RE::Actor>());
+								Dialogue::TalkToA(preyData->get()->As<RE::Actor>());
 								SetMenuMode(kDefault);
 							}
 						}

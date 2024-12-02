@@ -50,8 +50,8 @@ namespace Vore
 		// sound
 		static inline bool enable_sound = true;
 		static inline bool play_scream = false;
-		static inline float burp_rate = 0.5f;
-		static inline float gurgle_rate = 0.5f;
+		static inline float burp_rate = 0.2f;
+		static inline float gurgle_rate = 0.2f;
 
 		//static inline double digestion_amount_base = 0.03;
 		static inline double digestion_amount_base = 1.0;

@@ -30,6 +30,24 @@ namespace Vore::Core
 		return VoreState::sStill;
 	}
 
+	void HidePrey(RE::Actor* target)
+	{
+		Funcs::StopCombatAlarm(target);
+		Funcs::StopCombat(target);
+		Funcs::SetAlpha(target, 0.0f, false);
+		Funcs::SetGhost(target, true);
+		Funcs::SetAlpha(target, 0.0f, false);
+		Funcs::SetRestrained(target, true);
+	}
+
+	void UnhidePrey(RE::Actor* target)
+	{
+		Funcs::SetAlpha(target, 1.0f, false);
+		Funcs::SetGhost(target, false);
+		Funcs::SetAlpha(target, 1.0f, false);
+		Funcs::SetRestrained(target, false);
+	}
+
 	void SwitchToDigestion(const RE::FormID& pred, const Locus& locus, const VoreState& dType, const bool& forceStopDigestion)
 	{
 		if (!VoreData::IsValid(pred)) {
@@ -126,38 +144,30 @@ namespace Vore::Core
 		}
 	}
 
-	static void SetPreyVisibility(RE::TESObjectREFR* preyObj, RE::Actor* pred, bool show, bool digested, double preySize)
+	void SetPreyVisibility(RE::TESObjectREFR* preyObj, RE::Actor* pred, bool show, VoreDataEntry* preyData)
 	{
 		if (preyObj->GetFormType() == RE::FormType::ActorCharacter) {
 			RE::Actor* prey = preyObj->As<RE::Actor>();
 
 			if (!show) {
-				Funcs::StopCombatAlarm(prey);
-				Funcs::StopCombat(prey);
 				//RE::TESObjectCELL* stomachCell = RE::TESForm::LookupByEditorID("QASmoke")->As<RE::TESObjectCELL>();
 				RE::TESObjectREFR* stomachCell = RE::TESForm::LookupByEditorID<RE::TESObjectREFR>("BellyAMarker");
 				//flog::critical("FOUND CELL MARKER {}", (int)stomachCell);
 				// test: can you move dead actors?
 				prey->MoveTo(stomachCell);
+				
+				HidePrey(prey);
 
-				Funcs::SetAlpha(prey, 0.0f, false);
-				Funcs::SetGhost(prey, true);
-				Funcs::SetAlpha(prey, 0.0f, false);
-				Funcs::SetRestrained(prey, true);
-
-				if (!prey->IsPlayerRef()) {
+				/*if (!prey->IsPlayerRef()) {
 					prey->EnableAI(false);
-				}
+				}*/
 			} else {
-				Funcs::SetAlpha(prey, 1.0f, false);
-				Funcs::SetGhost(prey, false);
-				Funcs::SetAlpha(prey, 1.0f, false);
-				Funcs::SetRestrained(prey, false);
+				UnhidePrey(prey);
 
-				if (!prey->IsPlayerRef()) {
+				/*if (!prey->IsPlayerRef()) {
 					prey->EnableAI(true);
-				}
-				if (digested) {
+				}*/
+				if (preyData && preyData->pyDigestProgress >= 100.0) {
 					RE::TESObjectREFR* stomachDeadCell = RE::TESForm::LookupByEditorID<RE::TESObjectREFR>("BellyDMarker");
 					prey->MoveTo(stomachDeadCell);
 					// make remains
@@ -188,7 +198,7 @@ namespace Vore::Core
 					AV::DamageAV(bones, RE::ActorValue::kHealth, AV::GetAV(bones, RE::ActorValue::kHealth));
 					bones->KillImpl(nullptr, (float)AV::GetAV(bones, RE::ActorValue::kHealth), true, true);
 					auto items = prey->GetInventory();
-					bones->SetSize(static_cast<float>(preySize / VoreGlobals::slider_one));
+					bones->SetSize(static_cast<float>(preyData->aSize / VoreGlobals::slider_one));
 					for (auto& [i, j] : items) {
 						prey->RemoveItem(i, j.first, RE::ITEM_REMOVE_REASON::kStoreInContainer, nullptr, bones);
 					}
@@ -205,7 +215,7 @@ namespace Vore::Core
 				RE::TESObjectREFR* stomachCell = RE::TESForm::LookupByEditorID<RE::TESObjectREFR>("BellyIMarker");
 				preyObj->MoveTo(stomachCell);
 			} else {
-				if (digested) {
+				if (preyData && preyData->pyDigestProgress >= 100.0) {
 					uint32_t refCound = preyObj->QRefCount();
 
 					flog::info("Ref cound {}", refCound);
@@ -268,7 +278,7 @@ namespace Vore::Core
 						Regurgitate(VoreData::Data[oldPred].get()->As<RE::Actor>(), preyId, RegType::rTransfer);
 					}
 				} else {
-					SetPreyVisibility(preyA, pred, false, false, preyData.aSize);
+					SetPreyVisibility(preyA, pred, false, &preyData);
 				}
 
 				// don't delete a prey if we're planning on using them
@@ -314,7 +324,7 @@ namespace Vore::Core
 							Regurgitate(VoreData::Data[oldPred].get()->As<RE::Actor>(), preyId, RegType::rTransfer);
 						}
 					} else {
-						SetPreyVisibility(prey, pred, false, false, preyData.aSize);
+						SetPreyVisibility(prey, pred, false, &preyData);
 					}
 					//auto* scForm = RE::TESForm::LookupByEditorID<RE::TESObjectCONT>("StomachContainer");
 					//auto* scPtr = pred->PlaceObjectAtMe(scForm, false).get();
@@ -374,6 +384,7 @@ namespace Vore::Core
 				predData.UpdateSliderGoals();
 				predData.PlayStomachSounds();
 			}
+			predData.SetPredUpdate(true);
 		} else {
 			flog::warn("No prey were swallowed");
 		}
@@ -511,7 +522,7 @@ namespace Vore::Core
 		}
 		// regurgitation
 		for (auto& [prey, pData] : preysToDelete) {
-			SetPreyVisibility(prey, pred, true, pData->pyDigestProgress == 100, pData->aSize);
+			SetPreyVisibility(prey, pred, true, pData);
 			pData->pyDigestProgress = 0;
 		}
 

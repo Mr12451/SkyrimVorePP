@@ -37,7 +37,6 @@ namespace Vore::UI
 		void SetText(std::string_view text);
 		static void Update();
 		static void SetMenuMode(VoreMenuMode mode, bool ignoreInfoCrosshair = false);
-		static void TalkToA(RE::Actor* character);
 		static void DoMenuAction(MenuAction action);
 
 		static RE::stl::owner<RE::IMenu*> Creator()

@@ -203,6 +203,15 @@ namespace Vore::Funcs
 	{
 		CallFunctionOn(actor, "Actor", "StopCombatAlarm");
 	}
+	bool IsInDialogueWithPlayer(RE::Actor* actor)
+	{
+		if (actor->GetHighProcess() && actor->GetHighProcess()->talkingToPC) {
+			return true;
+		}
+		//isInDialogue.head->data.runOnRef = actor->GetHandle();
+
+		return false;
+	}
 }
 
 namespace Vore::Name

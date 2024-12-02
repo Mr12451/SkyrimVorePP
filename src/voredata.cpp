@@ -52,7 +52,7 @@ namespace Vore
 
 	void VoreDataEntry::HandleDamage(const double& delta, RE::Actor* asActor, VoreDataEntry* predData)
 	{
-		predData->SetPredUpdate(true);
+		//predData->SetPredUpdate(true);
 		if (delta > 10 && pyStruggle != sStill) {
 			//can the prey struggle out while he lives
 			//this is not entirely accurate because it doesn't account for the struggles of other prey,
@@ -373,7 +373,7 @@ namespace Vore
 				predData->pdUpdateStruggleGoal = true;
 			}
 			predData->SetBellyUpdate(true);
-			predData->SetPredUpdate(true);
+			//predData->SetPredUpdate(true);
 			if (aSex != RE::SEX::kNone) {
 				predData->pdStrugglePreySex = aSex;
 			}
@@ -408,7 +408,7 @@ namespace Vore
 	{
 		RE::Actor* asActor = get()->As<RE::Actor>();
 		if (VoreDataEntry* predData = VoreData::IsValidGet(pred)) {
-			predData->SetPredUpdate(true);
+			//predData->SetPredUpdate(true);
 			AV::DamageAV(asActor, RE::ActorValue::kHealth, -VoreSettings::acid_damage * delta);
 		}
 	}
@@ -417,7 +417,7 @@ namespace Vore
 	{
 		RE::Actor* asActor = get()->As<RE::Actor>();
 		if (VoreDataEntry* predData = VoreData::IsValidGet(pred)) {
-			predData->SetPredUpdate(true);
+			//predData->SetPredUpdate(true);
 			AV::DamageAV(asActor, RE::ActorValue::kHealth, -VoreSettings::acid_damage * delta);
 			Struggle(delta, asActor, predData);
 		}
@@ -428,6 +428,38 @@ namespace Vore
 		RE::Actor* asActor = get()->As<RE::Actor>();
 		if (VoreDataEntry* predData = VoreData::IsValidGet(pred)) {
 			Struggle(delta, asActor, predData);
+		}
+	}
+
+	void VoreDataEntry::FastDialogue(const double& delta)
+	{
+		switch (aDialogue) {
+
+		case VoreDataEntry::kWaiting:
+			aDialogueTimeout += delta;
+			if (aDialogueTimeout > 2.0) {
+				flog::info("failed to start dialogue");
+				get()->As<RE::Actor>()->EndDialogue();
+				aDialogue = kNone;
+				FastDialogue(delta);
+			}
+			break;
+		case VoreDataEntry::kDialogue:
+			if (!Funcs::IsInDialogueWithPlayer(get()->As<RE::Actor>())) {
+				aDialogue = kNone;
+				FastDialogue(delta);
+			}
+			break;
+		default:
+			flog::info("Dialogue ended. Hiding prey");
+			if (pred) {
+				Core::SetPreyVisibility(get(), VoreData::IsValidGet(pred)->get()->As<RE::Actor>(), false, this);
+			}
+			CalcFast();
+			if (FastU) {
+				(this->*FastU)(delta);
+			}
+			break;
 		}
 	}
 
@@ -536,6 +568,10 @@ namespace Vore
 	void VoreDataEntry::CalcFast(bool forceStop)
 	{
 		//calculate next state
+		if (aDialogue != kNone) {
+			FastU = &VoreDataEntry::FastDialogue;
+			return;
+		}
 		if (!pred || forceStop) {
 			FastU = nullptr;
 			return;
@@ -846,10 +882,14 @@ namespace Vore
 
 		float burpBurden = pdGoal[0] + pdGoal[1] / 3.0f;
 		burpBurden *= VoreSettings::burp_rate;
+		if (pdHasDigestion) {
+			burpBurden *= 3.0f;
+		}
 		if (Math::randfloat(0.0f, 100.0f) <= burpBurden) {
 			RE::BSFaceGenAnimationData* fData = get()->As<RE::Actor>()->GetFaceGenAnimationData();
-
+			//flog::trace("Burp");
 			if (fData && !fData->exprOverride) {
+				//flog::trace("Burp1");
 				PlaySound(Sounds::Burp);
 				fData->SetExpressionOverride(16, 1.0f);
 				//fData->expressionKeyFrame.SetValue(16, 1.0f);
@@ -880,6 +920,9 @@ namespace Vore
 
 		float gurgleBurden = pdGoal[1] + pdGoal[0] / 3.0f;
 		gurgleBurden *= VoreSettings::gurgle_rate;
+		if (pdHasDigestion) {
+			gurgleBurden *= 2.0f;
+		}
 		if (Math::randfloat(0.0f, 100.0f) <= gurgleBurden) {
 			//flog::info("playing gurgle");
 			PlaySound(Sounds::Gurgle);
@@ -978,7 +1021,6 @@ namespace Vore
 		soundHandles.struggleHandle.FadeOutAndRelease(1000);
 	}
 
-	
 	void VoreDataEntry::EmoteSmile(int duration_ms) const
 	{
 		RE::BSFaceGenAnimationData* fData = get()->As<RE::Actor>()->GetFaceGenAnimationData();
@@ -1076,7 +1118,6 @@ namespace Vore
 		}
 		return false;
 	}
-
 
 	/// <summary>
 	/// calculates the size and weight of a prey, including all the preys inside them

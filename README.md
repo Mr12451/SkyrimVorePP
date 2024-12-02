@@ -27,7 +27,7 @@ However, you can build it from source yourself.
 * build
 * run game
 
-### Bugs
+## Bugs
 #### Sliders freeze/stop changing
 This happens with certain sliders, like SSBBW3 body/SSBBW2 body
 Once the bug happens, all sliders, not just these, stop changing
@@ -69,12 +69,14 @@ Has sound files from Devourment in it. When loaded alongside SkyrimVore++, my mo
 * Add size gain
 * Add dragon soul on digestion (look into dragon quest)
 * Sounds (plugin)
+* Fixed Talk to prey/pred
 ### Plans
 #### Currently working on
+* Dialogue plugin
+* Player as Prey
+* Inventory (items from container) vore
 * Basic reformation
 #### For the future
-* Fix Talk to prey/pred
-* Basic dialogue
 * Basic Animations
 * Basic VFX
 * Limit WG to certain NPC categories
