@@ -6,6 +6,7 @@
 #include "headers/ui.h"
 #include "headers/voremain.h"
 #include "headers/vutils.h"
+#include "headers/dialogue.h"
 
 #include <chrono>
 //#include <future>
@@ -20,10 +21,15 @@ namespace Vore
 		pyDigestProgress = 0.0;
 		pyElimLocus = pyLocus;
 		pyLocusMovement = mStill;
+		CalcFast();
 		CalcSlow();
 
 		if (VoreDataEntry* predData = VoreData::IsValidGet(pred)) {
 			predData->EmoteSmile(5000);
+		}
+		if (aIsPlayer) {
+			Dialogue::PlayerDied();
+			Core::SwitchToDigestion(pred, pyLocus, VoreState::hSafe, false);
 		}
 	}
 
@@ -71,8 +77,10 @@ namespace Vore
 		double acidMulti = predData->pdAcid[pyLocus] / 100.0;
 		if (AV::GetAV(asActor, RE::ActorValue::kHealth) - VoreSettings::acid_damage * delta <= 0) {
 			// LATER implement entrapment for essential/protected instead of regurgitation NPCs
-
-			if (asActor->IsEssential()) {
+			if (aIsPlayer) {
+				HandlePreyDeathImmidiate();
+			}
+			else if (asActor->IsEssential()) {
 				if (VoreSettings::digest_essential) {
 					//asActor->boolFlags = (unsigned int)(asActor->boolFlags) & ~(unsigned int)RE::Actor::BOOL_FLAGS::kEssential;
 					asActor->GetActorBase()->actorData.actorBaseFlags.reset(RE::ACTOR_BASE_DATA::Flag::kEssential);
@@ -431,38 +439,6 @@ namespace Vore
 		}
 	}
 
-	void VoreDataEntry::FastDialogue(const double& delta)
-	{
-		switch (aDialogue) {
-
-		case VoreDataEntry::kWaiting:
-			aDialogueTimeout += delta;
-			if (aDialogueTimeout > 2.0) {
-				flog::info("failed to start dialogue");
-				get()->As<RE::Actor>()->EndDialogue();
-				aDialogue = kNone;
-				FastDialogue(delta);
-			}
-			break;
-		case VoreDataEntry::kDialogue:
-			if (!Funcs::IsInDialogueWithPlayer(get()->As<RE::Actor>())) {
-				aDialogue = kNone;
-				FastDialogue(delta);
-			}
-			break;
-		default:
-			flog::info("Dialogue ended. Hiding prey");
-			if (pred) {
-				Core::SetPreyVisibility(get(), VoreData::IsValidGet(pred)->get()->As<RE::Actor>(), false, this);
-			}
-			CalcFast();
-			if (FastU) {
-				(this->*FastU)(delta);
-			}
-			break;
-		}
-	}
-
 	void VoreDataEntry::Swallow(const double& delta)
 	{
 		VoreDataEntry* predData = VoreData::IsValidGet(pred);
@@ -568,8 +544,8 @@ namespace Vore
 	void VoreDataEntry::CalcFast(bool forceStop)
 	{
 		//calculate next state
-		if (aDialogue != kNone) {
-			FastU = &VoreDataEntry::FastDialogue;
+		if (aDialogue) {
+			FastU = nullptr;
 			return;
 		}
 		if (!pred || forceStop) {
@@ -758,14 +734,14 @@ namespace Vore
 				pdGoal[LocusSliders::uBowel] += static_cast<float>(preySize * (1 - preyData->pyLocusProcess / 100.0));
 				pdGoal[LocusSliders::uStomach] += static_cast<float>(preySize * preyData->pyLocusProcess / 100.0);
 				break;
+			case Locus::lWomb:
+				pdGoal[LocusSliders::uWomb] += static_cast<float>(preySize);
+				break;
 			case Locus::lBreastl:
 				pdGoal[LocusSliders::uBreastl] += static_cast<float>(preySize);
 				break;
 			case Locus::lBreastr:
 				pdGoal[LocusSliders::uBreastr] += static_cast<float>(preySize);
-				break;
-			case Locus::lWomb:
-				pdGoal[LocusSliders::uWomb] += static_cast<float>(preySize);
 				break;
 			// for swallowing cv
 			case Locus::lBalls:

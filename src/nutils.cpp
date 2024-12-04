@@ -85,6 +85,43 @@ RE::TESObjectREFR* Vore::Utils::GetCrosshairObject()
 	return crosshairPick->target.get().get();
 }
 
+	/*
+	if pred == playerRef
+		return prey.getRelationshipRank(pred) > 0 \
+		|| prey.IsPlayerTeammate() \
+		|| prey.IsPlayersLastRiddenHorse()
+	elseif prey == playerRef
+		return pred.getRelationshipRank(prey) > 0 \
+		|| prey.IsPlayerTeammate() \
+		|| pred.IsPlayersLastRiddenHorse()
+	else
+		return prey.getRelationshipRank(pred) > 0
+	endIf
+	*/
+
+bool Vore::Utils::AreFriends(RE::Actor* a_first, RE::Actor* a_second)
+{
+	if (a_first == a_second) {
+		return true;
+	}
+	if (a_first->IsPlayerRef()) {
+		RE::BGSRelationship* rel = RE::BGSRelationship::GetRelationship(a_second->GetActorBase(), a_first->GetActorBase());
+		RE::BGSRelationship::RELATIONSHIP_LEVEL relLevel = rel->level.get();
+		flog::info("REL LEVEL {}", (int)relLevel);
+		return a_second->IsPlayerTeammate() || relLevel < RE::BGSRelationship::RELATIONSHIP_LEVEL::kAcquaintance;
+	} else if (a_second->IsPlayerRef()) {
+		RE::BGSRelationship* rel = RE::BGSRelationship::GetRelationship(a_first->GetActorBase(), a_second->GetActorBase());
+		RE::BGSRelationship::RELATIONSHIP_LEVEL relLevel = rel->level.get();
+		flog::info("REL LEVEL {}", (int)relLevel);
+		return a_first->IsPlayerTeammate() || relLevel < RE::BGSRelationship::RELATIONSHIP_LEVEL::kAcquaintance;
+	} else {
+		RE::BGSRelationship* rel = RE::BGSRelationship::GetRelationship(a_second->GetActorBase(), a_first->GetActorBase());
+		RE::BGSRelationship::RELATIONSHIP_LEVEL relLevel = rel->level.get();
+		flog::info("REL LEVEL {}", (int)relLevel);
+		return relLevel < RE::BGSRelationship::RELATIONSHIP_LEVEL::kAcquaintance;
+	}
+}
+
 namespace Vore::AV
 {
 	double GetMaxAV(Actor* actor, ActorValue av)
@@ -211,6 +248,47 @@ namespace Vore::Funcs
 		//isInDialogue.head->data.runOnRef = actor->GetHandle();
 
 		return false;
+	}
+	void ForceQuestAlias(RE::TESQuest* quest, std::string_view alias, RE::Actor* target)
+	{
+		if (!quest) {
+			return;
+		}
+
+		uint32_t aliasId = 0;
+
+		for (auto el : quest->aliases) {
+			if (el->aliasName == alias) {
+
+				aliasId = el->aliasID;
+				flog::info("Found alias {}", el->aliasName.c_str());
+				break;
+			}
+		}
+
+		if (target) {
+
+			using DefForceAlias = uint32_t (RE::TESQuest::*)(uint32_t aliasId, TESObjectREFR * reference);
+			// id for SE is probably wrong!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			static REL::Relocation<DefForceAlias> func{ RELOCATION_ID(24523, 25052) };
+			uint32_t res = func(quest, aliasId, target);
+			flog::info("res {}", res);
+		} else {
+			using DefClearAlias = void (RE::TESQuest::*)(uint32_t aliasId);
+			// id for SE is probably wrong!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			static REL::Relocation<DefClearAlias> func{ RELOCATION_ID(24521, 25050) };
+			func(quest, aliasId);
+			flog::info("clearing alias");
+		}
+
+		for (auto el : quest->aliases) {
+			if (el->aliasName == alias) {
+				RE::BGSRefAlias* elRef = skyrim_cast<RE::BGSRefAlias*>(el);
+				flog::info("Alias refr {}", Name::GetName(elRef->GetReference()));
+				break;
+			}
+		}
+
 	}
 }
 

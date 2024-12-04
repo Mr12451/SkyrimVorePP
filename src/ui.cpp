@@ -302,7 +302,7 @@ namespace Vore::UI
 								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_2);
 								text += "]";
 							}
-							if (Core::CanBeRegurgitated(*actorData)) {
+							if (Core::CanBeRegurgitated(actorData)) {
 								text += "\nRelease [";
 								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_3);
 								_iAllowReg = true;

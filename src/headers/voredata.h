@@ -5,13 +5,14 @@ namespace Vore
 
 	constexpr int struggle_sliders_per_locus = 5;
 
+	// same order as in devourment for compatibility 
 	enum Locus : uint8_t
 	{
 		lStomach,
 		lBowel,
+		lWomb,
 		lBreastl,
 		lBreastr,
-		lWomb,
 		lBalls,
 
 		NUMOFLOCI,
@@ -128,16 +129,9 @@ namespace Vore
 		// used for scaling sliders for big sizes
 		float aSizeScale = 0;
 
-		enum DialogueState : uint8_t
-		{
-			kNone,
-			kWaiting,
-			kDialogue,
-			kFail
-		};
 
-		DialogueState aDialogue = kNone;
-		double aDialogueTimeout = 0.0;
+
+		bool aDialogue = false;
 		//pred stats
 		//temp wg
 		double pdFat = 0;
@@ -257,7 +251,6 @@ namespace Vore
 		void FastHealW(const double& delta);
 		void FastHealU(const double& delta);
 		void FastEndoU(const double& delta);
-		void FastDialogue(const double& delta);
 		void Swallow(const double& delta);
 		void PredSlow(const double& delta);
 	};

@@ -10,6 +10,8 @@ namespace Vore
 		std::vector<RE::TESObjectREFR*> GetFrontObjects(RE::Actor* source, size_t maxActors);
 
 		RE::TESObjectREFR* GetCrosshairObject();
+
+		bool AreFriends(RE::Actor* a_first, RE::Actor* a_second);
 	}
 	namespace AV
 	{
@@ -35,6 +37,7 @@ namespace Vore
 		void StopCombat(RE::Actor* actor);
 		void StopCombatAlarm(RE::Actor* actor);
 		bool IsInDialogueWithPlayer(RE::Actor* actor);
+		void ForceQuestAlias(RE::TESQuest* quest, std::string_view alias, RE::Actor* target);
 	}
 	namespace Name
 	{

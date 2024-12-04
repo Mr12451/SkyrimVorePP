@@ -7,6 +7,8 @@
 #include "headers/settings.h"
 #include "headers/ui.h"
 #include "headers/sounds.h"
+#include "headers/dialogue.h"
+#include "headers/papyrusUtil.h"
 
 const SKSE::MessagingInterface* g_messaging;
 
@@ -78,6 +80,8 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 		InitializeEvents();
 		Vore::UI::VoreMenu::Register();
 		Vore::Sounds::InitSounds();
+		Vore::Dialogue::CheckPlugin();
+		Vore::PapyrusAPI::Register();
 		break;
 	}
 }

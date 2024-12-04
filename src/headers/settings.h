@@ -92,28 +92,6 @@ namespace Vore
 		//max slider step per second
 		static inline float slider_maxstep = 150.0f;
 
-		/*
-		uStomach,
-		uThroat,
-		uBowel,
-		uBreastl,
-		uBreastr,
-		uWomb,
-		uCock,
-		uBalls,
-
-		uFatBelly,
-		uFatAss,
-		uFatBreasts,
-		uFatCock,
-
-		uFatLow,
-		uFatHigh,
-		uGrowthLow,
-		uGrowthHigh,
-
-		NUMOFSLIDERS
-		*/
 
 		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		//
@@ -318,12 +296,12 @@ namespace Vore
 				return "Oral";
 			case Locus::lBowel:
 				return "Anal";
+			case Locus::lWomb:
+				return "Unbirth";
 			case Locus::lBreastl:
 				return "Breast L";
 			case Locus::lBreastr:
 				return "Breast R";
-			case Locus::lWomb:
-				return "Unbirth";
 			case Locus::lBalls:
 				return "Cock";
 			case Locus::lNone:
@@ -383,10 +361,19 @@ namespace Vore
 			case Locus::lStomach:
 				return Locus::lBowel;
 			case Locus::lBowel:
+				if (hasV())
+					return Locus::lWomb;
+				else if (hasB())
+					return Locus::lBreastl;
+				else if (hasC())
+					return Locus::lBalls;
+				else if (allowAll)
+					return Locus::lNone;
+				else
+					return Locus::lStomach;
+			case Locus::lWomb:
 				if (hasB())
 					return Locus::lBreastl;
-				else if (hasV())
-					return Locus::lWomb;
 				else if (hasC())
 					return Locus::lBalls;
 				else if (allowAll)
@@ -396,8 +383,6 @@ namespace Vore
 			case Locus::lBreastl:
 				if (VoreSettings::dual_boobs)
 					return Locus::lBreastr;
-				else if (hasV())
-					return Locus::lWomb;
 				else if (hasC())
 					return Locus::lBalls;
 				else if (allowAll)
@@ -405,15 +390,6 @@ namespace Vore
 				else
 					return Locus::lStomach;
 			case Locus::lBreastr:
-				if (hasV())
-					return Locus::lWomb;
-				else if (hasC())
-					return Locus::lBalls;
-				else if (allowAll)
-					return Locus::lNone;
-				else
-					return Locus::lStomach;
-			case Locus::lWomb:
 				if (hasC())
 					return Locus::lBalls;
 				else if (allowAll)

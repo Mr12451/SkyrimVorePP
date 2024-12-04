@@ -82,6 +82,9 @@ namespace Vore
 					UI::VoreMenu::SetMenuMode(UI::VoreMenuMode::kSwallow);
 				} else if (keyCode == VoreSettings::k_test) {
 					Log::PrintVoreData();
+					for (auto& i : RE::PlayerCharacter::GetSingleton()->addedSpells) {
+						flog::info("found spell {}", i->GetFullName());
+					}
 				}
 
 				break;
