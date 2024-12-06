@@ -14,12 +14,33 @@ namespace Vore
 	class PapyrusAPI
 	{
 	public:
-		static void TalkToPred();
-		static void TalkToPrey();
-		static void TalkToActor();
-		static void Swallow();
-		static void Regurgitate();
-		static void RegurgitateAll();
+		//dialogue
+		static void TalkToPred(RE::StaticFunctionTag*);
+		static void TalkToPrey(RE::StaticFunctionTag*);
+		static void TalkToActor(RE::StaticFunctionTag*, RE::Actor* aToTalk);
+		//main controls
+		static void Swallow(RE::StaticFunctionTag*, RE::Actor* pred, RE::TESObjectREFR* prey, float locus, float digestionType, bool fullSwallow);
+		static void Regurgitate(RE::StaticFunctionTag*, RE::Actor* pred, RE::TESObjectREFR* prey);
+		static void RegurgitateAll(RE::StaticFunctionTag*, RE::Actor* pred, float locus);
+		// vore state
+		static void Consent(RE::StaticFunctionTag*, RE::Actor* pred, RE::TESObjectREFR* prey, bool willing, bool lethal);
+		static void DisableEscape(RE::StaticFunctionTag*, RE::TESObjectREFR* target);
+		static void SwitchTo(RE::StaticFunctionTag*, RE::TESObjectREFR* target, float digestionType);
+		static void SwitchPredTo(RE::StaticFunctionTag*, RE::Actor* target, float digestionType, bool forceNoEscape);
+		static void SetPredControl(RE::StaticFunctionTag*, bool allowControl);
+		static void KillPrey(RE::StaticFunctionTag*, RE::Actor* prey);
+		static void PlanReformation(RE::StaticFunctionTag*, RE::Actor* prey);
+
+		//utils
+		static void Strip(RE::StaticFunctionTag*, RE::Actor* target);
+		static float GetDefaultLocus(RE::StaticFunctionTag*);
+		static float GetRandomLocus(RE::StaticFunctionTag*, RE::Actor* target);
+
+
+
+		//other
+		static RE::TESObjectREFR* MakeBolus(RE::StaticFunctionTag*, RE::Actor* pred);  //placeholder
+
 		static void Register();
 	};
 

@@ -1,0 +1,2 @@
+ScriptName DevourmentPlayerAlias extends ReferenceAlias
+{}

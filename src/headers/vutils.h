@@ -15,4 +15,5 @@ namespace Vore
 	void UpdateBelly(const double& delta);
 	float GetModelScale(RE::TESObjectREFR* target);
 	void SetModelScale(RE::TESObjectREFR* target, float scale);
+	void UnequipAll(RE::Actor* target);
 }

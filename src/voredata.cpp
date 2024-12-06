@@ -14,7 +14,43 @@
 
 namespace Vore
 {
-
+	void VoreDataEntry::DigestLive()
+	{
+		if (pred && aAlive && aIsChar) {
+			RE::Actor* asActor = get()->As<RE::Actor>();
+			VoreDataEntry* predData = VoreData::IsValidGet(pred);
+			if (!predData) {
+				return;
+			}
+			if (aIsPlayer) {
+				AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth) - 5.0f);
+				HandlePreyDeathImmidiate();
+			} else if (asActor->IsEssential()) {
+				if (VoreSettings::digest_essential) {
+					//asActor->boolFlags = (unsigned int)(asActor->boolFlags) & ~(unsigned int)RE::Actor::BOOL_FLAGS::kEssential;
+					asActor->GetActorBase()->actorData.actorBaseFlags.reset(RE::ACTOR_BASE_DATA::Flag::kEssential);
+					AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth) + 1.0f);
+					//this is necessary for long deltas to work
+					HandlePreyDeathImmidiate();
+				} else {
+					Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
+				}
+			} else if (asActor->IsProtected()) {
+				if (VoreSettings::digest_protected) {
+					asActor->GetActorBase()->actorData.actorBaseFlags.reset(RE::ACTOR_BASE_DATA::Flag::kProtected);
+					AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth) + 1.0f);
+					//this is necessary for long deltas to work
+					HandlePreyDeathImmidiate();
+				} else {
+					Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
+				}
+			} else {
+				AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth) + 1.0f);
+				//asActor->KillImmediate();
+				HandlePreyDeathImmidiate();
+			}
+		}
+	}
 	void VoreDataEntry::HandlePreyDeathImmidiate()
 	{
 		aAlive = false;
@@ -59,7 +95,7 @@ namespace Vore
 	void VoreDataEntry::HandleDamage(const double& delta, RE::Actor* asActor, VoreDataEntry* predData)
 	{
 		//predData->SetPredUpdate(true);
-		if (delta > 10 && pyStruggle != sStill) {
+		if (delta > 10 && pyStruggling) {
 			//can the prey struggle out while he lives
 			//this is not entirely accurate because it doesn't account for the struggles of other prey,
 			//and acid damage increase
@@ -77,33 +113,7 @@ namespace Vore
 		double acidMulti = predData->pdAcid[pyLocus] / 100.0;
 		if (AV::GetAV(asActor, RE::ActorValue::kHealth) - VoreSettings::acid_damage * delta <= 0) {
 			// LATER implement entrapment for essential/protected instead of regurgitation NPCs
-			if (aIsPlayer) {
-				HandlePreyDeathImmidiate();
-			}
-			else if (asActor->IsEssential()) {
-				if (VoreSettings::digest_essential) {
-					//asActor->boolFlags = (unsigned int)(asActor->boolFlags) & ~(unsigned int)RE::Actor::BOOL_FLAGS::kEssential;
-					asActor->GetActorBase()->actorData.actorBaseFlags.reset(RE::ACTOR_BASE_DATA::Flag::kEssential);
-					AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth));
-					//this is necessary for long deltas to work
-					HandlePreyDeathImmidiate();
-				} else {
-					Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
-				}
-			} else if (asActor->IsProtected()) {
-				if (VoreSettings::digest_protected) {
-					asActor->GetActorBase()->actorData.actorBaseFlags.reset(RE::ACTOR_BASE_DATA::Flag::kProtected);
-					AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth));
-					//this is necessary for long deltas to work
-					HandlePreyDeathImmidiate();
-				} else {
-					Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
-				}
-			} else {
-				AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth));
-				//asActor->KillImmediate();
-				HandlePreyDeathImmidiate();
-			}
+			DigestLive();
 
 			predData->pdUpdateStruggleGoal = true;
 			return;
@@ -288,21 +298,21 @@ namespace Vore
 		if (!predData) {
 			return;
 		}
-		if (pyLocusMovement == VoreState::mIncrease) {
+		if (pyLocusMovement == VoreDataEntry::FullTour::mIncrease) {
 			pyLocusProcess += VoreSettings::locus_process_speed * delta;
-		} else if (pyLocusMovement == VoreState::mDecrease) {
+		} else if (pyLocusMovement == VoreDataEntry::FullTour::mDecrease) {
 			pyLocusProcess -= VoreSettings::locus_process_speed * delta;
 		}
-		if (pyLocusMovement != VoreState::mStill) {
+		if (pyLocusMovement != VoreDataEntry::FullTour::mStill) {
 			predData->pdUpdateGoal = true;
 		}
 		if (pyLocusProcess >= 100) {
 			pyLocusProcess = 100;
-			pyLocusMovement = VoreState::mStill;
+			pyLocusMovement = VoreDataEntry::FullTour::mStill;
 			CalcSlow();
 		} else if (pyLocusProcess <= 0) {
 			pyLocusProcess = 0;
-			pyLocusMovement = VoreState::mStill;
+			pyLocusMovement = VoreDataEntry::FullTour::mStill;
 			CalcSlow();
 		}
 	}
@@ -364,33 +374,38 @@ namespace Vore
 
 	void VoreDataEntry::Struggle(const double& delta, RE::Actor* asActor, VoreDataEntry* predData)
 	{
-		if (pyStruggle == VoreState::sStruggling) {
-			if (AV::GetAV(asActor, RE::ActorValue::kStamina) > 0) {
-				//damage prey's stamina and pred's struggle bar for this locus
-				AV::DamageAV(asActor, RE::ActorValue::kStamina, VoreSettings::struggle_stamina * delta);
-				predData->pdIndigestion[pyLocus] += VoreSettings::struggle_amount * delta;
+		if (pyStruggleResource > 0) {
+			if (pyStruggling) {
+				if (AV::GetAV(asActor, RE::ActorValue::kStamina) > 0) {
+					//damage prey's stamina and pred's struggle bar for this locus
+					AV::DamageAV(asActor, RE::ActorValue::kStamina, VoreSettings::struggle_stamina * delta);
+					predData->pdIndigestion[pyLocus] += VoreSettings::struggle_amount * delta;
 
-				if (predData->pdIndigestion[pyLocus] >= 100) {
-					Core::RegurgitateAll(predData->get()->As<RE::Actor>(), pyLocus);
+					if (predData->pdIndigestion[pyLocus] >= 100) {
+						Core::RegurgitateAll(predData->get()->As<RE::Actor>(), pyLocus);
+					}
+				} else {
+					pyStruggling = false;
 				}
-			} else {
-				pyStruggle = VoreState::sExhausted;
-			}
-			//pred is top pred
-			if (!predData->pred) {
-				predData->pdUpdateStruggleGoal = true;
-			}
-			predData->SetBellyUpdate(true);
-			//predData->SetPredUpdate(true);
-			if (aSex != RE::SEX::kNone) {
-				predData->pdStrugglePreySex = aSex;
-			}
+				//pred is top pred
+				if (!predData->pred) {
+					predData->pdUpdateStruggleGoal = true;
+				}
+				predData->SetBellyUpdate(true);
+				//predData->SetPredUpdate(true);
+				if (aSex != RE::SEX::kNone) {
+					predData->pdStrugglePreySex = aSex;
+				}
 
-		} else if (pyStruggle == VoreState::sExhausted) {
-			//restore stamina
-			AV::DamageAV(asActor, RE::ActorValue::kStamina, -AV::GetAV(asActor, RE::ActorValue::kStaminaRate) * AV::GetAV(asActor, RE::ActorValue::kStaminaRateMult) / 100.0 * delta);
-			if (AV::GetPercentageAV(asActor, RE::ActorValue::kStamina) >= 0.9) {
-				pyStruggle = VoreState::sStruggling;
+			} else {
+				//restore stamina
+				AV::DamageAV(asActor, RE::ActorValue::kStamina, -AV::GetAV(asActor, RE::ActorValue::kStaminaRate) * AV::GetAV(asActor, RE::ActorValue::kStaminaRateMult) / 100.0 * delta);
+				if (AV::GetPercentageAV(asActor, RE::ActorValue::kStamina) >= 0.9) {
+					pyStruggleResource--;
+					if (pyStruggleResource > 0) {
+						pyStruggling = true;
+					}
+				}
 			}
 		}
 	}
@@ -549,6 +564,7 @@ namespace Vore
 			return;
 		}
 		if (!pred || forceStop) {
+			pyStruggling = false;
 			FastU = nullptr;
 			return;
 		}
@@ -558,27 +574,41 @@ namespace Vore
 		}
 		if (aAlive) {
 			if (pyDigestion == VoreState::hSafe) {
-				if (pyStruggle == VoreState::sStill) {
+				if (pyConsentEndo) {
+					pyStruggling = false;
 					FastU = nullptr;
 				} else {
+					if (pyStruggleResource > 0) {
+						pyStruggling = true;
+					}
 					FastU = &VoreDataEntry::FastEndoU;
 				}
 			} else if (pyDigestion == VoreState::hLethal) {
-				if (pyStruggle == VoreState::sStill) {
+				if (pyConsentLethal) {
+					pyStruggling = false;
 					FastU = &VoreDataEntry::FastLethalW;
 				} else {
+					if (pyStruggleResource > 0) {
+						pyStruggling = true;
+					}
 					FastU = &VoreDataEntry::FastLethalU;
 				}
 			} else if (pyDigestion == VoreState::hReformation) {
-				if (pyStruggle == VoreState::sStill) {
+				if (pyConsentEndo) {
+					pyStruggling = false;
 					FastU = &VoreDataEntry::FastHealW;
 				} else {
+					if (pyStruggleResource > 0) {
+						pyStruggling = true;
+					}
 					FastU = &VoreDataEntry::FastHealU;
 				}
 			} else {
+				pyStruggling = false;
 				FastU = nullptr;
 			}
 		} else {
+			pyStruggling = false;
 			FastU = nullptr;
 		}
 	}
@@ -590,7 +620,7 @@ namespace Vore
 			return;
 		}
 		if (aAlive) {
-			if (pyLocus == Locus::lBowel && pyLocusMovement != VoreState::mStill) {
+			if (pyLocus == Locus::lBowel && pyLocusMovement != VoreDataEntry::FullTour::mStill) {
 				SlowU = &VoreDataEntry::SlowF;
 			} else {
 				SlowU = nullptr;
@@ -599,6 +629,34 @@ namespace Vore
 			SlowU = &VoreDataEntry::SlowD;
 		} else {
 			SlowU = nullptr;
+		}
+	}
+
+	void VoreDataEntry::SetConsent(bool willing, bool lethal)
+	{
+		if (!aIsChar) {
+			pyConsentLethal = true;
+			pyConsentEndo = true;
+			CalcFast();
+		} else {
+			RE::Actor* preyA = get()->As<RE::Actor>();
+			VoreDataEntry* predData = VoreData::IsValidGet(pred);
+			if (!predData) {
+				return;
+			}
+			RE::Actor* predA = predData->get()->As<RE::Actor>();
+			if (!preyA || !predA) {
+				return;
+			}
+			if (lethal) {
+				pyConsentLethal = willing;
+				pyConsentEndo = willing || pyConsentEndo;
+			} else {
+				pyConsentEndo = willing;
+			}
+			CalcFast();
+			Dialogue::SetConsent(predA, preyA, willing, lethal);
+			
 		}
 	}
 
@@ -644,7 +702,7 @@ namespace Vore
 
 		for (const RE::FormID& a_prey : prey) {
 			if (VoreDataEntry* preyData = VoreData::IsValidGet(a_prey)) {
-				if (preyData->aAlive && preyData->pyStruggle == VoreState::sStruggling) {
+				if (preyData->aAlive && preyData->pyStruggling) {
 					accum_struggle[preyData->pyLocus] += static_cast<float>(preyData->aSize * AV::GetPercentageAV(preyData->get()->As<RE::Actor>(), RE::ActorValue::kStamina) / 1.5f);
 					//accum_struggle[preyData.pyLocus] += (float)preyData.aSize;
 				}
@@ -1082,7 +1140,7 @@ namespace Vore
 					flog::trace("Link between prey {} and pred {} is broken!", Name::GetName(character), Name::GetName(characterData->pred));
 					return false;
 				}
-				if (characterData->pyDigestion == VoreState::hNone) {
+				if (characterData->pyDigestion == VoreDataEntry::VoreState::hNone) {
 					flog::warn("No digestion type for {}!", Name::GetName(character));
 					return false;
 				} else if (characterData->pyLocus >= Locus::NUMOFLOCI) {
@@ -1167,7 +1225,7 @@ namespace Vore
 			value.me = target->GetHandle();
 
 			for (auto& el : value.pdLoci) {
-				el = VoreState::hSafe;
+				el = VoreDataEntry::VoreState::hSafe;
 			}
 			flog::trace("Making new vore data entry for {}", Name::GetName(target));
 			Data.insert(std::make_pair(chid, value));
@@ -1370,12 +1428,16 @@ namespace Vore
 
 			//save prey stats
 			flog::info("Prey");
-			flog::info("Locus: {}, ElimLocus: {}, Digestion: {}, Struggle: {}, Movement: {}",
-				(uint8_t)vde.pyLocus, (uint8_t)vde.pyElimLocus, (uint8_t)vde.pyDigestion, (uint8_t)vde.pyStruggle, (uint8_t)vde.pyLocusMovement);
+			flog::info("Locus: {}, ElimLocus: {}, Digestion: {}, Struggle {} {} {}, Movement: {}",
+				(uint8_t)vde.pyLocus, (uint8_t)vde.pyElimLocus, (uint8_t)vde.pyDigestion, vde.pyStruggleResource, vde.pyConsentEndo, vde.pyConsentLethal, (uint8_t)vde.pyLocusMovement);
 			s = s && a_intfc->WriteRecordData(&vde.pyLocus, sizeof(vde.pyLocus));
 			s = s && a_intfc->WriteRecordData(&vde.pyElimLocus, sizeof(vde.pyElimLocus));
 			s = s && a_intfc->WriteRecordData(&vde.pyDigestion, sizeof(vde.pyDigestion));
-			s = s && a_intfc->WriteRecordData(&vde.pyStruggle, sizeof(vde.pyStruggle));
+
+			s = s && a_intfc->WriteRecordData(&vde.pyStruggleResource, sizeof(vde.pyStruggleResource));
+			s = s && a_intfc->WriteRecordData(&vde.pyConsentEndo, sizeof(vde.pyConsentEndo));
+			s = s && a_intfc->WriteRecordData(&vde.pyConsentLethal, sizeof(vde.pyConsentLethal));
+
 			s = s && a_intfc->WriteRecordData(&vde.pyLocusMovement, sizeof(vde.pyLocusMovement));
 			flog::info("Digestion Process: {}, Swallow Process: {}, Locus Process: {}", vde.pyDigestProgress, vde.pySwallowProcess, vde.pyLocusProcess);
 			s = s && a_intfc->WriteRecordData(&vde.pyDigestProgress, sizeof(vde.pyDigestProgress));
@@ -1519,10 +1581,10 @@ namespace Vore
 					a_intfc->ReadRecordData(sizeLoci);
 					flog::info("List of Loci, size: {}", sizeLoci);
 					for (int i = 0; i < sizeLoci; i++) {
-						VoreState locus = VoreState::hNone;
+						VoreDataEntry::VoreState locus = VoreDataEntry::VoreState::hNone;
 						a_intfc->ReadRecordData(locus);
 						entry.pdLoci[i] = locus;
-						flog::info("Locus {} {}", i, (int)locus);
+						flog::info("Locus {} {}", i, (uint8_t)locus);
 					}
 
 					size_t sizeLocAcid;
@@ -1576,10 +1638,14 @@ namespace Vore
 					a_intfc->ReadRecordData(entry.pyLocus);
 					a_intfc->ReadRecordData(entry.pyElimLocus);
 					a_intfc->ReadRecordData(entry.pyDigestion);
-					a_intfc->ReadRecordData(entry.pyStruggle);
+
+					a_intfc->ReadRecordData(entry.pyStruggleResource);
+					a_intfc->ReadRecordData(entry.pyConsentEndo);
+					a_intfc->ReadRecordData(entry.pyConsentLethal);
+
 					a_intfc->ReadRecordData(entry.pyLocusMovement);
-					flog::info("Locus: {}, ElimLocus: {}, Digestion: {}, Struggle: {}, Movement: {}",
-						(uint8_t)entry.pyLocus, (uint8_t)entry.pyElimLocus, (uint8_t)entry.pyDigestion, (uint8_t)entry.pyStruggle, (uint8_t)entry.pyLocusMovement);
+					flog::info("Locus: {}, ElimLocus: {}, Digestion: {}, Struggle: {} {} {}, Movement: {}",
+						(uint8_t)entry.pyLocus, (uint8_t)entry.pyElimLocus, (uint8_t)entry.pyDigestion, entry.pyStruggleResource, entry.pyConsentEndo, entry.pyConsentLethal, (uint8_t) entry.pyLocusMovement);
 					a_intfc->ReadRecordData(entry.pyDigestProgress);
 					a_intfc->ReadRecordData(entry.pySwallowProcess);
 					a_intfc->ReadRecordData(entry.pyLocusProcess);

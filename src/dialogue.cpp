@@ -2,6 +2,7 @@
 #include "headers/nutils.h"
 #include "headers/voredata.h"
 #include "headers/voremain.h"
+#include "headers/settings.h"
 
 #include <chrono>
 #include <thread>
@@ -9,7 +10,8 @@
 namespace Vore
 {
 
-	static float LocusToDevLocus(Locus loc) {
+	static float LocusToDevLocus(Locus loc)
+	{
 		switch (loc) {
 		case (Locus::lStomach):
 			return 0.0f;
@@ -33,18 +35,17 @@ namespace Vore
 			VoreDataEntry* vDataNPC = VoreData::IsValidGet(_handleNPC.get()->GetFormID());
 			VoreDataEntry* vDataPlayer = VoreData::IsValidGet(_handlePlayer.get()->GetFormID());
 
-
 			if (vDataPlayer && vDataPlayer->pred) {
 				Funcs::ForceQuestAlias(_dialogueQuest, "DialoguePreyAlias", _handlePlayer.get().get());
 				Funcs::ForceQuestAlias(_dialogueQuest, "DialoguePredAlias", _handleNPC.get().get());
 
-				g_lethal->value = vDataPlayer->pyDigestion == hLethal ? 1.0f : 0.0f;
+				g_lethal->value = vDataPlayer->pyDigestion == VoreDataEntry::hLethal ? 1.0f : 0.0f;
 				g_locus->value = LocusToDevLocus(vDataPlayer->pyLocus);
 			} else if (vDataNPC && vDataNPC->pred) {
 				Funcs::ForceQuestAlias(_dialogueQuest, "DialoguePredAlias", _handlePlayer.get().get());
 				Funcs::ForceQuestAlias(_dialogueQuest, "DialoguePreyAlias", _handleNPC.get().get());
 
-				g_lethal->value = vDataNPC->pyDigestion == hLethal ? 1.0f : 0.0f;
+				g_lethal->value = vDataNPC->pyDigestion == VoreDataEntry::hLethal ? 1.0f : 0.0f;
 				g_locus->value = LocusToDevLocus(vDataNPC->pyLocus);
 			}
 		}
@@ -100,7 +101,7 @@ namespace Vore
 		if (!preyA->HasSpell(s_notThere)) {
 			preyA->AddSpell(s_notThere);
 		}
-		if (!pred->IsPlayerRef() && !preyA->IsPlayerRef() && Utils::AreFriends(RE::PlayerCharacter::GetSingleton(), preyA)) {
+		if (!pred->IsPlayerRef() && !preyA->IsPlayerRef() && Utils::AreFriends(RE::PlayerCharacter::GetSingleton(), preyA, RE::BGSRelationship::RELATIONSHIP_LEVEL::kFriend)) {
 			if (!pred->HasSpell(s_statusSwalFol)) {
 				pred->AddSpell(s_statusSwalFol);
 			}
@@ -125,7 +126,10 @@ namespace Vore
 				bool hasFollowers = false;
 				for (auto& pyId : predData->prey) {
 					if (VoreDataEntry* pyData = VoreData::IsValidGet(pyId)) {
-						if (pyData->aIsChar && !pyData->aIsPlayer && Utils::AreFriends(RE::PlayerCharacter::GetSingleton(), pyData->get()->As<RE::Actor>())) {
+						if (pyData->aIsChar && !pyData->aIsPlayer &&
+							Utils::AreFriends(RE::PlayerCharacter::GetSingleton(),
+								pyData->get()->As<RE::Actor>(),
+								RE::BGSRelationship::RELATIONSHIP_LEVEL::kFriend)) {
 							hasFollowers = true;
 							break;
 						}
@@ -168,12 +172,10 @@ namespace Vore
 			if (!pred->HasSpell(s_statusSwalP)) {
 				pred->AddSpell(s_statusSwalP);
 			}
-			
+
 		} else if (preyA->IsPlayerRef()) {
 			g_playerDead->value = 0.0f;
 		}
-
-
 	}
 
 	void Dialogue::SetupForReform(RE::Actor* prey)
@@ -181,7 +183,6 @@ namespace Vore
 		if (!prey || !plugin_loaded) {
 			return;
 		}
-
 	}
 
 	void Dialogue::OnDigestionChange(RE::Actor* pred)
@@ -198,7 +199,7 @@ namespace Vore
 			for (auto& el : predData->prey) {
 				if (VoreDataEntry* preyData = VoreData::IsValidGet(el)) {
 					if (predData->aIsChar) {
-						if (preyData->aAlive && preyData->pyDigestion == hLethal) {
+						if (preyData->aAlive && preyData->pyDigestion == VoreDataEntry::hLethal) {
 							if (preyData->aSex == RE::SEX::kFemale) {
 								removeF = false;
 							} else if (preyData->aSex == RE::SEX::kMale) {
@@ -235,7 +236,6 @@ namespace Vore
 		} else if (!pred->HasSpell(s_soundDig)) {
 			pred->AddSpell(s_soundDig);
 		}
-
 	}
 
 	void Dialogue::PlayerDied()
@@ -244,6 +244,123 @@ namespace Vore
 			return;
 		}
 		g_playerDead->value = 1.0f;
+	}
+
+	Dialogue::PreyWillingness Dialogue::IsWillingPrey(RE::Actor* pred, RE::Actor* prey, bool lethal)
+	{
+		if (!plugin_loaded) {
+			return kDisabled;
+		}
+		if (pred->IsPlayerRef()) {
+			if (prey->IsInFaction(f_dialogueVorePrey)) {
+				return kWilling;
+			}
+			if (!lethal && prey->IsInFaction(f_dialogueEndoPrey)) {
+				return kWilling;
+			}
+			return kUnwilling;
+		} else if (prey->IsPlayerRef()) {
+			if (pred->IsInFaction(f_dialogueVorePred)) {
+				return kWilling;
+			}
+			if (!lethal && pred->IsInFaction(f_dialogueEndoPred)) {
+				return kWilling;
+			}
+			return kUnwilling;
+		} else {
+			return kDisabled;
+		}
+	}
+
+	Vore::Locus Dialogue::GetLocusForSwallow(RE::Actor* pred, RE::TESObjectREFR* prey)
+	{
+		// placeholder
+		// placeholder
+		// placeholder
+		// placeholder
+		// placeholder
+		// placeholder
+		if (!plugin_loaded) {
+			return lNone;
+		}
+		if (pred->IsPlayerRef()) {
+			if (prey->GetFormType() == RE::FormType::ActorCharacter && prey->As<RE::Actor>()->IsInFaction(f_locusPrey)) {
+				int32_t fRank = prey->As<RE::Actor>()->GetFactionRank(f_locusPrey, false);
+				if (fRank >= (int32_t)lStomach && fRank < (int32_t)NUMOFLOCI) {
+					return (Locus)fRank;
+				} else {
+					return PlayerPrefs::voreLoc;
+				}
+			} else {
+				return PlayerPrefs::voreLoc;
+			}
+		} else {
+			if (pred->IsInFaction(f_locusPred)) {
+				int32_t fRank = pred->GetFactionRank(f_locusPred, false);
+				if (fRank >= (int32_t)lStomach && fRank < (int32_t)NUMOFLOCI) {
+					return (Locus)fRank;
+				}
+			}
+		}
+		return lNone;
+	}
+
+	void Dialogue::SetConsent(RE::Actor* pred, RE::Actor* prey, bool willing, bool lethal)
+	{
+        if (!plugin_loaded) {
+            return;
+        }
+		if (pred->IsPlayerRef()) {
+			if (willing) {
+				if (lethal) {
+					if (!prey->IsInFaction(f_dialogueVorePrey)) {
+						prey->AddToFaction(f_dialogueVorePrey, 0);
+					}
+					if (!prey->IsInFaction(f_dialogueEndoPrey)) {
+						prey->AddToFaction(f_dialogueEndoPrey, 0);
+					}
+				} else {
+					if (!prey->IsInFaction(f_dialogueEndoPrey)) {
+						prey->AddToFaction(f_dialogueEndoPrey, 0);
+					}
+				}
+			} else {
+				if (lethal) {
+					if (prey->IsInFaction(f_dialogueVorePrey)) {
+						prey->RemoveFromFaction(f_dialogueVorePrey);
+					}
+				} else {
+					if (prey->IsInFaction(f_dialogueEndoPrey)) {
+						prey->RemoveFromFaction(f_dialogueEndoPrey);
+					}
+				}
+			}
+		} else if (prey->IsPlayerRef()) {
+			if (willing) {
+				if (lethal) {
+					if (!pred->IsInFaction(f_dialogueVorePred)) {
+						pred->AddToFaction(f_dialogueVorePred, 0);
+					}
+					if (!pred->IsInFaction(f_dialogueEndoPred)) {
+						pred->AddToFaction(f_dialogueEndoPred, 0);
+					}
+				} else {
+					if (!pred->IsInFaction(f_dialogueEndoPred)) {
+						pred->AddToFaction(f_dialogueEndoPred, 0);
+					}
+				}
+			} else {
+				if (lethal) {
+					if (pred->IsInFaction(f_dialogueVorePred)) {
+						pred->RemoveFromFaction(f_dialogueVorePred);
+					}
+				} else {
+					if (pred->IsInFaction(f_dialogueEndoPred)) {
+						pred->RemoveFromFaction(f_dialogueEndoPred);
+					}
+				}
+			}
+		}
 	}
 
 	void Dialogue::TalkToA(RE::Actor* target)
@@ -344,15 +461,16 @@ namespace Vore
 		s_soundStrF = RE::TESDataHandler::GetSingleton()->LookupForm<RE::SpellItem>(0x964, "Devourment.esp");
 		s_soundStrM = RE::TESDataHandler::GetSingleton()->LookupForm<RE::SpellItem>(0x81C, "Devourment.esp");
 		s_soundDig = RE::TESDataHandler::GetSingleton()->LookupForm<RE::SpellItem>(0xC8E, "Devourment.esp");
-		
+
 		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		// digestion sounds placeholder
 		//s_soundEndo = RE::TESDataHandler::GetSingleton()->LookupForm<RE::SpellItem>(0xC8E, "DialogueReGherk.esp");
 		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+		s_statusSwalFol = RE::TESDataHandler::GetSingleton()->LookupForm<RE::SpellItem>(0xCE6, "Devourment.esp");
+		// unused
 		s_statusSwalP = RE::TESDataHandler::GetSingleton()->LookupForm<RE::SpellItem>(0xA59, "Devourment.esp");
 		s_statusSwalByP = RE::TESDataHandler::GetSingleton()->LookupForm<RE::SpellItem>(0xA3E, "Devourment.esp");
-		s_statusSwalFol = RE::TESDataHandler::GetSingleton()->LookupForm<RE::SpellItem>(0xCE6, "Devourment.esp");
 		s_statusRefP = RE::TESDataHandler::GetSingleton()->LookupForm<RE::SpellItem>(0xA9D, "Devourment.esp");
 		s_statusRefByP = RE::TESDataHandler::GetSingleton()->LookupForm<RE::SpellItem>(0xA41, "Devourment.esp");
 		s_statusDigP = RE::TESDataHandler::GetSingleton()->LookupForm<RE::SpellItem>(0xAA0, "Devourment.esp");
@@ -362,5 +480,15 @@ namespace Vore
 
 		g_lethal = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESGlobal>(0x991, "Devourment.esp");
 		g_locus = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESGlobal>(0x994, "Devourment.esp");
+
+		//FACT
+		f_dialogueVorePrey = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESFaction>(0x6FEC0, "DialogueReGherk.esp");
+		f_dialogueEndoPrey = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESFaction>(0x6FEBE, "DialogueReGherk.esp");
+
+		f_dialogueVorePred = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESFaction>(0x6FEBF, "DialogueReGherk.esp");
+		f_dialogueEndoPred = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESFaction>(0x6FEBD, "DialogueReGherk.esp");
+
+		f_locusPrey = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESFaction>(0x7A0C1, "DialogueReGherk.esp");
+		f_locusPred = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESFaction>(0x7A0C2, "DialogueReGherk.esp");
 	}
 }

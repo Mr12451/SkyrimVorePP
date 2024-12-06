@@ -99,7 +99,7 @@ RE::TESObjectREFR* Vore::Utils::GetCrosshairObject()
 	endIf
 	*/
 
-bool Vore::Utils::AreFriends(RE::Actor* a_first, RE::Actor* a_second)
+bool Vore::Utils::AreFriends(RE::Actor* a_first, RE::Actor* a_second, RE::BGSRelationship::RELATIONSHIP_LEVEL min_rel)
 {
 	if (a_first == a_second) {
 		return true;
@@ -108,17 +108,17 @@ bool Vore::Utils::AreFriends(RE::Actor* a_first, RE::Actor* a_second)
 		RE::BGSRelationship* rel = RE::BGSRelationship::GetRelationship(a_second->GetActorBase(), a_first->GetActorBase());
 		RE::BGSRelationship::RELATIONSHIP_LEVEL relLevel = rel->level.get();
 		flog::info("REL LEVEL {}", (int)relLevel);
-		return a_second->IsPlayerTeammate() || relLevel < RE::BGSRelationship::RELATIONSHIP_LEVEL::kAcquaintance;
+		return a_second->IsPlayerTeammate() || relLevel <= min_rel;
 	} else if (a_second->IsPlayerRef()) {
 		RE::BGSRelationship* rel = RE::BGSRelationship::GetRelationship(a_first->GetActorBase(), a_second->GetActorBase());
 		RE::BGSRelationship::RELATIONSHIP_LEVEL relLevel = rel->level.get();
 		flog::info("REL LEVEL {}", (int)relLevel);
-		return a_first->IsPlayerTeammate() || relLevel < RE::BGSRelationship::RELATIONSHIP_LEVEL::kAcquaintance;
+		return a_first->IsPlayerTeammate() || relLevel <= min_rel;
 	} else {
 		RE::BGSRelationship* rel = RE::BGSRelationship::GetRelationship(a_second->GetActorBase(), a_first->GetActorBase());
 		RE::BGSRelationship::RELATIONSHIP_LEVEL relLevel = rel->level.get();
 		flog::info("REL LEVEL {}", (int)relLevel);
-		return relLevel < RE::BGSRelationship::RELATIONSHIP_LEVEL::kAcquaintance;
+		return relLevel <= min_rel;
 	}
 }
 
@@ -318,8 +318,7 @@ namespace Vore::Name
 
 float Vore::Math::randfloat(float min, float max)
 {
-	static bool first = true;
-	if (first) {
+	/*if (first) {
 		srand((unsigned int)time(NULL));
 		first = false;
 	}
@@ -329,5 +328,24 @@ float Vore::Math::randfloat(float min, float max)
 	} else if (min == max) {
 		return min;
 	}
-	return min + (float)rand() / ((float)RAND_MAX / (max - min));
+	return min + (float)rand() / ((float)RAND_MAX * (max - min));*/
+	std::uniform_real_distribution<float> dist(min, max);
+	return dist(gen);
+}
+
+size_t Vore::Math::randInt(size_t min, size_t max)
+{
+	/*if (first) {
+		srand((unsigned int)time(NULL));
+		first = false;
+	}
+	if (min > max) {
+		flog::warn("trying to generate a random number where min > max");
+		return 0;
+	} else if (min == max) {
+		return min;
+	}
+	return (size_t)(rand() / RAND_MAX * (max - min + 1) + min);*/
+	std::uniform_int_distribution dist(min, max);
+	return dist(gen);
 }

@@ -11,7 +11,7 @@ namespace Vore
 
 		RE::TESObjectREFR* GetCrosshairObject();
 
-		bool AreFriends(RE::Actor* a_first, RE::Actor* a_second);
+		bool AreFriends(RE::Actor* a_first, RE::Actor* a_second, RE::BGSRelationship::RELATIONSHIP_LEVEL min_rel);
 	}
 	namespace AV
 	{
@@ -46,6 +46,8 @@ namespace Vore
 	}
 	namespace Math
 	{
+		static inline std::minstd_rand gen(std::random_device{}());
 		float randfloat(float min, float max);
+		size_t randInt(size_t min, size_t max);
 	}
 }

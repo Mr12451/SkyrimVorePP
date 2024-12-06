@@ -26,9 +26,9 @@ namespace Vore::Log
 			entry.pdSizegrowth, entry.prey.size(),
 			entry.pdUpdateGoal, entry.pdUpdateSlider, entry.pdFullBurden);
 
-		flog::info("Prey Stats: Locus {}, ElimLocus {}, Digestion {}, Struggle {}, Movement {}; Digestion P {}, Swallow P {}, Locus P {}",
+		flog::info("Prey Stats: Locus {}, ElimLocus {}, Digestion {}, Struggle {} {} {}, Movement {}; Digestion P {}, Swallow P {}, Locus P {}",
 			(uint8_t)entry.pyLocus, (uint8_t)entry.pyElimLocus,
-			(uint8_t)entry.pyDigestion, (uint8_t)entry.pyStruggle,
+			(uint8_t)entry.pyDigestion, entry.pyStruggling, entry.pyConsentEndo, entry.pyConsentLethal,
 			(uint8_t)entry.pyLocusMovement, entry.pyDigestProgress,
 			entry.pySwallowProcess, entry.pyLocusProcess);
 		std::string pr = "";
@@ -266,6 +266,81 @@ namespace Vore
 			first_model->local.scale = scale;
 			RE::NiUpdateData ctx;
 			model->UpdateWorldData(&ctx);
+		}
+	}
+	void UnequipAll(RE::Actor* target)
+	{
+		// code from GTS Plugin
+		static const std::vector<std::string_view> KeywordBlackList = {
+			"SOS_Genitals",  //Fix Slot 52 Genitals while still keeping the ability to unequip slot 52 underwear
+			"ArmorJewelry",
+			"VendorItemJewelry"
+			"ClothingRing",
+			"ClothingNecklace",
+			"SexLabNoStrip",  //This is the keyword 3BA uses for the SMP addons?, it doesnt even originate from SL.
+			"GTSDontStrip"
+		};
+		static const std::vector<RE::BGSBipedObjectForm::BipedObjectSlot> ValidSlots = {
+			RE::BGSBipedObjectForm::BipedObjectSlot::kHead,  // 30
+			// RE::BGSBipedObjectForm::BipedObjectSlot::kHair,					// 31
+			RE::BGSBipedObjectForm::BipedObjectSlot::kBody,      // 32
+			RE::BGSBipedObjectForm::BipedObjectSlot::kHands,     // 33
+			RE::BGSBipedObjectForm::BipedObjectSlot::kForearms,  // 34
+			// RE::BGSBipedObjectForm::BipedObjectSlot::kAmulet,					// 35
+			// RE::BGSBipedObjectForm::BipedObjectSlot::kRing,					// 36
+			RE::BGSBipedObjectForm::BipedObjectSlot::kFeet,    // 37
+			RE::BGSBipedObjectForm::BipedObjectSlot::kCalves,  // 38
+			RE::BGSBipedObjectForm::BipedObjectSlot::kShield,  // 39
+			// RE::BGSBipedObjectForm::BipedObjectSlot::kTail,					// 40
+			// RE::BGSBipedObjectForm::BipedObjectSlot::kLongHair,				// 41
+			RE::BGSBipedObjectForm::BipedObjectSlot::kCirclet,           // 42
+			//RE::BGSBipedObjectForm::BipedObjectSlot::kEars,              // 43
+			//RE::BGSBipedObjectForm::BipedObjectSlot::kModMouth,          // 44
+			//RE::BGSBipedObjectForm::BipedObjectSlot::kModNeck,           // 45
+			//RE::BGSBipedObjectForm::BipedObjectSlot::kModChestPrimary,   // 46
+			//RE::BGSBipedObjectForm::BipedObjectSlot::kModBack,           // 47
+			//RE::BGSBipedObjectForm::BipedObjectSlot::kModMisc1,          // 48
+			//RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisPrimary,  // 49
+			// RE::BGSBipedObjectForm::BipedObjectSlot::kDecapitateHead,			// 50
+			// RE::BGSBipedObjectForm::BipedObjectSlot::kDecapitate,				// 51
+			//RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary,  // 52
+			//RE::BGSBipedObjectForm::BipedObjectSlot::kModLegRight,         // 53
+			//RE::BGSBipedObjectForm::BipedObjectSlot::kModLegLeft,          // 54
+			//RE::BGSBipedObjectForm::BipedObjectSlot::kModFaceJewelry,      // 55
+			//RE::BGSBipedObjectForm::BipedObjectSlot::kModChestSecondary,   // 56
+			//RE::BGSBipedObjectForm::BipedObjectSlot::kModShoulder,         // 57
+			//RE::BGSBipedObjectForm::BipedObjectSlot::kModArmLeft,          // 58
+			//RE::BGSBipedObjectForm::BipedObjectSlot::kModArmRight,         // 59
+																		   // BGSBipedObjectForm::BipedObjectSlot::kModMisc2,				// 60
+																		   // BGSBipedObjectForm::BipedObjectSlot::kFX01,					// 61
+		};
+		if (!target->IsHumanoid()) {
+			return;
+		}
+		
+		std::vector<RE::TESObjectARMO*> ArmorList{};
+		for (auto Slot : ValidSlots) {
+			RE::TESObjectARMO* Armor = target->GetWornArmor(Slot);
+			// If armor is null skip
+			if (!Armor) {
+				continue;
+			}
+			bool allowed = true;
+			for (const auto& BKwd : KeywordBlackList) {
+				if (Armor->HasKeywordString(BKwd)) {
+					allowed = false;
+					break;  //If blacklisted keyword is found skip
+				}
+			}
+			if (allowed) {
+				ArmorList.push_back(Armor);
+			}
+		}
+		for (auto& armor : ArmorList) {
+			if (armor) {
+				RE::ActorEquipManager* manager = RE::ActorEquipManager::GetSingleton();
+				manager->UnequipObject(target, armor, nullptr, 1, nullptr, true, false, false);
+			}
 		}
 	}
 }

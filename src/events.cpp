@@ -126,10 +126,10 @@ namespace Vore
 					return RE::BSEventNotifyControl::kContinue;
 				}
 				if (actorData->pred) {
-					Core::SwitchToDigestion(actorData->pred, actorData->pyLocus, VoreState::hSafe, false);
+					Core::SwitchToDigestion(actorData->pred, actorData->pyLocus, VoreDataEntry::hSafe, false);
 					actorData->pyDigestProgress = 0.0;
 					actorData->pyElimLocus = actorData->pyLocus;
-					actorData->pyLocusMovement = mStill;
+					actorData->pyLocusMovement = VoreDataEntry::mStill;
 					//
 					if (actorData->get()->IsDragon() && actorData->pred == RE::PlayerCharacter::GetSingleton()->GetFormID()) {
 						AV::ModAV(RE::PlayerCharacter::GetSingleton(), RE::ActorValue::kDragonSouls, 1.0);
@@ -138,6 +138,7 @@ namespace Vore
 					//idk what's that
 					if (VoreDataEntry* predData = VoreData::IsValidGet(actorData->pred)) {
 						predData->PlayScream(actorData);
+						predData->EmoteSmile(5000);
 					}
 					actorData->CalcFast();
 					actorData->CalcSlow();

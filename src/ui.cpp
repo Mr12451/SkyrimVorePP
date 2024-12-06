@@ -88,7 +88,11 @@ namespace Vore::UI
 			text += ", ";
 			text += PlayerPrefs::GetTypeStr(pyData->pyDigestion);
 			text += ", ";
-			text += (pyData->pyStruggle == VoreState::sStill) ? "Willing" : "Unwilling";
+			if (pyData->pyDigestion == VoreDataEntry::hLethal) {
+				text += pyData->pyConsentLethal ? "Willing" : "Unwilling";
+			} else {
+				text += pyData->pyConsentEndo ? "Willing" : "Unwilling";
+			}
 			if (pyData->pySwallowProcess != 100) {
 				text += "\nSwallow process: ";
 				text += std::format("{:.2f}", pyData->pySwallowProcess);
@@ -96,7 +100,7 @@ namespace Vore::UI
 			if (!pyData->aAlive) {
 				text += "\nDigestion: ";
 				text += std::format("{:.2f}", pyData->pyDigestProgress);
-			} else if (pyData->pyLocusMovement != VoreState::mStill) {
+			} else if (pyData->pyLocusMovement != VoreDataEntry::mStill) {
 				text += "\nFULL TOUR";
 			}
 
@@ -163,7 +167,11 @@ namespace Vore::UI
 					text += ", ";
 					text += PlayerPrefs::GetTypeStr(playerData.pyDigestion);
 					text += ", ";
-					text += (playerData.pyStruggle == VoreState::sStill) ? "Willing" : "Unwilling";
+					if (playerData.pyDigestion == VoreDataEntry::hLethal) {
+						text += playerData.pyConsentLethal ? "Willing" : "Unwilling";
+					} else {
+						text += playerData.pyConsentEndo ? "Willing" : "Unwilling";
+					}
 					if (!playerData.aAlive) {
 						text += "\nDigestion: ";
 						text += std::format("{:.2f}", playerData.pyDigestProgress);
@@ -533,10 +541,12 @@ namespace Vore::UI
 					case (MenuAction::kMenuA2):
 						{
 							if (VoreDataEntry* playerData = VoreData::IsValidGet(RE::PlayerCharacter::GetSingleton()->GetFormID())) {
-								if (playerData->pyStruggle == VoreState::sStill) {
-									playerData->pyStruggle = sStruggling;
+								if (playerData->pyConsentLethal) {
+									playerData->SetConsent(false, true);
+									playerData->SetConsent(false, false);
 								} else {
-									playerData->pyStruggle = sStill;
+									playerData->SetConsent(true, true);
+									playerData->SetConsent(true, false);
 								}
 							}
 							Update();
@@ -558,10 +568,10 @@ namespace Vore::UI
 						{
 							if (VoreDataEntry* preyData = VoreData::IsValidGet(_infoTarget.get().get()->GetFormID())) {
 								if (preyData->aAlive) {
-									if (preyData->pyDigestion == VoreState::hLethal) {
-										Core::SwitchToDigestion(RE::PlayerCharacter::GetSingleton()->GetFormID(), preyData->pyLocus, VoreState::hSafe, true);
+									if (preyData->pyDigestion == VoreDataEntry::hLethal) {
+										Core::SwitchToDigestion(RE::PlayerCharacter::GetSingleton()->GetFormID(), preyData->pyLocus, VoreDataEntry::hSafe, true);
 									} else {
-										Core::SwitchToDigestion(RE::PlayerCharacter::GetSingleton()->GetFormID(), preyData->pyLocus, VoreState::hLethal, true);
+										Core::SwitchToDigestion(RE::PlayerCharacter::GetSingleton()->GetFormID(), preyData->pyLocus, VoreDataEntry::hLethal, true);
 									}
 									Update();
 								}
@@ -578,7 +588,7 @@ namespace Vore::UI
 						if (_iFullTour) {
 							if (VoreDataEntry* preyData = VoreData::IsValidGet(_infoTarget.get().get()->GetFormID())) {
 								Core::MoveToLocus(RE::PlayerCharacter::GetSingleton()->GetFormID(), _infoTarget.get().get()->GetFormID(), lBowel, lStomach);
-								preyData->pyLocusMovement = mDecrease;
+								preyData->pyLocusMovement = VoreDataEntry::mDecrease;
 								Update();
 							}
 						}
@@ -619,10 +629,10 @@ namespace Vore::UI
 					}
 				case (MenuAction::kMenuA2):
 					{
-						if (PlayerPrefs::voreType == VoreState::hLethal) {
-							PlayerPrefs::voreType = VoreState::hSafe;
+						if (PlayerPrefs::voreType == VoreDataEntry::hLethal) {
+							PlayerPrefs::voreType = VoreDataEntry::hSafe;
 						} else {
-							PlayerPrefs::voreType = VoreState::hLethal;
+							PlayerPrefs::voreType = VoreDataEntry::hLethal;
 						}
 						thisMenu->WriteSwallowMenu();
 						break;

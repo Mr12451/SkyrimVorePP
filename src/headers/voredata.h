@@ -62,25 +62,7 @@ namespace Vore
 		NUMOFSLIDERS
 	};
 
-	enum VoreState : uint8_t
-	{
-		//overall state
-		hNone = 0,
-		hSafe = 1,
-		hLethal = 2,
-		hReformation = 3,
 
-		//stamina? mod
-		sStill = 0,
-		sStruggling = 1,
-		sExhausted = 2,
-
-		//full tour
-		//for every locus other than lBowel should be mStill
-		mStill = 0,
-		mIncrease = 1,
-		mDecrease = 2
-	};
 
 	struct SoundHandles
 	{
@@ -94,6 +76,27 @@ namespace Vore
 	class VoreDataEntry
 	{
 	public:
+		enum VoreState : uint8_t
+		{
+			//overall state
+			hNone = 0,
+			hSafe = 1,
+			hLethal = 2,
+			hReformation = 3,
+
+			//full tour
+			//for every locus other than lBowel should be mStill
+
+		};
+
+		enum FullTour : uint8_t
+		{
+			mStill = 0,
+			mIncrease = 1,
+			mDecrease = 2
+		};
+
+
 		using VoreStateFunc = void (Vore::VoreDataEntry::*)(const double&);
 		//saved
 		// pred
@@ -143,10 +146,15 @@ namespace Vore
 		Locus pyLocus = Locus::lNone;
 		Locus pyElimLocus = Locus::lNone;
 		VoreState pyDigestion = VoreState::hNone;
-		VoreState pyStruggle = VoreState::sStill;
+
+		uint8_t pyStruggleResource = 0;
+		bool pyConsentEndo = false;
+		bool pyConsentLethal = false;
+		bool pyStruggling = false;
+		
 		//full tour, only for lBowel
 		//mIncrease is when prey is moving towards stomach
-		VoreState pyLocusMovement = VoreState::mStill;
+		FullTour pyLocusMovement = FullTour::mStill;
 
 		double pyDigestProgress = 0;
 		double pySwallowProcess = 0;
@@ -203,6 +211,7 @@ namespace Vore
 
 		void CalcFast(bool forceStop = false);
 		void CalcSlow(bool forceStop = false);
+		void SetConsent(bool willing, bool lethal);
 		void SetBellyUpdate(bool doUpdate);
 		void SetPredUpdate(bool doUpdate);
 		void ClearAllUpdates();
@@ -235,9 +244,9 @@ namespace Vore
 		/// </summary>
 		/// <param name="locus"></param>
 		/// <returns></returns>
+		void DigestLive();
 	private:
 		void HandlePreyDeathImmidiate();
-
 		void HandleDamage(const double& delta, RE::Actor* asActor, VoreDataEntry* predData);
 
 		//states

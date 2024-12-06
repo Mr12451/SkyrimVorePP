@@ -1,39 +1,33 @@
 #include "headers/voremain.h"
+#include "headers/dialogue.h"
 #include "headers/nutils.h"
 #include "headers/settings.h"
+#include "headers/sounds.h"
 #include "headers/times.h"
 #include "headers/ui.h"
 #include "headers/vutils.h"
-#include "headers/sounds.h"
-#include "headers/dialogue.h"
 
 namespace Vore::Core
 {
-
-	bool HasConsented(RE::Actor* prey, RE::Actor* pred, VoreState dType)
+	static bool CalculateConsent(RE::Actor* pred, RE::Actor* prey, bool lethal)
 	{
-		return dType != hLethal;
-	}
-	VoreState GetStruggle(RE::Actor* prey, RE::Actor* pred, Locus locus, VoreState dType)
-	{
-		//placeholder!!!
-		if (locus == Locus::lNone) {
-			return VoreState::sStill;
+		Dialogue::PreyWillingness preyWilling = Dialogue::IsWillingPrey(pred, prey, lethal);
+		if (preyWilling < Dialogue::kDisabled) {
+			return (bool)preyWilling;
 		}
-		//placeholder!!!
-		if (prey->IsDead()) {
-			return VoreState::sStill;
-		}
-
-		if (!HasConsented(prey, pred, dType)) {
-			if (pred->IsPlayerRef()) {
-				//Funcs::StartCombat(pred, prey);
-				//Funcs::SendAssaultAlarm(prey);
-				Funcs::Attacked(prey, pred);
+		if (!lethal) {
+			if (Utils::AreFriends(pred, prey, RE::BGSRelationship::RELATIONSHIP_LEVEL::kConfidant)) {
+				return true;
+			} else {
+				return false;
 			}
-			return VoreState::sStruggling;
+		} else {
+			if (Utils::AreFriends(pred, prey, RE::BGSRelationship::RELATIONSHIP_LEVEL::kLover)) {
+				return true;
+			} else {
+				return false;
+			}
 		}
-		return VoreState::sStill;
 	}
 
 	void HidePrey(RE::Actor* target)
@@ -54,14 +48,14 @@ namespace Vore::Core
 		Funcs::SetRestrained(target, false);
 	}
 
-	void SwitchToDigestion(const RE::FormID pred, const Locus locus, const VoreState dType, const bool forceStopDigestion, bool doDialogueUpd)
+	void SwitchToDigestion(const RE::FormID pred, const Locus locus, const VoreDataEntry::VoreState dType, const bool forceStopDigestion, bool doDialogueUpd)
 	{
 		VoreDataEntry* predData = VoreData::IsValidGet(pred);
 		if (!predData) {
 			flog::warn("Switching to digestion failed: bad pred: {}", Name::GetName(predData->get()));
 			return;
 		}
-		if (dType == VoreState::hNone) {
+		if (dType == VoreDataEntry::hNone) {
 			flog::warn("Switching to None digestion type! Returning.: {}", Name::GetName(predData->get()));
 			return;
 		}
@@ -76,10 +70,10 @@ namespace Vore::Core
 		}
 		bool allowChange = true;
 		std::vector<RE::FormID> locusPreys = FilterPrey(pred, locus, false);
-		if (!forceStopDigestion && dType == VoreState::hSafe) {
+		if (!forceStopDigestion && dType == VoreDataEntry::hSafe) {
 			for (const RE::FormID& el : locusPreys) {
 				if (VoreDataEntry* pyData = VoreData::IsValidGet(el)) {
-					if (pyData->aAlive && (pyData->pyDigestion == hLethal || pyData->pyDigestion == hReformation)) {
+					if (pyData->aAlive && (pyData->pyDigestion == VoreDataEntry::hLethal || pyData->pyDigestion == VoreDataEntry::hReformation)) {
 						flog::trace("Can't switch locus {} from {} for {}", (uint8_t)locus, (uint8_t)predData->pdLoci[locus], Name::GetName(predData->get()));
 						allowChange = false;
 						break;
@@ -96,8 +90,7 @@ namespace Vore::Core
 					}
 					pyData->pyDigestion = dType;
 					if (pyData->aIsChar) {
-						pyData->pyStruggle = GetStruggle(pyData->get()->As<RE::Actor>(), predData->get()->As<RE::Actor>(), pyData->pyLocus, pyData->pyDigestion);
-					} else if (pyData->pyDigestion == VoreState::hLethal) {
+					} else if (pyData->pyDigestion == VoreDataEntry::hLethal) {
 						pyData->aAlive = false;
 					}
 					pyData->CalcFast();
@@ -178,7 +171,7 @@ namespace Vore::Core
 				//flog::critical("FOUND CELL MARKER {}", (int)stomachCell);
 				// test: can you move dead actors?
 				prey->MoveTo(stomachCell);
-				
+
 				HidePrey(prey);
 
 				/*if (!prey->IsPlayerRef()) {
@@ -255,7 +248,7 @@ namespace Vore::Core
 		}
 	}
 
-	void Swallow(RE::Actor* pred, std::vector<RE::TESObjectREFR*> preys, Locus locus, VoreState ldType, bool fullswallow)
+	void Swallow(RE::Actor* pred, std::vector<RE::TESObjectREFR*> preys, Locus locus, VoreDataEntry::VoreState ldType, bool fullswallow)
 	{
 		flog::info("Swallow start");
 		if (!pred) {
@@ -299,13 +292,13 @@ namespace Vore::Core
 
 				RE::FormID oldPred = preyData.pred;
 
+
 				if (oldPred) {
 					if (VoreData::Data.contains(oldPred) && VoreData::Data[oldPred].prey.contains(preyId)) {
 						Regurgitate(VoreData::Data[oldPred].get()->As<RE::Actor>(), preyId, RegType::rTransfer);
 					}
-				} else {
-					SetPreyVisibility(preyA, pred, false, &preyData);
 				}
+
 
 				// don't delete a prey if we're planning on using them
 				if (VoreGlobals::delete_queue.contains(preyId)) {
@@ -321,14 +314,30 @@ namespace Vore::Core
 				preyData.pyLocus = locus;
 				preyData.pyElimLocus = locus;
 				preyData.pyDigestion = ldType;
-				preyData.pyStruggle = GetStruggle(preyA, pred, locus, ldType);
+
+				preyData.pyStruggleResource = 4;
+
+				// prey will be willing if they are a friend or if they are in a special faction from dialogue plugin
+				preyData.pyConsentLethal = CalculateConsent(pred, preyA, true);
+				preyData.pyConsentEndo = CalculateConsent(pred, preyA, false);
 
 				preyData.pyDigestProgress = 0;
 				preyData.pySwallowProcess = fullswallow || !preyData.aAlive ? 100 : 20;
 
 				//full tour related shit
-				preyData.pyLocusMovement = (preyData.pyLocus == Locus::lBowel) ? VoreState::mIncrease : VoreState::mStill;
+				preyData.pyLocusMovement = (preyData.pyLocus == Locus::lBowel) ? VoreDataEntry::mIncrease : VoreDataEntry::mStill;
 				preyData.pyLocusProcess = 0;
+
+				//crime / combat when prey is unwilling
+				if (ldType == VoreDataEntry::hLethal && !preyData.pyConsentLethal) {
+					Funcs::Attacked(preyA, pred);
+				} else if (ldType != VoreDataEntry::hLethal && !preyData.pyConsentEndo) {
+					Funcs::Attacked(preyA, pred);
+				}
+
+				if (!oldPred) {
+					SetPreyVisibility(preyA, pred, false, &preyData);
+				}
 
 				preyData.CalcFast();
 				preyData.CalcSlow();
@@ -368,13 +377,16 @@ namespace Vore::Core
 					preyData.pyLocus = locus;
 					preyData.pyElimLocus = locus;
 					preyData.pyDigestion = ldType;
-					preyData.pyStruggle = VoreState::sStill;
 
 					preyData.pyDigestProgress = 0;
+
+					preyData.pyConsentEndo = true;
+					preyData.pyConsentLethal = true;
+
 					preyData.pySwallowProcess = fullswallow || !preyData.aAlive ? 100 : 20;
 
 					//full tour related shit
-					preyData.pyLocusMovement = (preyData.pyLocus == Locus::lBowel) ? VoreState::mIncrease : VoreState::mStill;
+					preyData.pyLocusMovement = (preyData.pyLocus == Locus::lBowel) ? VoreDataEntry::mIncrease : VoreDataEntry::mStill;
 					preyData.pyLocusProcess = 0;
 
 					preyData.CalcFast();
@@ -422,13 +434,13 @@ namespace Vore::Core
 		flog::info("Swallow end");
 	}
 
-	void Swallow(RE::Actor* pred, RE::TESObjectREFR* prey, Locus locus, VoreState ldType, bool fullswallow)
+	void Swallow(RE::Actor* pred, RE::TESObjectREFR* prey, Locus locus, VoreDataEntry::VoreState ldType, bool fullswallow)
 	{
 		std::vector<RE::TESObjectREFR*> preys = { prey };
 		Swallow(pred, preys, locus, ldType, fullswallow);
 	}
 
-	void SwallowTarget(RE::Actor* pred, Locus locus, VoreState ldType, bool fullswallow)
+	void SwallowTarget(RE::Actor* pred, Locus locus, VoreDataEntry::VoreState ldType, bool fullswallow)
 	{
 		//flog::info("{}'s target for swallow: {}", pred-> ,pred->GetDisplayFullName());
 		//find target
@@ -475,7 +487,6 @@ namespace Vore::Core
 		bool playVomit{ false };
 		bool playDisposal{ false };
 
-
 		for (RE::FormID prey : preys) {
 			flog::info("Prey {}", Name::GetName(prey));
 			VoreDataEntry* preyData = VoreData::IsValidGet(prey);
@@ -515,16 +526,19 @@ namespace Vore::Core
 			}
 			preyData->pyLocus = Locus::lNone;
 			preyData->pyElimLocus = Locus::lNone;
-			preyData->pyDigestion = VoreState::hNone;
-			preyData->pyStruggle = VoreState::sStill;
-			preyData->pyLocusMovement = VoreState::mStill;
+			preyData->pyDigestion = VoreDataEntry::hNone;
+
+			preyData->pyStruggleResource = 0;
+			preyData->pyConsentEndo = false;
+			preyData->pyConsentLethal = false;
+
+			preyData->pyLocusMovement = VoreDataEntry::mStill;
 
 			preyData->pySwallowProcess = 0;
 			preyData->pyLocusProcess = 0;
 
 			preyData->CalcFast(true);
 			preyData->CalcSlow(true);
-
 
 			if (rtype == RegType::rTransfer) {
 				preyData->pyDigestProgress = 0;
@@ -573,7 +587,7 @@ namespace Vore::Core
 				predData.pdIndigestion[l] = 0.0;
 			}
 		}
-		SwitchToDigestion(predId, Locus::lNone, VoreState::hSafe, false);
+		SwitchToDigestion(predId, Locus::lNone, VoreDataEntry::hSafe, false);
 
 		if (playVomit) {
 			predData.PlayRegurgitation(false);
@@ -626,7 +640,6 @@ namespace Vore::Core
 			if (val.Predd()) {
 				(val.*(val.Predd()))(delta);
 			}
-			
 		}
 
 		//handle erase queue
@@ -660,7 +673,6 @@ namespace Vore::Core
 
 		UI::VoreMenu::NeedUpdate = true;
 	}
-
 
 	//updates live characters
 	static void UpdateFast(const double& delta)

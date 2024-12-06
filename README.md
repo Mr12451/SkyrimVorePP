@@ -46,6 +46,11 @@ A version of Devourment with all the features and scripts removed. Does nothing 
 
 Has sound files from Devourment in it. When loaded alongside SkyrimVore++, my mod will use them. The code that plays the sounds is my own, obviously, only the sound files are from Devourment. They're better then nothing, so they'll serve as a placeholder for the time being.
 
+### DialogueReGherk
+A version of DialogueReGherk (devourment dialogue plugin) that is compatible with SkyrimVorePP. Requires Devourment Dummy Plugin and SkyUI for MCM
+
+.esp is untouched, scripts are rewritten to use my Papyrus API
+
 ## Development roadmap
 ### Implemented
 * Swallowing and regurgitation
@@ -70,9 +75,10 @@ Has sound files from Devourment in it. When loaded alongside SkyrimVore++, my mo
 * Add dragon soul on digestion (look into dragon quest)
 * Sounds (plugin)
 * Fixed Talk to prey/pred
+* Dialogue plugin (item vore, player prey, reformation still not finished)
+* Papyrus API
 ### Plans
 #### Currently working on
-* Dialogue plugin
 * Player as Prey
 * Inventory (items from container) vore
 * Basic reformation
@@ -87,14 +93,13 @@ Has sound files from Devourment in it. When loaded alongside SkyrimVore++, my mo
 * Swallow minigame
 * Find more people
 * Compatibility with futa mods
-* Compatibility with needs mods
-* Compatibility with survival mods
+* Compatibility with needs / survival mods
 * Compatibility with ostim?
 * Compatibility with devourment sound mod
 * Better WG (food, sprint, etc. should affect WG/Loss)
 * NPC Vore in combat
-* Non-combat NPC vore
-* Vore personalities and preferences for NPCs
+* Non-combat NPC vore (dialogue plugin includes this, but maybe add something more)
+* Vore personalities and preferences for NPCs (need a whole new dialogue plugin)
 * Capacity limits
 * Spells/Perks/Vore leveling
 * Vore gives stats/skill xp

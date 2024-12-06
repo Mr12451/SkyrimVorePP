@@ -268,21 +268,21 @@ namespace Vore
 	public:
 		static inline Locus voreLoc = Locus::lStomach;
 		static inline Locus regLoc = Locus::lNone;
-		static inline VoreState voreType = VoreState::hSafe;
+		static inline VoreDataEntry::VoreState voreType = VoreDataEntry::VoreState::hSafe;
 
 		static void clear()
 		{
 			voreLoc = Locus::lStomach;
 			regLoc = Locus::lNone;
-			voreType = VoreState::hSafe;
+			voreType = VoreDataEntry::VoreState::hSafe;
 		}
 
-		static std::string_view GetTypeStr(VoreState vType)
+		static std::string_view GetTypeStr(VoreDataEntry::VoreState vType)
 		{
 			switch (vType) {
-			case VoreState::hSafe:
+			case VoreDataEntry::VoreState::hSafe:
 				return "Safe";
-			case VoreState::hLethal:
+			case VoreDataEntry::VoreState::hLethal:
 				return "Lethal";
 			default:
 				return "Error!";
