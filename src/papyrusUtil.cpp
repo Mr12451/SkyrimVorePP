@@ -158,14 +158,22 @@ namespace Vore
 		}
 	}
 
-	void PapyrusAPI::PlanReformation(RE::StaticFunctionTag*, [[maybe_unused]] RE::Actor* prey)
+	void PapyrusAPI::PlanReformation(RE::StaticFunctionTag*, RE::Actor* pred, RE::Actor* prey)
 	{
 		flog::info("PPAPI PlanReformation");
+		VoreData::Reforms[prey->GetFormID()] = pred->GetFormID();
 		//placeholder
 		//placeholder
 		//placeholder
 		//placeholder
 		//placeholder
+	}
+
+	void PapyrusAPI::UnplanReformation(RE::StaticFunctionTag*, [[maybe_unused]] RE::Actor* pred, RE::Actor* prey)
+	{
+		if (VoreData::Reforms.contains(prey->GetFormID())) {
+			VoreData::Reforms.erase(prey->GetFormID());
+		}
 	}
 
 	void PapyrusAPI::Strip(RE::StaticFunctionTag*, RE::Actor* target)
@@ -282,6 +290,7 @@ namespace Vore
 		VM::GetSingleton()->RegisterFunction("SetPredControl", "SVPP_API", SetPredControl);
 		VM::GetSingleton()->RegisterFunction("KillPrey", "SVPP_API", KillPrey);
 		VM::GetSingleton()->RegisterFunction("PlanReformation", "SVPP_API", PlanReformation);
+		VM::GetSingleton()->RegisterFunction("UnplanReformation", "SVPP_API", UnplanReformation);
 
 		VM::GetSingleton()->RegisterFunction("Strip", "SVPP_API", Strip);
 		VM::GetSingleton()->RegisterFunction("GetDefaultLocus", "SVPP_API", GetDefaultLocus);

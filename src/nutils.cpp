@@ -290,6 +290,29 @@ namespace Vore::Funcs
 		}
 
 	}
+	void MoveTo(RE::TESObjectREFR* melmoth, RE::TESObjectREFR* moveTo)
+	{
+		if (!melmoth) {
+			return;
+		}
+		
+		if (moveTo && (melmoth->GetParentCell() != moveTo->GetParentCell())) {
+			melmoth->MoveTo(moveTo);
+		} else {
+			NiPoint3 point{ 1.0f, 1.0f, 1.0f };
+			if (moveTo) {
+				point = moveTo->GetPosition();
+			}
+			if (melmoth->GetFormType() == RE::FormType::ActorCharacter) {
+				//true here is necessary to prevent a lag spike when moving player
+				melmoth->As<RE::Actor>()->SetPosition(point, true);
+			} else {
+				melmoth->SetPosition(point);
+			}
+			
+		}
+		//toMove->SetPosition(moveTo->GetPosition());
+	}
 }
 
 namespace Vore::Name

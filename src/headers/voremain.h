@@ -12,9 +12,12 @@ namespace Vore
 			rTransfer, //called from swallow function when prey was already a prey
 			rAll //regurgiate all prey, used when the pred dies
 		};
+		VoreDataEntry* GetApex(VoreDataEntry* prey);
 		void HidePrey(RE::Actor* target);
 		void UnhidePrey(RE::Actor* target);
+		void FinishPlayerDigestion();
 		void SwitchToDigestion(const RE::FormID pred, const Locus locus, const VoreDataEntry::VoreState dType, const bool forceStopDigestion, bool doDialogueUpd = true);
+		void StartReformation(VoreDataEntry* preyData, VoreDataEntry* predData);
 		bool CanMoveToLocus(const RE::FormID& pred, const RE::FormID& prey, const Locus& locus, const Locus& locusSource);
 		bool CanBeRegurgitated(const VoreDataEntry* prey);
 		void MoveToLocus(const RE::FormID& pred, const RE::FormID& prey, const Locus& locus, const Locus& locusSource = Locus::lNone);

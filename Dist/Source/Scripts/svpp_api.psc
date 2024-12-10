@@ -14,7 +14,8 @@ Function SwitchTo(ObjectReference prey, Float digType) global native
 Function SwitchPredTo(Actor pred, Float digType, Bool noEscape) global native
 Function SetPredControl(Bool allowControl) global native
 Function KillPrey(Actor prey) global native
-Function PlanReformation(Actor prey) global native
+Function PlanReformation(Actor pred, Actor prey) global native
+Function UnplanReformation(Actor pred, Actor prey) global native
 
 Function Strip(Actor target) global native
 float function GetDefaultLocus() global native

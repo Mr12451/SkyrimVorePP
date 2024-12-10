@@ -31,7 +31,7 @@ function Fragment_0(ObjectReference akSpeakerRef)
 	actor akSpeaker = akSpeakerRef as actor
 	; game.GetPlayer().AddPerk(DevourmentPerk_Phylactery)
 	; devourmentreformationquest.instance().AddReformationHost(akSpeakerRef as actor)
-    SVPP_API.PlanReformation(game.GetPlayer())
+    SVPP_API.PlanReformation(akSpeaker, game.GetPlayer())
 
 	if bribe
 		pFDS.bribe(akSpeaker)

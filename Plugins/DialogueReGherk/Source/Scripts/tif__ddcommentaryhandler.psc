@@ -90,7 +90,7 @@ function Fragment_0(ObjectReference akSpeakerRef)
 		endIf
 	endIf
 	if akSpeaker.HasSpell(DevourmentStatus_ReformedByPlayer as form) || akSpeaker.HasSpell(DLC2BlackBookCompanionsSafeSpell as form)
-		if !akSpeaker.HasSpell(DevourmentStatus_SwallowedByPlayer as form) || akSpeaker.HasSpell(DialogueVorePrey as form)
+		if !akSpeaker.HasSpell(DevourmentStatus_SwallowedByPlayer as form) || akSpeaker.IsInFaction(DialogueVorePrey)
 			akSpeaker.AddToFaction(DialogueReformedWillingBefore)
 		else
 			akSpeaker.SetRelationshipRank(game.GetPlayer(), akSpeaker.getrelationshiprank(game.GetPlayer()) - 1)

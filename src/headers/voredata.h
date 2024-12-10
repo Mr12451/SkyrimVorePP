@@ -146,6 +146,8 @@ namespace Vore
 		Locus pyLocus = Locus::lNone;
 		Locus pyElimLocus = Locus::lNone;
 		VoreState pyDigestion = VoreState::hNone;
+		// prey will start reforming upon death
+		// bool pyPendingReformation = false;
 
 		uint8_t pyStruggleResource = 0;
 		bool pyConsentEndo = false;
@@ -254,6 +256,8 @@ namespace Vore
 		void BellyUpdate(const double& delta);
 		void SlowF(const double& delta);
 		void SlowD(const double& delta);
+		void SlowR(const double& delta);
+		void SlowP(const double& delta);
 		void Struggle(const double& delta, RE::Actor* asActor, VoreDataEntry* predData);
 		void FastLethalW(const double& delta);
 		void FastLethalU(const double& delta);
@@ -269,6 +273,7 @@ namespace Vore
 		//presistent data will be saved here
 	public:
 		static inline std::unordered_map<RE::FormID, Vore::VoreDataEntry> Data;
+		static inline std::unordered_map<RE::FormID, RE::FormID> Reforms;
 
 		static bool IsValid(RE::FormID character);
 		static VoreDataEntry* IsValidGet(RE::FormID character);

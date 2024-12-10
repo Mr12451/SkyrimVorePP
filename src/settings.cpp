@@ -155,6 +155,7 @@ namespace Vore
 		static const char* section3 = "Process";
 
 		cini::get_value(ini, digestion_amount_base, section3, "Digestion speed", ";All values in this category are PER SECOND\n;Base digestion speed for dead prey. Actual speed scales with prey size");
+		cini::get_value(ini, player_digest_multi, section3, "Player digestion multi", ";Dead player will be digested this times faster");
 		cini::get_value(ini, struggle_amount, section3, "Struggle amount", ";Indigestion gain rate");
 		cini::get_value(ini, struggle_stamina, section3, "Struggle stamina", ";Prey stamina loss during struggling");
 		cini::get_value(ini, indigestion_loss, section3, "Indigestion loss", ";Pred indigestion loss");

@@ -50,6 +50,7 @@ Has sound files from Devourment in it. When loaded alongside SkyrimVore++, my mo
 A version of DialogueReGherk (devourment dialogue plugin) that is compatible with SkyrimVorePP. Requires Devourment Dummy Plugin and SkyUI for MCM
 
 .esp is untouched, scripts are rewritten to use my Papyrus API
+Credits go to gherking on Discord for the original dialogue plugin
 
 ## Development roadmap
 ### Implemented
@@ -77,16 +78,17 @@ A version of DialogueReGherk (devourment dialogue plugin) that is compatible wit
 * Fixed Talk to prey/pred
 * Dialogue plugin (item vore, player prey, reformation still not finished)
 * Papyrus API
+* Player as Prey
+* Basic reformation
 ### Plans
 #### Currently working on
-* Player as Prey
 * Inventory (items from container) vore
-* Basic reformation
 #### For the future
 * Basic Animations
 * Basic VFX
 * Limit WG to certain NPC categories
 * Player-as-prey internal view
+* Reformation of skulls
 * Ui - hide debug info
 * Struggle minigame for prey and pred
 * Struggle damage
@@ -103,6 +105,6 @@ A version of DialogueReGherk (devourment dialogue plugin) that is compatible wit
 * Capacity limits
 * Spells/Perks/Vore leveling
 * Vore gives stats/skill xp
-* Become your killer
+* Become your killer - look into [this mod](https://www.nexusmods.com/skyrimspecialedition/mods/62934)
 * MCM
 * Fix menu disappearing on cell change

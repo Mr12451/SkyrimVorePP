@@ -29,7 +29,8 @@ namespace Vore
 		static void SwitchPredTo(RE::StaticFunctionTag*, RE::Actor* target, float digestionType, bool forceNoEscape);
 		static void SetPredControl(RE::StaticFunctionTag*, bool allowControl);
 		static void KillPrey(RE::StaticFunctionTag*, RE::Actor* prey);
-		static void PlanReformation(RE::StaticFunctionTag*, RE::Actor* prey);
+		static void PlanReformation(RE::StaticFunctionTag*, RE::Actor* pred, RE::Actor* prey);
+		static void UnplanReformation(RE::StaticFunctionTag*, RE::Actor* pred, RE::Actor* prey);
 
 		//utils
 		static void Strip(RE::StaticFunctionTag*, RE::Actor* target);

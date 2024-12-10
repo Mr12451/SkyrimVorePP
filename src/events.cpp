@@ -61,7 +61,14 @@ namespace Vore
 				// info("Key pressed: {}", keyCode);
 
 				if (keyCode == VoreSettings::k_vore_key) {
-					Core::SwallowTarget(RE::PlayerCharacter::GetSingleton(), PlayerPrefs::voreLoc, PlayerPrefs::voreType);
+					VoreDataEntry* playerData = VoreData::IsValidGet(RE::PlayerCharacter::GetSingleton()->GetFormID());
+					if (playerData && playerData->pred) {
+						if (playerData->pyDigestProgress == 100.0) {
+							Core::FinishPlayerDigestion();
+						}
+					} else {
+						Core::SwallowTarget(RE::PlayerCharacter::GetSingleton(), PlayerPrefs::voreLoc, PlayerPrefs::voreType);
+					}
 				} else if (keyCode == VoreSettings::k_regurg_key) {
 					Core::RegurgitateAll(RE::PlayerCharacter::GetSingleton(), PlayerPrefs::regLoc);
 				}
@@ -82,9 +89,10 @@ namespace Vore
 					UI::VoreMenu::SetMenuMode(UI::VoreMenuMode::kSwallow);
 				} else if (keyCode == VoreSettings::k_test) {
 					Log::PrintVoreData();
-					for (auto& i : RE::PlayerCharacter::GetSingleton()->addedSpells) {
+					Funcs::MoveTo(RE::PlayerCharacter::GetSingleton(), nullptr);
+					/*for (auto& i : RE::PlayerCharacter::GetSingleton()->addedSpells) {
 						flog::info("found spell {}", i->GetFullName());
-					}
+					}*/
 				}
 
 				break;
@@ -130,6 +138,7 @@ namespace Vore
 					actorData->pyDigestProgress = 0.0;
 					actorData->pyElimLocus = actorData->pyLocus;
 					actorData->pyLocusMovement = VoreDataEntry::mStill;
+					actorData->pyDigestion = VoreDataEntry::hLethal;
 					//
 					if (actorData->get()->IsDragon() && actorData->pred == RE::PlayerCharacter::GetSingleton()->GetFormID()) {
 						AV::ModAV(RE::PlayerCharacter::GetSingleton(), RE::ActorValue::kDragonSouls, 1.0);

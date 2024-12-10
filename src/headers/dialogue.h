@@ -66,7 +66,7 @@ namespace Vore
 
 		static void Clear_Pred(RE::Actor* pred);
 		static void Clear_Prey(RE::Actor* pred, RE::TESObjectREFR* prey, bool forceClear);
-		static void SetupForReform(RE::Actor* prey);
+		static void SetupForReform(RE::Actor* pred, RE::Actor* prey);
 		static void OnDigestionChange(RE::Actor* pred);
 		static void PlayerDied();
 		static Dialogue::PreyWillingness IsWillingPrey(RE::Actor* pred, RE::Actor* prey, bool lethal);

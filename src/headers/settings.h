@@ -55,6 +55,7 @@ namespace Vore
 
 		//static inline double digestion_amount_base = 0.03;
 		static inline double digestion_amount_base = 1.0;
+		static inline double player_digest_multi = 5.0;
 		static inline double struggle_amount = 5;
 		static inline double struggle_stamina = 15;
 		static inline double indigestion_loss = 0.5;
@@ -260,6 +261,8 @@ namespace Vore
 			{ "AlduinRace", "VoreSkeletonDragon" },
 			{ "UndeadDragonRace", "VoreSkeletonDragon" }
 		};
+
+		static inline RE::FormID player_camera_owner{};
 	};
 
 

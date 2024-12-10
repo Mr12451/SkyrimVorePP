@@ -57,6 +57,7 @@ namespace Vore
 		pyDigestProgress = 0.0;
 		pyElimLocus = pyLocus;
 		pyLocusMovement = mStill;
+		pyDigestion = hLethal;
 		CalcFast();
 		CalcSlow();
 
@@ -315,15 +316,29 @@ namespace Vore
 			pyLocusMovement = VoreDataEntry::FullTour::mStill;
 			CalcSlow();
 		}
+		// pred code
+		if (aIsPlayer && !aDialogue) {
+			VoreDataEntry* apexData = Core::GetApex(this);
+			Funcs::MoveTo(get(), apexData->get());
+		}
 	}
 
-	static void FinishDigestion([[maybe_unused]] const RE::FormID& prey, VoreDataEntry* preyData)
+	static void FinishDigestionProcess(VoreDataEntry* preyData, VoreDataEntry* predData)
 	{
 		//play some sound
-		//(possibly) turn into bones?
 		flog::info("{} was fully digested", Name::GetName(preyData->get()));
-		//RE::Actor* preyA = preyData.get()->As<RE::Actor>();
-		//preyA->SetCollision
+		preyData->pyDigestProgress = 100.0;
+		preyData->CalcSlow();
+		preyData->CalcFast();
+		if (!preyData->aIsChar) {
+			return;
+		}
+		predData->PlaySound(Sounds::Gurgle);
+		predData->EmoteSmile(5000);
+		if (VoreData::Reforms.contains(preyData->get()->GetFormID()) && VoreData::Reforms[preyData->get()->GetFormID()] == predData->get()->GetFormID()) {
+			Core::StartReformation(preyData, predData);
+			VoreData::Reforms.erase(preyData->get()->GetFormID());
+		}
 	}
 
 	void VoreDataEntry::SlowD(const double& delta)
@@ -333,6 +348,9 @@ namespace Vore
 			return;
 		}
 		double digestBase = VoreSettings::digestion_amount_base * delta;
+		if (aIsPlayer) {
+			digestBase *= VoreSettings::player_digest_multi;
+		}
 		//aWeight can increase / decrease digestion time
 		//calculate speed -> (100 - val.pyDigestProgress) / VoreSettings::digestion_amount_base * 100 / val.aSize
 		//get actual digestion time
@@ -342,9 +360,7 @@ namespace Vore
 		const double& newBase = digestBase > toDigest ? toDigest : digestBase;
 		pyDigestProgress += newBase * digestMod;
 		if (pyDigestProgress >= 100) {
-			pyDigestProgress = 100;
-			FinishDigestion(get()->GetFormID(), this);
-			CalcSlow();
+			FinishDigestionProcess(this, predData);
 		}
 		if (pyLocus == Locus::lBowel) {
 			pyLocusProcess = 100 - pyDigestProgress;
@@ -370,6 +386,105 @@ namespace Vore
 		predData->pdUpdateGoal = true;
 		predData->pdHasDigestion = true;
 		predData->SetPredUpdate(true);
+
+		//player code
+		if (aIsPlayer && !aDialogue) {
+			VoreDataEntry* apexData = Core::GetApex(this);
+			Funcs::MoveTo(get(), apexData->get());
+		}
+	}
+
+	static void FinishReformProcess(VoreDataEntry* preyData, VoreDataEntry* predData)
+	{
+		//play some sound
+		flog::info("{} was reformed", Name::GetName(preyData->get()));
+		if (!preyData->aIsChar) {
+			return;
+		}
+		preyData->pyDigestProgress = 0.0;
+		predData->PlaySound(Sounds::Gurgle);
+		predData->EmoteSmile(5000);
+		
+		preyData->pyDigestion = predData->pdLoci[preyData->pyLocus];
+		preyData->aAlive = true;
+		if (preyData->aIsChar && !preyData->aIsPlayer) {
+			preyData->get()->As<RE::Actor>()->Resurrect(false, false);
+		}
+		preyData->CalcSlow();
+		preyData->CalcFast();
+	}
+
+	void VoreDataEntry::SlowR(const double& delta)
+	{
+		VoreDataEntry* predData = VoreData::IsValidGet(pred);
+		if (!predData) {
+			return;
+		}
+		double reformBase = VoreSettings::digestion_amount_base * delta;
+		if (aIsPlayer) {
+			reformBase *= VoreSettings::player_digest_multi;
+		}
+
+		double reformMod = 1 / std::max(std::pow(aSize / VoreGlobals::slider_one, 0.5), 0.6);
+		double toReform = pyDigestProgress / reformMod;
+		const double& newBase = reformBase > toReform ? toReform : reformBase;
+		pyDigestProgress -= newBase * reformMod;
+		if (pyDigestProgress <= 0.0) {
+			
+			FinishReformProcess(this, predData);
+			
+		}
+		if (pyLocus == Locus::lBowel) {
+			pyLocusProcess = 100 - pyDigestProgress;
+		}
+
+
+		// weight loss
+
+		// locus increase
+		// fat
+		// fat growth
+		// height (size) increase; (for me) check gts for info
+		for (uint8_t i = 0; i < 4; i++) {
+			predData->pdGrowthLocus[i] -= newBase * VoreSettings::voretypes_partgain[pyElimLocus][i] * VoreSettings::wg_locusgrowth;
+			if (predData->pdGrowthLocus[i] < 0) {
+				predData->pdGrowthLocus[i] = 0;
+			}
+		}
+
+		predData->pdFat -= newBase * VoreSettings::wg_fattemp;
+		if (predData->pdFat < 0) {
+			predData->pdFat = 0;
+		}
+		predData->pdFatgrowth -= newBase * VoreSettings::wg_fatlong;
+		if (predData->pdFatgrowth < 0) {
+			predData->pdFatgrowth = 0;
+		}
+		predData->pdSizegrowth -= newBase * VoreSettings::wg_sizegrowth;
+		if (predData->pdSizegrowth < 0) {
+			predData->pdSizegrowth = 0;
+		}
+		predData->pdUpdateGoal = true;
+		predData->pdHasDigestion = true;
+		predData->SetPredUpdate(true);
+
+		//player code
+		if (aIsPlayer && !aDialogue) {
+			VoreDataEntry* apexData = Core::GetApex(this);
+			Funcs::MoveTo(get(), apexData->get());
+		}
+	}
+
+	void VoreDataEntry::SlowP(const double&)
+	{
+		VoreDataEntry* predData = VoreData::IsValidGet(pred);
+		if (!predData) {
+			return;
+		}
+		if (aIsPlayer && !aDialogue) {
+			VoreDataEntry* apexData = Core::GetApex(this);
+			Funcs::MoveTo(get(), apexData->get());
+		}
 	}
 
 	void VoreDataEntry::Struggle(const double& delta, RE::Actor* asActor, VoreDataEntry* predData)
@@ -622,10 +737,15 @@ namespace Vore
 		if (aAlive) {
 			if (pyLocus == Locus::lBowel && pyLocusMovement != VoreDataEntry::FullTour::mStill) {
 				SlowU = &VoreDataEntry::SlowF;
+			} else if (aIsPlayer) {
+				SlowU = &VoreDataEntry::SlowP;
 			} else {
 				SlowU = nullptr;
 			}
-		} else if (pyDigestProgress < 100) {
+		} else if (pyDigestion == hReformation) {
+			SlowU = &VoreDataEntry::SlowR;
+		}
+		else if (pyDigestProgress < 100) {
 			SlowU = &VoreDataEntry::SlowD;
 		} else {
 			SlowU = nullptr;
@@ -1072,8 +1192,11 @@ namespace Vore
 				std::this_thread::sleep_for(std::chrono::milliseconds{ duration_ms });
 				SKSE::GetTaskInterface()->AddTask([myHandle]() {
 					if (myHandle) {
-						myHandle.get()->GetFaceGenAnimationData()->ClearExpressionOverride();
-						myHandle.get()->GetFaceGenAnimationData()->exprOverride = false;
+						RE::BSFaceGenAnimationData* fgenData = myHandle.get()->GetFaceGenAnimationData();
+						if (fgenData) {
+							fgenData->ClearExpressionOverride();
+							fgenData->exprOverride = false;
+						}
 					}
 				});
 			});
@@ -1347,12 +1470,22 @@ namespace Vore
 		//cosave version
 		s = s && a_intfc->WriteRecordData(&VORE_VERSION, sizeof(VORE_VERSION));
 
+
 		s = s && a_intfc->WriteRecordData(&PlayerPrefs::voreLoc, sizeof(PlayerPrefs::voreLoc));
 		s = s && a_intfc->WriteRecordData(&PlayerPrefs::regLoc, sizeof(PlayerPrefs::regLoc));
 		s = s && a_intfc->WriteRecordData(&PlayerPrefs::voreType, sizeof(PlayerPrefs::voreType));
 
+		size_t size = Reforms.size();
+		flog::info("Reforms, size: {}", size);
+		s = s && a_intfc->WriteRecordData(&size, sizeof(size));
+
+		for (auto& [pyId, pdId] : Reforms) {
+			s = s && SaveFormId(pyId, a_intfc);
+			s = s && SaveFormId(pdId, a_intfc);
+		}
+
 		//size of Data
-		size_t size = Data.size();
+		size = Data.size();
 		flog::info("Vore Data entries, size: {}", size);
 		s = s && a_intfc->WriteRecordData(&size, sizeof(size));
 
@@ -1530,8 +1663,21 @@ namespace Vore
 				a_intfc->ReadRecordData(PlayerPrefs::regLoc);
 				a_intfc->ReadRecordData(PlayerPrefs::voreType);
 
-				//size of Data
 				size_t size;
+				flog::info("Reforms, sise: {}", size);
+
+				//read reforms
+				a_intfc->ReadRecordData(size);
+				for (; size > 0; --size) {
+					RE::TESObjectREFR* preyRef = GetObjectPtr(a_intfc);
+					RE::TESObjectREFR* predRef = GetObjectPtr(a_intfc);
+					if (!preyRef || !predRef) {
+						continue;
+					}
+					Reforms[preyRef->GetFormID()] = predRef->GetFormID();
+				}
+
+				//size of Data
 				a_intfc->ReadRecordData(size);
 				flog::info("Vore Data entries, size: {}", size);
 
@@ -1676,6 +1822,7 @@ namespace Vore
 		UI::VoreMenu::_setModeAfterShow = UI::kNone;
 		UI::VoreMenu::_infoTarget = {};
 		flog::info("reverting, clearing data");
+		Reforms.clear();
 		Data.clear();
 	}
 }

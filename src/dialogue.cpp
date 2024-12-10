@@ -178,10 +178,19 @@ namespace Vore
 		}
 	}
 
-	void Dialogue::SetupForReform(RE::Actor* prey)
+	void Dialogue::SetupForReform(RE::Actor* pred, RE::Actor* prey)
 	{
 		if (!prey || !plugin_loaded) {
 			return;
+		}
+		if (prey->IsPlayerRef()) {
+			if (!pred->HasSpell(s_statusRefP)) {
+				pred->AddSpell(s_statusRefP);
+			}
+		} else if (pred->IsPlayerRef()) {
+			if (!prey->HasSpell(s_statusRefByP)) {
+				prey->AddSpell(s_statusRefByP);
+			}
 		}
 	}
 

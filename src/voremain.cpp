@@ -30,6 +30,44 @@ namespace Vore::Core
 		}
 	}
 
+	VoreDataEntry* GetApex(VoreDataEntry* prey)
+	{
+		if (!prey) {
+			return nullptr;
+		}
+		if (prey->pred) {
+			VoreDataEntry* predData = VoreData::IsValidGet(prey->pred);
+			if (predData) {
+				return GetApex(predData);
+			} else {
+				return prey;
+			}
+		} else {
+			return prey;
+		}
+	}
+
+	static void UpdatePlayerCamera() {
+		RE::PlayerCharacter* player = RE::PlayerCharacter::GetSingleton();
+		VoreDataEntry* playerData = VoreData::IsValidGet(player->GetFormID());
+		if (playerData && playerData->pred) {
+			VoreDataEntry* predData = GetApex(playerData);
+			if (predData->get()->GetFormID() != VoreGlobals::player_camera_owner) {
+				VoreGlobals::player_camera_owner = predData->get()->GetFormID();
+
+				RE::PlayerCamera* camera = RE::PlayerCamera::GetSingleton();
+				camera->cameraTarget = predData->get()->As<RE::Actor>()->GetHandle();
+				// set camera to 
+
+			}
+		} else if (VoreGlobals::player_camera_owner != 0) {
+			VoreGlobals::player_camera_owner = 0;
+			RE::PlayerCamera* camera = RE::PlayerCamera::GetSingleton();
+			camera->cameraTarget = player->GetHandle();
+			//return control to player
+		}
+	}
+
 	void HidePrey(RE::Actor* target)
 	{
 		Funcs::StopCombatAlarm(target);
@@ -37,7 +75,17 @@ namespace Vore::Core
 		Funcs::SetAlpha(target, 0.0f, false);
 		Funcs::SetGhost(target, true);
 		Funcs::SetAlpha(target, 0.0f, false);
-		Funcs::SetRestrained(target, true);
+		if (target->IsPlayerRef()) {
+			RE::ControlMap::GetSingleton()->ToggleControls(RE::UserEvents::USER_EVENT_FLAG::kMovement, false);
+			RE::ControlMap::GetSingleton()->ToggleControls(RE::UserEvents::USER_EVENT_FLAG::kFighting, false);
+			RE::ControlMap::GetSingleton()->ToggleControls(RE::UserEvents::USER_EVENT_FLAG::kSneaking, false);
+			RE::ControlMap::GetSingleton()->ToggleControls(RE::UserEvents::USER_EVENT_FLAG::kPOVSwitch, false);
+			RE::ControlMap::GetSingleton()->ToggleControls(RE::UserEvents::USER_EVENT_FLAG::kActivate, false);
+			RE::ControlMap::GetSingleton()->ToggleControls(RE::UserEvents::USER_EVENT_FLAG::kWheelZoom, false);
+		} else {
+			Funcs::SetRestrained(target, true);
+		}
+
 	}
 
 	void UnhidePrey(RE::Actor* target)
@@ -45,7 +93,25 @@ namespace Vore::Core
 		Funcs::SetAlpha(target, 1.0f, false);
 		Funcs::SetGhost(target, false);
 		Funcs::SetAlpha(target, 1.0f, false);
-		Funcs::SetRestrained(target, false);
+		if (target->IsPlayerRef()) {
+			RE::ControlMap::GetSingleton()->ToggleControls(RE::UserEvents::USER_EVENT_FLAG::kMovement, true);
+			RE::ControlMap::GetSingleton()->ToggleControls(RE::UserEvents::USER_EVENT_FLAG::kFighting, true);
+			RE::ControlMap::GetSingleton()->ToggleControls(RE::UserEvents::USER_EVENT_FLAG::kSneaking, true);
+			RE::ControlMap::GetSingleton()->ToggleControls(RE::UserEvents::USER_EVENT_FLAG::kPOVSwitch, true);
+			RE::ControlMap::GetSingleton()->ToggleControls(RE::UserEvents::USER_EVENT_FLAG::kActivate, true);
+			RE::ControlMap::GetSingleton()->ToggleControls(RE::UserEvents::USER_EVENT_FLAG::kWheelZoom, true);
+		} else {
+			Funcs::SetRestrained(target, false);
+		}
+	}
+
+	void FinishPlayerDigestion()
+	{
+		RE::Actor* player = RE::PlayerCharacter::GetSingleton();
+		VoreDataEntry* playerData = VoreData::IsValidGet(player->GetFormID());
+		if (playerData && !playerData->aAlive) {
+			AV::DamageAV(player, RE::ActorValue::kHealth, AV::GetAV(player, RE::ActorValue::kHealth) + 1.0f);
+		}
 	}
 
 	void SwitchToDigestion(const RE::FormID pred, const Locus locus, const VoreDataEntry::VoreState dType, const bool forceStopDigestion, bool doDialogueUpd)
@@ -85,6 +151,7 @@ namespace Vore::Core
 			predData->pdLoci[locus] = dType;
 			for (const RE::FormID& el : locusPreys) {
 				if (VoreDataEntry* pyData = VoreData::IsValidGet(el)) {
+					// digestion of dead prey shouldn't be changed, nor does it affect the digestion of live prey
 					if (!pyData->aAlive) {
 						continue;
 					}
@@ -104,6 +171,21 @@ namespace Vore::Core
 		if (doDialogueUpd) {
 			Dialogue::OnDigestionChange(predData->get()->As<RE::Actor>());
 		}
+	}
+
+	void StartReformation(VoreDataEntry* preyData, VoreDataEntry* predData)
+	{
+		if (!preyData->aIsChar) {
+			return;
+		}
+		preyData->pyDigestion = VoreDataEntry::hReformation;
+		preyData->pyLocusMovement = VoreDataEntry::mStill;
+		preyData->pyElimLocus = preyData->pyLocus;
+		preyData->aAlive = false;
+		preyData->pyDigestProgress = 99.999;
+		Dialogue::SetupForReform(predData->get()->As<RE::Actor>(), preyData->get()->As<RE::Actor>());
+		preyData->CalcFast();
+		preyData->CalcSlow();
 	}
 
 	bool CanMoveToLocus([[maybe_unused]] const RE::FormID& pred, [[maybe_unused]] const RE::FormID& prey, const Locus& locus, const Locus& locusSource)
@@ -170,14 +252,17 @@ namespace Vore::Core
 				RE::TESObjectREFR* stomachCell = RE::TESForm::LookupByEditorID<RE::TESObjectREFR>("BellyAMarker");
 				//flog::critical("FOUND CELL MARKER {}", (int)stomachCell);
 				// test: can you move dead actors?
-				prey->MoveTo(stomachCell);
-
+				if (!prey->IsPlayerRef()) {
+					Funcs::MoveTo(prey, stomachCell);
+				}
+				UpdatePlayerCamera();
 				HidePrey(prey);
 
 				/*if (!prey->IsPlayerRef()) {
 					prey->EnableAI(false);
 				}*/
 			} else if (pred) {
+				UpdatePlayerCamera();
 				UnhidePrey(prey);
 
 				/*if (!prey->IsPlayerRef()) {
@@ -186,7 +271,7 @@ namespace Vore::Core
 
 				if (preyData && preyData->pyDigestProgress >= 100.0) {
 					RE::TESObjectREFR* stomachDeadCell = RE::TESForm::LookupByEditorID<RE::TESObjectREFR>("BellyDMarker");
-					prey->MoveTo(stomachDeadCell);
+					Funcs::MoveTo(prey, stomachDeadCell);
 					// make remains
 					// pred->PlaceObjectAtMe();```
 					// unequip all from prey
@@ -224,7 +309,7 @@ namespace Vore::Core
 					flog::critical("Is prey persistent? {}", prey->IsPersistent());
 
 				} else {
-					prey->MoveTo(pred);
+					Funcs::MoveTo(prey, pred);
 				}
 			} else {
 				UnhidePrey(prey);
@@ -232,7 +317,7 @@ namespace Vore::Core
 		} else {
 			if (!show) {
 				RE::TESObjectREFR* stomachCell = RE::TESForm::LookupByEditorID<RE::TESObjectREFR>("BellyIMarker");
-				preyObj->MoveTo(stomachCell);
+				Funcs::MoveTo(preyObj, stomachCell);
 			} else if (pred) {
 				if (preyData && preyData->pyDigestProgress >= 100.0) {
 					uint32_t refCound = preyObj->QRefCount();
@@ -242,7 +327,7 @@ namespace Vore::Core
 					flog::critical("RELEASING {}", Name::GetName(preyObj));
 					//finish this!!!!!!!!
 				} else {
-					preyObj->MoveTo(pred);
+					Funcs::MoveTo(preyObj, pred);
 				}
 			}
 		}
@@ -314,6 +399,7 @@ namespace Vore::Core
 				preyData.pyLocus = locus;
 				preyData.pyElimLocus = locus;
 				preyData.pyDigestion = ldType;
+				//preyData.pyPendingReformation = false;
 
 				preyData.pyStruggleResource = 4;
 
@@ -428,6 +514,7 @@ namespace Vore::Core
 		} else {
 			flog::warn("No prey were swallowed");
 		}
+
 		predData.PlaySwallow();
 		UI::VoreMenu::SetMenuMode(UI::kDefault);
 		Log::PrintVoreData();
@@ -527,6 +614,7 @@ namespace Vore::Core
 			preyData->pyLocus = Locus::lNone;
 			preyData->pyElimLocus = Locus::lNone;
 			preyData->pyDigestion = VoreDataEntry::hNone;
+			//preyData->pyPendingReformation = false;
 
 			preyData->pyStruggleResource = 0;
 			preyData->pyConsentEndo = false;
