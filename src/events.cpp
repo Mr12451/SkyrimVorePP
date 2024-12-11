@@ -102,9 +102,17 @@ namespace Vore
 	}
 
 	// Log information about Menu open/close events that happen in the game
-	RE::BSEventNotifyControl EventProcessor::ProcessEvent(const RE::MenuOpenCloseEvent* event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*)
+	RE::BSEventNotifyControl EventProcessor::ProcessEvent(const RE::MenuOpenCloseEvent*, RE::BSTEventSource<RE::MenuOpenCloseEvent>*)
 	{
-		flog::info("Menu {} Open? {}", event->menuName.c_str(), event->opening);
+		//if (event->menuName == "GiftMenu" && VoreGlobals::gift_menu_target) {
+		//	if (event->opening) {
+		//		flog::info("Opened vore GiftMenu");
+		//	} else {
+		//		flog::info("Closed vore GiftMenu");
+		//		VoreGlobals::gift_menu_target = RE::ActorHandle();
+		//		VoreGlobals::gift_menu_ic = RE::ObjectRefHandle();
+		//	}
+		//}
 		return RE::BSEventNotifyControl::kContinue;
 	}
 
@@ -209,14 +217,24 @@ namespace Vore
 	EventProcessor::EventProcessor(const EventProcessor&){};
 	EventProcessor::EventProcessor(EventProcessor&&){};
 
+
 	void VEventProcessor::Hook()
 	{
-		flog::info("Hooking impact event");
-		REL::Relocation<std::uintptr_t> Vtbl{ RE::VTABLE_BGSImpactManager[0] };
-		_ProcessEvent = Vtbl.write_vfunc(0x01, ProcessEvent);
+		flog::info("Hooking footstep event");
+		REL::Relocation<std::uintptr_t> VtblImpact{ RE::VTABLE_BGSImpactManager[0] };
+		_ProcessFootstepEvent = VtblImpact.write_vfunc(0x01, ProcessFootstepEvent);
+		//flog::info("Hooking gift menu events");
+		/*REL::Relocation<std::uintptr_t> VtblGift{ RE::VTABLE_IGiftMenuScriptCallback[0] };
+		const auto a_idx = 0x01;
+		const auto addr = VtblGift.address() + (sizeof(void*) * a_idx);
+		const auto result = *reinterpret_cast<std::uintptr_t*>(addr);
+		REL::Relocation<void(RE::GiftMenu*)> func(result);
+		func(this);*/
+		//auto g_menu = RE::UI::GetSingleton()->GetMenu<RE::GiftMenu>();
+		//CallbackProcessor
 	}
 
-	RE::BSEventNotifyControl VEventProcessor::ProcessEvent(RE::BGSImpactManager* a_this, const RE::BGSFootstepEvent* a_event, RE::BSTEventSource<RE::BGSFootstepEvent>* a_eventSource)
+	RE::BSEventNotifyControl VEventProcessor::ProcessFootstepEvent(RE::BGSImpactManager* a_this, const RE::BGSFootstepEvent* a_event, RE::BSTEventSource<RE::BGSFootstepEvent>* a_eventSource)
 	{
 		//flog::info("Footstep event {}", a_event->actor.get()->GetDisplayFullName());
 		if (a_event->tag == "FootRight") {
@@ -227,7 +245,7 @@ namespace Vore
 			} 
 		}
 
-		auto result = _ProcessEvent(a_this, a_event, a_eventSource);
+		auto result = _ProcessFootstepEvent(a_this, a_event, a_eventSource);
 		return result;
 	}
 }

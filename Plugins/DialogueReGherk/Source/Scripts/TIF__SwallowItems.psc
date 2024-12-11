@@ -5,5 +5,8 @@ Spell property EatThis auto
 
 
 function Fragment_0(ObjectReference akSpeakerRef)
-	EatThis.cast(Game.GetPlayer(), akSpeakerRef as Actor)
+    actor akSpeaker = akSpeakerRef as actor
+    if akSpeaker
+        SVPP_API.InventoryVore(akSpeaker)
+    endIf
 endFunction

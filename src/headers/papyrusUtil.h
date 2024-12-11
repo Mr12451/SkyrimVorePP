@@ -31,6 +31,9 @@ namespace Vore
 		static void KillPrey(RE::StaticFunctionTag*, RE::Actor* prey);
 		static void PlanReformation(RE::StaticFunctionTag*, RE::Actor* pred, RE::Actor* prey);
 		static void UnplanReformation(RE::StaticFunctionTag*, RE::Actor* pred, RE::Actor* prey);
+		static void InventoryVore(RE::StaticFunctionTag*, RE::Actor* pred);
+		static RE::TESObjectREFR* MakeSC(RE::StaticFunctionTag*);
+		static void CommitSC(RE::StaticFunctionTag*, RE::Actor* pred, RE::TESObjectREFR* sc);
 
 		//utils
 		static void Strip(RE::StaticFunctionTag*, RE::Actor* target);
@@ -38,9 +41,6 @@ namespace Vore
 		static float GetRandomLocus(RE::StaticFunctionTag*, RE::Actor* target);
 
 
-
-		//other
-		static RE::TESObjectREFR* MakeBolus(RE::StaticFunctionTag*, RE::Actor* pred);  //placeholder
 
 		static void Register();
 	};

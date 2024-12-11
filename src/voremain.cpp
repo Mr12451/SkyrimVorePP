@@ -47,7 +47,8 @@ namespace Vore::Core
 		}
 	}
 
-	static void UpdatePlayerCamera() {
+	static void UpdatePlayerCamera()
+	{
 		RE::PlayerCharacter* player = RE::PlayerCharacter::GetSingleton();
 		VoreDataEntry* playerData = VoreData::IsValidGet(player->GetFormID());
 		if (playerData && playerData->pred) {
@@ -57,8 +58,7 @@ namespace Vore::Core
 
 				RE::PlayerCamera* camera = RE::PlayerCamera::GetSingleton();
 				camera->cameraTarget = predData->get()->As<RE::Actor>()->GetHandle();
-				// set camera to 
-
+				// set camera to
 			}
 		} else if (VoreGlobals::player_camera_owner != 0) {
 			VoreGlobals::player_camera_owner = 0;
@@ -85,7 +85,6 @@ namespace Vore::Core
 		} else {
 			Funcs::SetRestrained(target, true);
 		}
-
 	}
 
 	void UnhidePrey(RE::Actor* target)
@@ -188,6 +187,25 @@ namespace Vore::Core
 		preyData->CalcSlow();
 	}
 
+	void InventoryVore(RE::Actor* pred)
+	{
+		//apply effect
+		auto* iVoreSpell = RE::TESDataHandler::GetSingleton()->LookupForm<RE::SpellItem>(0x6F372, "SkyrimVorePP.esp");
+		if (!iVoreSpell) {
+			flog::error("No item vore spell found!");
+		}
+		auto* caster = RE::PlayerCharacter::GetSingleton()->GetMagicCaster(RE::MagicSystem::CastingSource::kInstant);
+		if (!caster) {
+			flog::error("Can't cast item vore spell - no magic caster on player");
+		}
+		caster->CastSpellImmediate(iVoreSpell, false, pred, 1.0f, false, 1.0f, nullptr);
+		//bool activated = false;
+		//activated = iVoreSpell->Activate(pred, RE::PlayerCharacter::GetSingleton(), 0, nullptr, 0);
+		//activated = RE::PlayerCharacter::GetSingleton()->Activate(pred, nullptr, 0, iVoreSpell, 0);
+		Funcs::ShowGiftMenu(pred, Dialogue::GetIVFormlist());
+		//flog::info("Item vore success? {}", activated);
+	}
+
 	bool CanMoveToLocus([[maybe_unused]] const RE::FormID& pred, [[maybe_unused]] const RE::FormID& prey, const Locus& locus, const Locus& locusSource)
 	{
 		// incorrect locus destination
@@ -249,7 +267,7 @@ namespace Vore::Core
 
 			if (!show) {
 				//RE::TESObjectCELL* stomachCell = RE::TESForm::LookupByEditorID("QASmoke")->As<RE::TESObjectCELL>();
-				RE::TESObjectREFR* stomachCell = RE::TESForm::LookupByEditorID<RE::TESObjectREFR>("BellyAMarker");
+				RE::TESObjectREFR* stomachCell = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESObjectREFR>(0x12D9, "SkyrimVorePP.esp");
 				//flog::critical("FOUND CELL MARKER {}", (int)stomachCell);
 				// test: can you move dead actors?
 				if (!prey->IsPlayerRef()) {
@@ -270,7 +288,7 @@ namespace Vore::Core
 				}*/
 
 				if (preyData && preyData->pyDigestProgress >= 100.0) {
-					RE::TESObjectREFR* stomachDeadCell = RE::TESForm::LookupByEditorID<RE::TESObjectREFR>("BellyDMarker");
+					RE::TESObjectREFR* stomachDeadCell = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESObjectREFR>(0x333D, "SkyrimVorePP.esp");
 					Funcs::MoveTo(prey, stomachDeadCell);
 					// make remains
 					// pred->PlaceObjectAtMe();```
@@ -316,7 +334,7 @@ namespace Vore::Core
 			}
 		} else {
 			if (!show) {
-				RE::TESObjectREFR* stomachCell = RE::TESForm::LookupByEditorID<RE::TESObjectREFR>("BellyIMarker");
+				RE::TESObjectREFR* stomachCell = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESObjectREFR>(0x28556, "SkyrimVorePP.esp");
 				Funcs::MoveTo(preyObj, stomachCell);
 			} else if (pred) {
 				if (preyData && preyData->pyDigestProgress >= 100.0) {
@@ -327,7 +345,23 @@ namespace Vore::Core
 					flog::critical("RELEASING {}", Name::GetName(preyObj));
 					//finish this!!!!!!!!
 				} else {
-					Funcs::MoveTo(preyObj, pred);
+					if (preyData && preyData->aIsContainer) {
+						//RE::NiPoint3 predPos{ pred->GetPosition() };
+						flog::info("Releasing stomach container");
+						//auto* player = RE::PlayerCharacter::GetSingleton();
+						//flog::info("player pos {} {} {}", player->GetPositionX(), player->GetPositionY(), player->GetPositionZ());
+						for (auto& [i, j] : preyObj->GetInventory()) {
+							auto itemPreyRefr = preyObj->RemoveItem(i, j.first, RE::ITEM_REMOVE_REASON::kDropping, nullptr, nullptr);
+							auto iobj = pred->PlaceObjectAtMe(i, false);
+							flog::info("Releaing {}", iobj->GetDisplayFullName());
+							//RE::TESObjectREFR* itemReft = itemPreyRefr.get().get();
+							//flog::info("Item: {} pos {} {} {}", itemReft->GetDisplayFullName(), itemReft->GetPositionX(), itemReft->GetPositionY(), itemReft->GetPositionZ());
+						}
+						preyObj->SetDelete(true);
+						VoreData::HardDelete(preyObj->GetFormID());
+					} else {
+						Funcs::MoveTo(preyObj, pred);
+					}
 				}
 			}
 		}
@@ -377,13 +411,11 @@ namespace Vore::Core
 
 				RE::FormID oldPred = preyData.pred;
 
-
 				if (oldPred) {
 					if (VoreData::Data.contains(oldPred) && VoreData::Data[oldPred].prey.contains(preyId)) {
 						Regurgitate(VoreData::Data[oldPred].get()->As<RE::Actor>(), preyId, RegType::rTransfer);
 					}
 				}
-
 
 				// don't delete a prey if we're planning on using them
 				if (VoreGlobals::delete_queue.contains(preyId)) {
@@ -433,7 +465,8 @@ namespace Vore::Core
 
 			} else {
 				RE::TESBoundObject* base = prey->GetBaseObject();
-				if (VoreGlobals::allowed_pickup.contains(base->GetFormType())) {
+				// check if the object is valid bc it can be a stomach contaner with pre-created voredata, but it's form type isn't usually allowed for swallowing
+				if (VoreData::IsValid(prey->GetFormID()) || VoreGlobals::allowed_pickup.contains(base->GetFormType())) {
 					flog::info("Pred {}, prey {}, eatable object", Name::GetName(pred), Name::GetName(prey));
 
 					RE::FormID preyId = VoreData::MakeData(prey);

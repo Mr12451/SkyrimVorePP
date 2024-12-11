@@ -18,6 +18,7 @@ namespace Vore
 		void FinishPlayerDigestion();
 		void SwitchToDigestion(const RE::FormID pred, const Locus locus, const VoreDataEntry::VoreState dType, const bool forceStopDigestion, bool doDialogueUpd = true);
 		void StartReformation(VoreDataEntry* preyData, VoreDataEntry* predData);
+		void InventoryVore(RE::Actor* pred);
 		bool CanMoveToLocus(const RE::FormID& pred, const RE::FormID& prey, const Locus& locus, const Locus& locusSource);
 		bool CanBeRegurgitated(const VoreDataEntry* prey);
 		void MoveToLocus(const RE::FormID& pred, const RE::FormID& prey, const Locus& locus, const Locus& locusSource = Locus::lNone);

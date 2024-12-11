@@ -72,7 +72,7 @@ namespace Vore
 		static void Hook();
 
 	private:
-		static RE::BSEventNotifyControl ProcessEvent(RE::BGSImpactManager* a_this, const RE::BGSFootstepEvent* a_event, RE::BSTEventSource<RE::BGSFootstepEvent>* a_eventSource);
-		static inline REL::Relocation<decltype(ProcessEvent)> _ProcessEvent;
+		static RE::BSEventNotifyControl ProcessFootstepEvent(RE::BGSImpactManager* a_this, const RE::BGSFootstepEvent* a_event, RE::BSTEventSource<RE::BGSFootstepEvent>* a_eventSource);
+		static inline REL::Relocation<decltype(ProcessFootstepEvent)> _ProcessFootstepEvent;
 	};
 }

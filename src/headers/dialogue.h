@@ -38,6 +38,8 @@ namespace Vore
 		static inline RE::SpellItem* s_statusRefByP = nullptr;
 		static inline RE::SpellItem* s_statusDigP = nullptr;
 
+		//globs
+		static inline RE::TESGlobal* g_ivType = nullptr;
 		static inline RE::TESGlobal* g_playerDead = nullptr;
 
 		static inline RE::TESGlobal* g_lethal = nullptr;
@@ -52,6 +54,13 @@ namespace Vore
 
 		static inline RE::TESFaction* f_locusPrey = nullptr;
 		static inline RE::TESFaction* f_locusPred = nullptr;
+
+		//formlists
+		static inline RE::BGSListForm* l_food = nullptr;
+		static inline RE::BGSListForm* l_ingredients = nullptr;
+		static inline RE::BGSListForm* l_potions = nullptr;
+
+
 
 
 	public:
@@ -69,9 +78,11 @@ namespace Vore
 		static void SetupForReform(RE::Actor* pred, RE::Actor* prey);
 		static void OnDigestionChange(RE::Actor* pred);
 		static void PlayerDied();
-		static Dialogue::PreyWillingness IsWillingPrey(RE::Actor* pred, RE::Actor* prey, bool lethal);
 		static Vore::Locus GetLocusForSwallow(RE::Actor* pred, RE::TESObjectREFR* prey);
 		static void SetConsent(RE::Actor* pred, RE::Actor* prey, bool willing, bool lethal);
+
+		static Dialogue::PreyWillingness IsWillingPrey(RE::Actor* pred, RE::Actor* prey, bool lethal);
+		static RE::BGSListForm* GetIVFormlist();
 
 		static void TalkToA(RE::Actor* target);
 		static void CheckPlugin();

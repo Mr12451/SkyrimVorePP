@@ -39,6 +39,7 @@ namespace Vore
 		bool IsInDialogueWithPlayer(RE::Actor* actor);
 		void ForceQuestAlias(RE::TESQuest* quest, std::string_view alias, RE::Actor* target);
 		void MoveTo(RE::TESObjectREFR* melmoth, RE::TESObjectREFR* moveTo);
+		void ShowGiftMenu(RE::Actor* target, RE::BGSListForm* forms);
 	}
 	namespace Name
 	{

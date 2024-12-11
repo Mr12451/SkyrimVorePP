@@ -122,6 +122,7 @@ namespace Vore
 		float aScaleDefault = 0.0f;
 		bool aIsChar = false;
 		bool aIsPlayer = false;
+		bool aIsContainer = false;
 		bool aAlive = false;
 		bool aEssential = false;
 		bool aProtected = false;
@@ -272,8 +273,8 @@ namespace Vore
 	{
 		//presistent data will be saved here
 	public:
-		static inline std::unordered_map<RE::FormID, Vore::VoreDataEntry> Data;
-		static inline std::unordered_map<RE::FormID, RE::FormID> Reforms;
+		static inline std::unordered_map<RE::FormID, Vore::VoreDataEntry> Data{};
+		static inline std::unordered_map<RE::FormID, RE::FormID> Reforms{};
 
 		static bool IsValid(RE::FormID character);
 		static VoreDataEntry* IsValidGet(RE::FormID character);

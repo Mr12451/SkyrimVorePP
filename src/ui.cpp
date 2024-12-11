@@ -309,6 +309,9 @@ namespace Vore::UI
 								text += "]\nSwitch Lethality [";
 								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_2);
 								text += "]";
+							} else if (actorData->pyDigestProgress == 100.0) {
+								text += "\nReform [";
+								text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_1);
 							}
 							if (Core::CanBeRegurgitated(actorData)) {
 								text += "\nRelease [";
@@ -561,6 +564,10 @@ namespace Vore::UI
 							if (preyData->aAlive) {
 								Dialogue::TalkToA(preyData->get()->As<RE::Actor>());
 								SetMenuMode(kDefault);
+							} else if (preyData->pyDigestProgress == 100.0) {
+								if (VoreDataEntry* playerData = VoreData::IsValidGet(RE::PlayerCharacter::GetSingleton()->GetFormID())) {
+									Core::StartReformation(preyData, playerData);
+								}
 							}
 						}
 						break;

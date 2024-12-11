@@ -80,28 +80,28 @@ Credits go to gherking on Discord for the original dialogue plugin
 * Papyrus API
 * Player as Prey
 * Basic reformation
+* Inventory vore (not for player, also items may disappear on release. Will fix when adding animations)
 ### Plans
 #### Currently working on
-* Inventory (items from container) vore
+* Limit WG to certain NPC categories
+* Struggle damage
+* Ui - hide debug info
+* Vore personalities and preferences for NPCs (need a whole new dialogue plugin)
+* Better WG (food, sprint, etc. should affect WG/Loss)
 #### For the future
 * Basic Animations
 * Basic VFX
-* Limit WG to certain NPC categories
 * Player-as-prey internal view
 * Reformation of skulls
-* Ui - hide debug info
 * Struggle minigame for prey and pred
-* Struggle damage
 * Swallow minigame
 * Find more people
 * Compatibility with futa mods
 * Compatibility with needs / survival mods
 * Compatibility with ostim?
 * Compatibility with devourment sound mod
-* Better WG (food, sprint, etc. should affect WG/Loss)
 * NPC Vore in combat
 * Non-combat NPC vore (dialogue plugin includes this, but maybe add something more)
-* Vore personalities and preferences for NPCs (need a whole new dialogue plugin)
 * Capacity limits
 * Spells/Perks/Vore leveling
 * Vore gives stats/skill xp

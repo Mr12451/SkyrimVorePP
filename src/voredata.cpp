@@ -579,7 +579,7 @@ namespace Vore
 		if (delta > 10) {
 			pySwallowProcess = 100;
 		}
-		if (VoreSettings::swallow_auto) {
+		if (VoreSettings::swallow_auto || !predData->aIsPlayer) {
 			pySwallowProcess += VoreSettings::swallow_auto_speed * 1 / std::max(std::pow(aSize / VoreGlobals::slider_one, 0.3), 0.7) * delta;
 			predData->PlaySwallow();
 			predData->pdUpdateGoal = true;
@@ -1548,6 +1548,7 @@ namespace Vore
 
 			// save size, important
 			s = s && a_intfc->WriteRecordData(&vde.aSizeDefault, sizeof(vde.aSizeDefault));
+			s = s && a_intfc->WriteRecordData(&vde.aIsContainer, sizeof(vde.aIsContainer));
 
 			//universal stats, not saved
 			flog::info("Char type: {}, player {}, alive {}, size {}", (int)vde.aIsChar, vde.aIsPlayer, vde.aAlive, vde.aSize);
@@ -1664,10 +1665,10 @@ namespace Vore
 				a_intfc->ReadRecordData(PlayerPrefs::voreType);
 
 				size_t size;
+				a_intfc->ReadRecordData(size);
 				flog::info("Reforms, sise: {}", size);
 
 				//read reforms
-				a_intfc->ReadRecordData(size);
 				for (; size > 0; --size) {
 					RE::TESObjectREFR* preyRef = GetObjectPtr(a_intfc);
 					RE::TESObjectREFR* predRef = GetObjectPtr(a_intfc);
@@ -1763,14 +1764,9 @@ namespace Vore
 						flog::info("Growth {} {}", i, growth);
 					}
 
-					// default values that are assigned when character's 3d is not loaded
-					if (entry.aSizeDefault == 5.0 || entry.aSizeDefault == 100.0 || entry.aSizeDefault == 0.0 || entry.aSizeDefault == 3000.0) {
-						a_intfc->ReadRecordData(entry.aSizeDefault);
-						entry.aSize = entry.aSizeDefault;
-					} else {
-						double oldSize = 0;
-						a_intfc->ReadRecordData(oldSize);
-					}
+					a_intfc->ReadRecordData(entry.aSizeDefault);
+					entry.aSize = entry.aSizeDefault;
+					a_intfc->ReadRecordData(entry.aIsContainer);
 
 					flog::info("Char type: {}, is player: {}, alive {}, size {}", (int)entry.aIsChar, entry.aIsPlayer, entry.aAlive, entry.aSize);
 

@@ -313,6 +313,11 @@ namespace Vore::Funcs
 		}
 		//toMove->SetPosition(moveTo->GetPosition());
 	}
+	void ShowGiftMenu(RE::Actor* target, RE::BGSListForm* forms)
+	{
+		CallFunctionOn(target, "Actor", "ShowGiftMenu", true, forms, true, false);
+		//RE::GiftMenu::itemList
+	}
 }
 
 namespace Vore::Name

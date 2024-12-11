@@ -16,6 +16,9 @@ Function SetPredControl(Bool allowControl) global native
 Function KillPrey(Actor prey) global native
 Function PlanReformation(Actor pred, Actor prey) global native
 Function UnplanReformation(Actor pred, Actor prey) global native
+Function InventoryVore(Actor pred) global native
+ObjectReference function MakeSC() global native
+Function CommitSC(Actor pred, ObjectReference sc) global native
 
 Function Strip(Actor target) global native
 float function GetDefaultLocus() global native

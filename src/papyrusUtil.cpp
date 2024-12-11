@@ -176,6 +176,60 @@ namespace Vore
 		}
 	}
 
+	void PapyrusAPI::InventoryVore(RE::StaticFunctionTag*, RE::Actor* pred)
+	{
+		Core::InventoryVore(pred);
+	}
+
+	RE::TESObjectREFR* PapyrusAPI::MakeSC(RE::StaticFunctionTag*)
+	{
+		RE::TESObjectREFR* itemCell = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESObjectREFR>(0x28556, "SkyrimVorePP.esp");
+		TESObjectCONT* scForm = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESObjectCONT>(0x28569, "SkyrimVorePP.esp");
+
+		auto ic = itemCell->PlaceObjectAtMe(scForm, false).get();
+
+		return ic;
+	}
+
+	void PapyrusAPI::CommitSC(RE::StaticFunctionTag*, RE::Actor* pred, RE::TESObjectREFR* sc)
+	{
+		flog::info("Item vore End");
+		if (sc->GetInventory().size() == 0) {
+			sc->SetDelete(true);
+			flog::warn("Empty stomach container - won't swallow");
+			return;
+		}
+		VoreDataEntry* scData = VoreData::IsValidGet(VoreData::MakeData(sc));
+		if (!scData) {
+			flog::error("Can't make voredata entry for stomach container");
+		}
+		scData->aSize = 0;
+		scData->aIsContainer = true;
+		for (auto& [item, el] : sc->GetInventory()) {
+			RE::NiPoint3 bounds = {
+				(float)(item->boundData.boundMax.x - item->boundData.boundMin.x),
+				(float)(item->boundData.boundMax.y - item->boundData.boundMin.y),
+				(float)(item->boundData.boundMax.z - item->boundData.boundMin.z),
+			};
+			// this number converts one type of coordinates to another (bounds to havok)
+			double totalSize = bounds.x * bounds.y * bounds.z / 343000.0f;
+			// this adjusts size so 1 person with 1.0 height is 100 in size
+			totalSize = totalSize / 0.1538f * 100.0f;
+
+			if (totalSize > VoreSettings::size_softcap) {
+				totalSize = std::pow(totalSize / VoreSettings::size_softcap, VoreSettings::size_softcap_power) * VoreSettings::size_softcap;
+			}
+			scData->aSize += totalSize;
+			//sc->RemoveItem(item, el.first, RE::ITEM_REMOVE_REASON::kStoreInContainer, nullptr, bones);
+		}
+		scData->aSizeDefault = scData->aSize;
+		Locus loc = Dialogue::GetLocusForSwallow(pred, sc);
+		if (loc >= NUMOFLOCI) {
+			loc = lStomach;
+		}
+		Core::Swallow(pred, sc, loc, VoreDataEntry::hSafe, false);
+	}
+
 	void PapyrusAPI::Strip(RE::StaticFunctionTag*, RE::Actor* target)
 	{
 		flog::info("PPAPI Strip");
@@ -211,17 +265,6 @@ namespace Vore
 		return (float)loci[Math::randInt(0, loci.size() - 1)];
 	}
 
-	RE::TESObjectREFR* PapyrusAPI::MakeBolus(RE::StaticFunctionTag*, RE::Actor* pred)
-	{
-		flog::info("PPAPI MakeBolus");
-		//placeholder
-		//placeholder
-		//placeholder
-		//placeholder
-		//placeholder
-		auto* scForm = RE::TESForm::LookupByEditorID<RE::TESObjectCONT>("StomachContainer");
-		return pred->PlaceObjectAtMe(scForm, false).get();
-	}
 
 	//static bool InitializeOffsets()
 	//{
@@ -291,6 +334,9 @@ namespace Vore
 		VM::GetSingleton()->RegisterFunction("KillPrey", "SVPP_API", KillPrey);
 		VM::GetSingleton()->RegisterFunction("PlanReformation", "SVPP_API", PlanReformation);
 		VM::GetSingleton()->RegisterFunction("UnplanReformation", "SVPP_API", UnplanReformation);
+		VM::GetSingleton()->RegisterFunction("InventoryVore", "SVPP_API", InventoryVore);
+		VM::GetSingleton()->RegisterFunction("MakeSC", "SVPP_API", MakeSC);
+		VM::GetSingleton()->RegisterFunction("CommitSC", "SVPP_API", CommitSC);
 
 		VM::GetSingleton()->RegisterFunction("Strip", "SVPP_API", Strip);
 		VM::GetSingleton()->RegisterFunction("GetDefaultLocus", "SVPP_API", GetDefaultLocus);

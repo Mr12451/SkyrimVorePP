@@ -1,8 +1,8 @@
 #include "headers/dialogue.h"
 #include "headers/nutils.h"
+#include "headers/settings.h"
 #include "headers/voredata.h"
 #include "headers/voremain.h"
-#include "headers/settings.h"
 
 #include <chrono>
 #include <thread>
@@ -255,32 +255,6 @@ namespace Vore
 		g_playerDead->value = 1.0f;
 	}
 
-	Dialogue::PreyWillingness Dialogue::IsWillingPrey(RE::Actor* pred, RE::Actor* prey, bool lethal)
-	{
-		if (!plugin_loaded) {
-			return kDisabled;
-		}
-		if (pred->IsPlayerRef()) {
-			if (prey->IsInFaction(f_dialogueVorePrey)) {
-				return kWilling;
-			}
-			if (!lethal && prey->IsInFaction(f_dialogueEndoPrey)) {
-				return kWilling;
-			}
-			return kUnwilling;
-		} else if (prey->IsPlayerRef()) {
-			if (pred->IsInFaction(f_dialogueVorePred)) {
-				return kWilling;
-			}
-			if (!lethal && pred->IsInFaction(f_dialogueEndoPred)) {
-				return kWilling;
-			}
-			return kUnwilling;
-		} else {
-			return kDisabled;
-		}
-	}
-
 	Vore::Locus Dialogue::GetLocusForSwallow(RE::Actor* pred, RE::TESObjectREFR* prey)
 	{
 		// placeholder
@@ -316,9 +290,9 @@ namespace Vore
 
 	void Dialogue::SetConsent(RE::Actor* pred, RE::Actor* prey, bool willing, bool lethal)
 	{
-        if (!plugin_loaded) {
-            return;
-        }
+		if (!plugin_loaded) {
+			return;
+		}
 		if (pred->IsPlayerRef()) {
 			if (willing) {
 				if (lethal) {
@@ -370,6 +344,49 @@ namespace Vore
 				}
 			}
 		}
+	}
+
+	Dialogue::PreyWillingness Dialogue::IsWillingPrey(RE::Actor* pred, RE::Actor* prey, bool lethal)
+	{
+		if (!plugin_loaded) {
+			return kDisabled;
+		}
+		if (pred->IsPlayerRef()) {
+			if (prey->IsInFaction(f_dialogueVorePrey)) {
+				return kWilling;
+			}
+			if (!lethal && prey->IsInFaction(f_dialogueEndoPrey)) {
+				return kWilling;
+			}
+			return kUnwilling;
+		} else if (prey->IsPlayerRef()) {
+			if (pred->IsInFaction(f_dialogueVorePred)) {
+				return kWilling;
+			}
+			if (!lethal && pred->IsInFaction(f_dialogueEndoPred)) {
+				return kWilling;
+			}
+			return kUnwilling;
+		} else {
+			return kDisabled;
+		}
+	}
+
+	RE::BGSListForm* Dialogue::GetIVFormlist()
+	{
+		if (!plugin_loaded) {
+			return nullptr;
+		}
+		uint8_t stuffingType = (uint8_t)g_ivType->value;
+		switch (stuffingType) {
+		case 1:
+			return l_food;
+		case 2:
+			return l_ingredients;
+		case 3:
+			return l_potions;
+		}
+		return nullptr;
 	}
 
 	void Dialogue::TalkToA(RE::Actor* target)
@@ -485,6 +502,7 @@ namespace Vore
 		s_statusDigP = RE::TESDataHandler::GetSingleton()->LookupForm<RE::SpellItem>(0xAA0, "Devourment.esp");
 
 		//GLOBs
+		g_ivType = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESGlobal>(0x2A742E, "DialogueReGherk.esp");
 		g_playerDead = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESGlobal>(0x990, "Devourment.esp");
 
 		g_lethal = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESGlobal>(0x991, "Devourment.esp");
@@ -499,5 +517,10 @@ namespace Vore
 
 		f_locusPrey = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESFaction>(0x7A0C1, "DialogueReGherk.esp");
 		f_locusPred = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESFaction>(0x7A0C2, "DialogueReGherk.esp");
+
+		//FLST
+		l_food = RE::TESDataHandler::GetSingleton()->LookupForm<RE::BGSListForm>(0x2A232B, "DialogueReGherk.esp");
+		l_ingredients = RE::TESDataHandler::GetSingleton()->LookupForm<RE::BGSListForm>(0x2A232D, "DialogueReGherk.esp");
+		l_potions = RE::TESDataHandler::GetSingleton()->LookupForm<RE::BGSListForm>(0x2A232C, "DialogueReGherk.esp");
 	}
 }
