@@ -1,11 +1,15 @@
 # SkyrimVore++
 My attempt to make a new vore mod for Skyrim SE/AE.
+
 This mod is not affiliated with Devourment and doesn't use it's code.
+
 The goal is to make it have as little dependencies as possible, and to write most of the code in c++, because it's faster and has more functionality than Papyrus.
 
 ### Progress
 Currently in pre-alpha state. Lacks some essential functionality and shouldn't be used for playthroughs.
+
 No releases are currently provided, because the mod is not release-ready yet.
+
 However, you can build it from source yourself.
 
 
@@ -30,9 +34,13 @@ However, you can build it from source yourself.
 ## Bugs
 #### Sliders freeze/stop changing
 This happens with certain sliders, like SSBBW3 body/SSBBW2 body
+
 Once the bug happens, all sliders, not just these, stop changing
+
 (not sure) but I think this happens because of EngineFixes
+
 You can fix this in 2 ways
+
 1. Change the problematic sliders to different ones
 2. Set `MemoryManager` and `ScaleformAllocator` to false in `EngineFixes.toml`
 
@@ -59,7 +67,7 @@ Credits go to gherking on Discord for the original dialogue plugin
 * Full tour
 * Vore data saving/loading
 * Basic ui
-* Belly visuals (a little wonky)
+* Highly customizable belly visuals
 * Struggle visuals
 * Basic WG
 * Proper damage and death handling
@@ -70,13 +78,13 @@ Credits go to gherking on Discord for the original dialogue plugin
 * Prey persistence (needs testing)
 * Acid levels (maybe make switching digestion dependent on acid level)
 * INI settings
-* Prey size calculation using havok data (idk how to calculate kMOPP and kConvexVertices, so I use bounds instead)
-* Item vore (very unoptimized and untested)
+* Prey size calculation using havok data (idk how to calculate kMOPP and kConvexVertices, so for some objects I use bounds instead)
+* Item vore
 * Add size gain
 * Add dragon soul on digestion (look into dragon quest)
 * Sounds (plugin)
 * Fixed Talk to prey/pred
-* Dialogue plugin (item vore, player prey, reformation still not finished)
+* Dialogue plugin (fully supported)
 * Papyrus API
 * Player as Prey
 * Basic reformation
@@ -88,10 +96,11 @@ Credits go to gherking on Discord for the original dialogue plugin
 * Ui - hide debug info
 * Vore personalities and preferences for NPCs (need a whole new dialogue plugin)
 * Better WG (food, sprint, etc. should affect WG/Loss)
+* NPC auto-diposal
+* Player-as-prey internal view - attach camera to belly node? also disable actor fade out on closeup
 #### For the future
 * Basic Animations
 * Basic VFX
-* Player-as-prey internal view
 * Reformation of skulls
 * Struggle minigame for prey and pred
 * Swallow minigame
