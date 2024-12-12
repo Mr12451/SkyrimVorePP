@@ -168,6 +168,15 @@ namespace Vore
 
 		static const char* section4 = "Weight Gain";
 
+		cini::get_value(ini, wg_allowed, section4, "Weight Gain", ";Allows all forms of weight or size gain");
+		cini::get_value(ini, wg_player, section4, "Player WG", ";Allows wg for player");
+		cini::get_value(ini, wg_followers, section4, "Followers WG", ";Allows wg for followers and recruitable NPCs");
+		cini::get_value(ini, wg_unique, section4, "Unique NPCs WG", ";Allows wg for unique NPCs");
+		cini::get_value(ini, wg_other, section4, "WG for everyone else", ";Allows wg for every other actor. NOT RECOMMENDED, may cause lag (untested)");
+		cini::get_value(ini, wg_female, section4, "WG for females", ";Allows wg for female humanoids. Works on top of other toggles\n;Example: if player is female and Player WG is on, but this is off, no wg will happen");
+		cini::get_value(ini, wg_male, section4, "WG for males", ";Allows wg for male humanoids. Works on top of other toggles");
+		cini::get_value(ini, wg_creature, section4, "WG for creatures", ";Allows wg for non humanoids. Works on top of other toggles");
+		
 		cini::get_value(ini, wg_fattemp, section4, "Temp weight gain", ";All values in this category are PER SECOND\n;Short-term weight gain");
 		cini::get_value(ini, wg_fatlong, section4, "Long-term weight gain", ";");
 		cini::get_value(ini, wg_locusgrowth, section4, "Body part WG", ";Weight gain for a specific body part (depends on vore type)");

@@ -89,10 +89,9 @@ Credits go to gherking on Discord for the original dialogue plugin
 * Player as Prey
 * Basic reformation
 * Inventory vore (not for player, also items may disappear on release. Will fix when adding animations)
+* Limit WG to certain NPC categories
 ### Plans
 #### Currently working on
-* Limit WG to certain NPC categories
-* Struggle damage
 * Ui - hide debug info
 * Vore personalities and preferences for NPCs (need a whole new dialogue plugin)
 * Better WG (food, sprint, etc. should affect WG/Loss)
@@ -113,6 +112,7 @@ Credits go to gherking on Discord for the original dialogue plugin
 * Non-combat NPC vore (dialogue plugin includes this, but maybe add something more)
 * Capacity limits
 * Spells/Perks/Vore leveling
+* Struggle damage
 * Vore gives stats/skill xp
 * Become your killer - look into [this mod](https://www.nexusmods.com/skyrimspecialedition/mods/62934)
 * MCM

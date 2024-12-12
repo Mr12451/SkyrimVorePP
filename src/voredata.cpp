@@ -7,6 +7,7 @@
 #include "headers/voremain.h"
 #include "headers/vutils.h"
 #include "headers/dialogue.h"
+#include "headers/staticforms.h"
 
 #include <chrono>
 //#include <future>
@@ -376,13 +377,15 @@ namespace Vore
 		// fat
 		// fat growth
 		// height (size) increase; (for me) check gts for info
-		for (uint8_t i = 0; i < 4; i++) {
-			predData->pdGrowthLocus[i] += newBase * VoreSettings::voretypes_partgain[pyElimLocus][i] * VoreSettings::wg_locusgrowth;
-		}
+		if (predData->pdWGAllowed) {
+			for (uint8_t i = 0; i < 4; i++) {
+				predData->pdGrowthLocus[i] += newBase * VoreSettings::voretypes_partgain[pyElimLocus][i] * VoreSettings::wg_locusgrowth;
+			}
 
-		predData->pdFat += newBase * VoreSettings::wg_fattemp;
-		predData->pdFatgrowth += newBase * VoreSettings::wg_fatlong;
-		predData->pdSizegrowth += newBase * VoreSettings::wg_sizegrowth;
+			predData->pdFat += newBase * VoreSettings::wg_fattemp;
+			predData->pdFatgrowth += newBase * VoreSettings::wg_fatlong;
+			predData->pdSizegrowth += newBase * VoreSettings::wg_sizegrowth;
+		}
 		predData->pdUpdateGoal = true;
 		predData->pdHasDigestion = true;
 		predData->SetPredUpdate(true);
@@ -445,24 +448,26 @@ namespace Vore
 		// fat
 		// fat growth
 		// height (size) increase; (for me) check gts for info
-		for (uint8_t i = 0; i < 4; i++) {
-			predData->pdGrowthLocus[i] -= newBase * VoreSettings::voretypes_partgain[pyElimLocus][i] * VoreSettings::wg_locusgrowth;
-			if (predData->pdGrowthLocus[i] < 0) {
-				predData->pdGrowthLocus[i] = 0;
+		if (predData->pdWGAllowed) {
+			for (uint8_t i = 0; i < 4; i++) {
+				predData->pdGrowthLocus[i] -= newBase * VoreSettings::voretypes_partgain[pyElimLocus][i] * VoreSettings::wg_locusgrowth;
+				if (predData->pdGrowthLocus[i] < 0) {
+					predData->pdGrowthLocus[i] = 0;
+				}
 			}
-		}
 
-		predData->pdFat -= newBase * VoreSettings::wg_fattemp;
-		if (predData->pdFat < 0) {
-			predData->pdFat = 0;
-		}
-		predData->pdFatgrowth -= newBase * VoreSettings::wg_fatlong;
-		if (predData->pdFatgrowth < 0) {
-			predData->pdFatgrowth = 0;
-		}
-		predData->pdSizegrowth -= newBase * VoreSettings::wg_sizegrowth;
-		if (predData->pdSizegrowth < 0) {
-			predData->pdSizegrowth = 0;
+			predData->pdFat -= newBase * VoreSettings::wg_fattemp;
+			if (predData->pdFat < 0) {
+				predData->pdFat = 0;
+			}
+			predData->pdFatgrowth -= newBase * VoreSettings::wg_fatlong;
+			if (predData->pdFatgrowth < 0) {
+				predData->pdFatgrowth = 0;
+			}
+			predData->pdSizegrowth -= newBase * VoreSettings::wg_sizegrowth;
+			if (predData->pdSizegrowth < 0) {
+				predData->pdSizegrowth = 0;
+			}
 		}
 		predData->pdUpdateGoal = true;
 		predData->pdHasDigestion = true;
@@ -614,28 +619,30 @@ namespace Vore
 		//flog::info("pred slow");
 		bool doGoalUpdate = false;
 		bool stopSlow = true;
-		//reduce wg
-		if (pdFat > 0) {
-			pdFat = std::max(pdFat - VoreSettings::wg_loss_temp * delta, 0.0);
-			doGoalUpdate = true;
-			stopSlow = false;
-		}
-		if (pdFatgrowth > 0) {
-			pdFatgrowth = std::max(pdFatgrowth - VoreSettings::wg_loss_long * delta, 0.0);
-			doGoalUpdate = true;
-			stopSlow = false;
-		}
-		if (pdSizegrowth > 0) {
-			pdSizegrowth = std::max(pdFat - VoreSettings::wg_loss_size * delta, 0.0);
-			stopSlow = false;
-			// DO SIZE UPDATE
-			UpdatePredScale();
-		}
-		for (auto& el : pdGrowthLocus) {
-			if (el > 0) {
-				el = std::max(el - VoreSettings::wg_loss_locus * delta, 0.0);
+		if (pdWGAllowed) {
+			//reduce wg
+			if (pdFat > 0) {
+				pdFat = std::max(pdFat - VoreSettings::wg_loss_temp * delta, 0.0);
 				doGoalUpdate = true;
 				stopSlow = false;
+			}
+			if (pdFatgrowth > 0) {
+				pdFatgrowth = std::max(pdFatgrowth - VoreSettings::wg_loss_long * delta, 0.0);
+				doGoalUpdate = true;
+				stopSlow = false;
+			}
+			if (pdSizegrowth > 0) {
+				pdSizegrowth = std::max(pdFat - VoreSettings::wg_loss_size * delta, 0.0);
+				stopSlow = false;
+				// DO SIZE UPDATE
+				UpdatePredScale();
+			}
+			for (auto& el : pdGrowthLocus) {
+				if (el > 0) {
+					el = std::max(el - VoreSettings::wg_loss_locus * delta, 0.0);
+					doGoalUpdate = true;
+					stopSlow = false;
+				}
 			}
 		}
 		//reduce acid and indigestion
@@ -932,16 +939,18 @@ namespace Vore
 		//update other sliders
 
 		// locus fat
-		pdGoal[LocusSliders::uFatBelly] = static_cast<float>(pdGrowthLocus[0]);
-		pdGoal[LocusSliders::uFatAss] = static_cast<float>(pdGrowthLocus[1]);
-		pdGoal[LocusSliders::uFatBreasts] = static_cast<float>(pdGrowthLocus[2]);
-		pdGoal[LocusSliders::uFatCock] = static_cast<float>(pdGrowthLocus[3]);
+		if (pdWGAllowed) {
+			pdGoal[LocusSliders::uFatBelly] = static_cast<float>(pdGrowthLocus[0]);
+			pdGoal[LocusSliders::uFatAss] = static_cast<float>(pdGrowthLocus[1]);
+			pdGoal[LocusSliders::uFatBreasts] = static_cast<float>(pdGrowthLocus[2]);
+			pdGoal[LocusSliders::uFatCock] = static_cast<float>(pdGrowthLocus[3]);
 
-		//fat and perma fat
-		pdGoal[LocusSliders::uFatLow] = static_cast<float>((pdFat < 0) ? pdFat : 0);
-		pdGoal[LocusSliders::uFatHigh] = static_cast<float>((pdFat >= 0) ? pdFat : 0);
-		pdGoal[LocusSliders::uGrowthLow] = static_cast<float>((pdFatgrowth < 0) ? pdFatgrowth : 0);
-		pdGoal[LocusSliders::uGrowthHigh] = static_cast<float>((pdFatgrowth >= 0) ? pdFatgrowth : 0);
+			//fat and perma fat
+			pdGoal[LocusSliders::uFatLow] = static_cast<float>((pdFat < 0) ? pdFat : 0);
+			pdGoal[LocusSliders::uFatHigh] = static_cast<float>((pdFat >= 0) ? pdFat : 0);
+			pdGoal[LocusSliders::uGrowthLow] = static_cast<float>((pdFatgrowth < 0) ? pdFatgrowth : 0);
+			pdGoal[LocusSliders::uGrowthHigh] = static_cast<float>((pdFatgrowth >= 0) ? pdFatgrowth : 0);
+		}
 
 		for (uint8_t i = 0; i < LocusSliders::NUMOFSLIDERS; i++) {
 			pdGoalStep[i] = VoreSettings::slider_maxstep * std::pow(std::abs(pdGoal[i] - pdSliders[i]) / VoreGlobals::slider_one, 0.75f);
@@ -1319,6 +1328,31 @@ namespace Vore
 
 				value.aScaleDefault = GetModelScale(asActor);
 
+				// calculate if wg is allowed
+
+				if (VoreSettings::wg_allowed) {
+					bool sexAllowed = false;
+
+					if (VoreSettings::wg_creature && value.aSex == RE::SEX::kNone) {
+						sexAllowed = true;
+					} else if (VoreSettings::wg_female && value.aSex == RE::SEX::kFemale) {
+						sexAllowed = true;
+					} else if (VoreSettings::wg_male && value.aSex == RE::SEX::kMale) {
+						sexAllowed = true;
+					}
+					if (sexAllowed) {
+						if (VoreSettings::wg_player && value.aIsPlayer) {
+							value.pdWGAllowed = true;
+						} else if (VoreSettings::wg_followers && (asActor->IsPlayerTeammate() || asActor->IsInFaction(StaticForms::potential_follower))) {
+							value.pdWGAllowed = true;
+						} else if (VoreSettings::wg_unique && asActor->GetActorBase()->IsUnique()) {
+							value.pdWGAllowed = true;
+						} else if (VoreSettings::wg_other) {
+							value.pdWGAllowed = true;
+						}
+					}
+				}
+
 				VM::GetSingleton()->CreateObject2("Actor", value.meVm);
 				VM::GetSingleton()->BindObject(value.meVm, GetHandle(target), false);
 			} else {
@@ -1329,7 +1363,7 @@ namespace Vore
 			// this might happen when vore happens outside of render distance?
 			// idk how 3d and actor processing is connected
 			// still, better have a fallback algorithm
-			// size should never be 0, because we divide by it
+			// size should never be 0, because we divide by it (I think)
 			if (!mySize) {
 				if (!value.aIsChar) {
 					value.aSizeDefault = 5.0;
@@ -1351,7 +1385,7 @@ namespace Vore
 				el = VoreDataEntry::VoreState::hSafe;
 			}
 			flog::trace("Making new vore data entry for {}", Name::GetName(target));
-			Data.insert(std::make_pair(chid, value));
+			Data.emplace(chid, value);
 		}
 		return chid;
 	}
@@ -1400,6 +1434,12 @@ namespace Vore
 		// Fix characters
 		std::vector<RE::FormID> bad = {};
 		for (auto& [key, val] : Data) {
+			if (!val.pdWGAllowed) {
+				val.pdFat = 0.0;
+				val.pdFatgrowth = 0.0;
+				val.pdSizegrowth = 0.0;
+				val.pdGrowthLocus.fill(0.0);
+			}
 			if (!IsPred(key, false) && !IsPrey(key)) {
 				bad.push_back(key);
 			}

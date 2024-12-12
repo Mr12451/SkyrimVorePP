@@ -68,6 +68,14 @@ namespace Vore
 		static inline double locus_process_speed = 1;
 
 		//wg
+		static inline bool wg_allowed = true;
+		static inline bool wg_player = true;
+		static inline bool wg_followers = true;
+		static inline bool wg_unique = true;
+		static inline bool wg_other = false;
+		static inline bool wg_female = true;
+		static inline bool wg_male = false;
+		static inline bool wg_creature = false;
 		static inline double wg_fattemp = 0.02;
 		static inline double wg_fatlong = 0.005;
 		static inline double wg_locusgrowth = 0.008;

@@ -137,6 +137,9 @@ namespace Vore
 
 		bool aDialogue = false;
 		//pred stats
+		//calculated on voredata creation and game reloading
+		//if char has wg but this is turned off, wg will be reset
+		bool pdWGAllowed = false;
 		//temp wg
 		double pdFat = 0;
 		//long-term wg; lower than normal wg, but lasts for much longer
