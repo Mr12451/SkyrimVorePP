@@ -131,7 +131,7 @@ namespace Vore
 		double aSize = 0;
 		double aSizeDefault = 0;
 		// used for scaling sliders for big sizes
-		float aSizeScale = 0;
+		//float aSizeScale = 1.0f;
 
 
 

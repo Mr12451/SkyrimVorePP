@@ -38,7 +38,7 @@ namespace Vore
 		void StopCombatAlarm(RE::Actor* actor);
 		bool IsInDialogueWithPlayer(RE::Actor* actor);
 		void ForceQuestAlias(RE::TESQuest* quest, std::string_view alias, RE::Actor* target);
-		void MoveTo(RE::TESObjectREFR* melmoth, RE::TESObjectREFR* moveTo);
+		void MoveTo(RE::TESObjectREFR* melmoth, RE::TESObjectREFR* moveTo, bool offset = true);
 		void ShowGiftMenu(RE::Actor* target, RE::BGSListForm* forms);
 	}
 	namespace Name

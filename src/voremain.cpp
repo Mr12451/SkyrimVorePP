@@ -55,10 +55,36 @@ namespace Vore::Core
 			VoreDataEntry* predData = GetApex(playerData);
 			if (predData->get()->GetFormID() != VoreGlobals::player_camera_owner) {
 				VoreGlobals::player_camera_owner = predData->get()->GetFormID();
+				RE::Actor* predA = predData->get()->As<RE::Actor>();
+				RE::PlayerCamera* camera = RE::PlayerCamera::GetSingleton(); 
+				camera->cameraTarget = predA->GetHandle();
+				camera->ForceFirstPerson();
+				camera->PushCameraState(RE::CameraState::kFirstPerson);
+				/*camera->cameraRoot->local.translate = predA->GetPosition();
+				camera->cameraRoot->world.translate = predA->GetPosition();
+				RE::NiUpdateData ctx;
+				camera->cameraRoot->UpdateWorldData(&ctx);*/
+				
+				/*RE::bhkCollisionFilter* filter = static_cast<RE::bhkCollisionFilter*>(world->GetWorld2()->collisionFilter);
+				filter->layerBitfields[static_cast<uint8_t>(COL_LAYER::kCamera)] &= ~(static_cast<uint64_t>(1) << static_cast<uint64_t>(COL_LAYER::kBiped));
+				filter->layerBitfields[static_cast<uint8_t>(COL_LAYER::kCamera)] &= ~(static_cast<uint64_t>(1) << static_cast<uint64_t>(COL_LAYER::kCharController));*/
 
-				RE::PlayerCamera* camera = RE::PlayerCamera::GetSingleton();
-				camera->cameraTarget = predData->get()->As<RE::Actor>()->GetHandle();
-				// set camera to
+				/* if (predA) {
+					auto* a3d = predA->Get3D1(false);
+					if (a3d) {
+						flog::info("found 3d");
+						auto* aNode = a3d->GetObjectByName("NPC Belly");
+						if (aNode) {
+							flog::info("found node");
+							RE::NiPointer<RE::NiNode> nodePointer(aNode->AsNode());
+							camera->SetCameraRoot(nodePointer);
+						}
+					}
+				}*/
+
+
+				
+
 			}
 		} else if (VoreGlobals::player_camera_owner != 0) {
 			VoreGlobals::player_camera_owner = 0;
@@ -82,6 +108,7 @@ namespace Vore::Core
 			RE::ControlMap::GetSingleton()->ToggleControls(RE::UserEvents::USER_EVENT_FLAG::kPOVSwitch, false);
 			RE::ControlMap::GetSingleton()->ToggleControls(RE::UserEvents::USER_EVENT_FLAG::kActivate, false);
 			RE::ControlMap::GetSingleton()->ToggleControls(RE::UserEvents::USER_EVENT_FLAG::kWheelZoom, false);
+			target->SetCollision(false);
 		} else {
 			Funcs::SetRestrained(target, true);
 		}
@@ -99,6 +126,7 @@ namespace Vore::Core
 			RE::ControlMap::GetSingleton()->ToggleControls(RE::UserEvents::USER_EVENT_FLAG::kPOVSwitch, true);
 			RE::ControlMap::GetSingleton()->ToggleControls(RE::UserEvents::USER_EVENT_FLAG::kActivate, true);
 			RE::ControlMap::GetSingleton()->ToggleControls(RE::UserEvents::USER_EVENT_FLAG::kWheelZoom, true);
+			target->SetCollision(true);
 		} else {
 			Funcs::SetRestrained(target, false);
 		}
@@ -778,8 +806,16 @@ namespace Vore::Core
 					++it;
 				} else {
 					flog::info("Starting deletion of {} from VoreData", Name::GetName(*it));
-					if (VoreData::Data[*it].aIsChar && VoreData::Data[*it].get() && VoreData::Data[*it].get()->Is3DLoaded() && VoreGlobals::body_morphs->HasBodyMorphKey(VoreData::Data[*it].get(), VoreGlobals::MORPH_KEY)) {
-						VoreGlobals::body_morphs->ClearBodyMorphKeys(VoreData::Data[*it].get(), VoreGlobals::MORPH_KEY);
+					if (VoreData::Data[*it].aIsChar && VoreData::Data[*it].get()) {
+						// unsure if this works, but there must be a way to remove body morphs when deleting from voredata
+						if (!VoreData::Data[*it].get()->Is3DLoaded()) {
+							flog::info("no 3d loaded when deleting from voredata, loading it");
+							VoreData::Data[*it].get()->Load3D(false);
+						}
+						if (VoreData::Data[*it].get()->Is3DLoaded() && VoreGlobals::body_morphs->HasBodyMorphKey(VoreData::Data[*it].get(), VoreGlobals::MORPH_KEY)) {
+							flog::info("found 3d, clearing body morphs");
+							VoreGlobals::body_morphs->ClearBodyMorphKeys(VoreData::Data[*it].get(), VoreGlobals::MORPH_KEY);
+						}
 					}
 					VoreData::Data.erase(*it);
 					flog::info("Deleting {} from VoreData", Name::GetName(*it));

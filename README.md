@@ -19,6 +19,7 @@ However, you can build it from source yourself.
 * [CMake](https://cmake.org/download/)
 * vcpkg
 * (for Skyrim) [SKSE](https://skse.silverlock.org/), [RaceMenu](https://www.nexusmods.com/skyrimspecialedition/mods/19080), [Address Library](https://www.nexusmods.com/skyrimspecialedition/mods/32444)
+* (Recommended) [SSE display tweaks](https://www.nexusmods.com/skyrimspecialedition/mods/34705) and [SSE Engine Fixes](https://www.nexusmods.com/skyrimspecialedition/mods/17230), but read the Bugs section first
 
 (optional) This mod uses sliders for belly/wg visuals, same as Devourment. So, you need to build a body with sliders in [BodySlide and Outfit Studio](https://www.nexusmods.com/skyrimspecialedition/mods/201). You can use 3BA + converted body and outfits from Devourment.
 
@@ -32,19 +33,18 @@ However, you can build it from source yourself.
 * run game
 
 ## Bugs
-#### Sliders freeze/stop changing
-This happens with certain sliders, like SSBBW3 body/SSBBW2 body
+### Characters fade out when camera is too close
+Use [SSE display tweaks](https://www.nexusmods.com/skyrimspecialedition/mods/34705) and set `DisableActorFade` and `DisablePlayerFade` to `true` in `SSEDisplayTweaks.ini`
 
-Once the bug happens, all sliders, not just these, stop changing
+### Sliders freeze/stop changing
+This happens with certain sliders, like SSBBW3 body/SSBBW2 body. Once the bug happens, all sliders, not just these, stop changing.
 
-(not sure) but I think this happens because of EngineFixes
-
-You can fix this in 2 ways
+(not sure) but I think this happens because of EngineFixes. You can fix this in 2 ways:
 
 1. Change the problematic sliders to different ones
-2. Set `MemoryManager` and `ScaleformAllocator` to false in `EngineFixes.toml`
+2. Set `MemoryManager` and `ScaleformAllocator` to `false` in `EngineFixes.toml`
 
-#### Vore expressions not working
+### Vore expressions not working
 Download Expressive Facial Animation [Female Version](https://www.nexusmods.com/skyrimspecialedition/mods/19181) [Male Version](https://www.nexusmods.com/skyrimspecialedition/mods/19532)
 
 
@@ -88,7 +88,7 @@ Credits go to gherking on Discord for the original dialogue plugin
 * Papyrus API
 * Player as Prey
 * Basic reformation
-* Inventory vore (not for player, also items may disappear on release. Will fix when adding animations)
+* Inventory vore (not for player, also items may disappear on release. Will fix when adding animations) MB look at display tweeks for better menu even handling
 * Limit WG to certain NPC categories
 ### Plans
 #### Currently working on

@@ -82,15 +82,15 @@ namespace Vore
 				return;
 			}
 		}
-		float sizeConv = (float)std::pow(pdSizegrowth, VoreSettings::slider_pow) / VoreGlobals::slider_one;
+		float scaleConv = (float)std::pow(pdSizegrowth, VoreSettings::slider_pow) / VoreGlobals::slider_one;
 		// get final scale
-		sizeConv += aScaleDefault;
-		if (!(sizeConv)) {
+		scaleConv += aScaleDefault;
+		if (!(scaleConv)) {
 			return;
 		}
-		SetModelScale(get(), sizeConv);
-		aSizeScale = std::pow(aScaleDefault / sizeConv, 1 / VoreSettings::slider_pow);
-		aSize = aSizeDefault * aSizeScale;
+		SetModelScale(get(), scaleConv);
+		float sizeScale = std::pow(aScaleDefault / scaleConv, 1 / VoreSettings::slider_pow);
+		aSize = aSizeDefault * sizeScale;
 		//flog::info("SIZE SCALE {}", this->aSizeScale);
 	}
 
@@ -139,7 +139,7 @@ namespace Vore
 	{
 		std::map<const char*, float> slidervalues = {};
 		//
-		float scaleScale = aSizeScale ? aSizeScale : 1.0f;
+		float scaleScale = VoreGlobals::slider_one / (float)aSize;
 
 		// if we need to update main sliders
 		if (pdUpdateSlider) {
@@ -393,7 +393,7 @@ namespace Vore
 		//player code
 		if (aIsPlayer && !aDialogue) {
 			VoreDataEntry* apexData = Core::GetApex(this);
-			Funcs::MoveTo(get(), apexData->get());
+			Funcs::MoveTo(get(), apexData->get(), true);
 		}
 	}
 
@@ -476,7 +476,7 @@ namespace Vore
 		//player code
 		if (aIsPlayer && !aDialogue) {
 			VoreDataEntry* apexData = Core::GetApex(this);
-			Funcs::MoveTo(get(), apexData->get());
+			Funcs::MoveTo(get(), apexData->get(), true);
 		}
 	}
 
@@ -488,7 +488,7 @@ namespace Vore
 		}
 		if (aIsPlayer && !aDialogue) {
 			VoreDataEntry* apexData = Core::GetApex(this);
-			Funcs::MoveTo(get(), apexData->get());
+			Funcs::MoveTo(get(), apexData->get(), true);
 		}
 	}
 
@@ -1453,6 +1453,9 @@ namespace Vore
 			if (val.pred) {
 				val.CalcFast();
 				val.CalcSlow();
+				if (val.aIsPlayer) {
+					Core::HidePrey(val.get()->As<RE::Actor>());
+				}
 			}
 			if (IsPred(key, false)) {
 				val.SetPredUpdate(true);

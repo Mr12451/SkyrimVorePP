@@ -110,10 +110,10 @@ namespace Vore
 
 		// !!!!!!!!!!!!!!!!!!!!!!!!! one person size for sliders in the belly group should be equal
 		static inline std::array<std::vector<std::tuple<std::string, float, float>>, LocusSliders::NUMOFSLIDERS> sliders_bodypart_female = { { // gr1 (belly)
-			{ { "Vore prey belly", 0.7f, 10.0f }, { "Giant belly up", 0.4f, 0.4f } },
-			{ { "Giant belly (coldsteelj)", 1.0f, 5.0f } },
-			{ { "Vore prey belly", 0.7f, 10.0f } },
-			{ { "FatBelly", 2.4f, 4.0f } },
+			{ { "Vore prey belly", 0.8f, 10.0f }, { "Giant belly up", 0.4f, 0.4f } },
+			{ { "Giant belly (coldsteelj)", 1.25f, 5.0f } },
+			{ { "Vore prey belly", 0.8f, 10.0f } },
+			{ { "FatBelly", 2.6f, 4.0f } },
 			//other vore
 			{ { "ChestDepth", 3.0f, 6.0f } },
 			{ { "BVoreL", 1.0f, 10.0f } },
@@ -132,10 +132,10 @@ namespace Vore
 			{ { "SSBBW2 body", 1.0f, 4.0f } } } };
 
 		static inline std::array<std::vector<std::tuple<std::string, float, float>>, LocusSliders::NUMOFSLIDERS> sliders_bodypart_male = { { // gr1 (belly)
-			{ { "Vore prey belly", 0.7f, 10.0f }, { "Giant belly up", 0.4f, 0.4f } },
-			{ { "Giant belly (coldsteelj)", 1.0f, 5.0f } },
-			{ { "Vore prey belly", 0.7f, 10.0f } },
-			{ { "FatBelly", 1.0f, 4.0f } },
+			{ { "Vore prey belly", 0.8f, 10.0f }, { "Giant belly up", 0.4f, 0.4f } },
+			{ { "Giant belly (coldsteelj)", 1.25f, 5.0f } },
+			{ { "Vore prey belly", 0.8f, 10.0f } },
+			{ { "FatBelly", 2.6f, 4.0f } },
 			//other vore
 			{ { "ChestDepth", 1.0f, 2.0f } },
 			{ { "BVoreL", 1.0f, 10.0f } },
@@ -154,9 +154,9 @@ namespace Vore
 			{ { "SSBBW2 body", 1.0f, 4.0f } } } };
 
 		static inline std::array<std::vector<std::tuple<std::string, float, float>>, LocusSliders::NUMOFSLIDERS> sliders_bodypart_creature = { { // gr1 (belly)
-			{ { "Vore prey belly", 0.7f, 10.0f } },
-			{ { "Vore prey belly", 0.7f, 10.0f } },
-			{ { "Vore prey belly", 0.7f, 10.0f } },
+			{ { "Vore prey belly", 0.8f, 10.0f } },
+			{ { "Vore prey belly", 0.8f, 10.0f } },
+			{ { "Vore prey belly", 0.8f, 10.0f } },
 			{},
 			{},
 			{},
@@ -295,6 +295,8 @@ namespace Vore
 				return "Safe";
 			case VoreDataEntry::VoreState::hLethal:
 				return "Lethal";
+			case VoreDataEntry::VoreState::hReformation:
+				return "Healing";
 			default:
 				return "Error!";
 			}

@@ -290,7 +290,7 @@ namespace Vore::Funcs
 		}
 
 	}
-	void MoveTo(RE::TESObjectREFR* melmoth, RE::TESObjectREFR* moveTo)
+	void MoveTo(RE::TESObjectREFR* melmoth, RE::TESObjectREFR* moveTo, bool offset)
 	{
 		if (!melmoth) {
 			return;
@@ -305,6 +305,9 @@ namespace Vore::Funcs
 			}
 			if (melmoth->GetFormType() == RE::FormType::ActorCharacter) {
 				//true here is necessary to prevent a lag spike when moving player
+				if (offset) {
+					point += { 200.0f, 0.0f, 0.0f };
+				}
 				melmoth->As<RE::Actor>()->SetPosition(point, true);
 			} else {
 				melmoth->SetPosition(point);
