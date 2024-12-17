@@ -14,6 +14,14 @@ namespace Vore::Hooks
 		static inline REL::Relocation<decltype(Update)> _Update;
 	};
 
+	template <class F, class T>
+	void write_vtable_func()
+	{
+		REL::Relocation<std::uintptr_t> vtbl{ F::VTABLE[T::index] };
+		T::func = vtbl.write_vfunc(T::size, T::thunk);
+	}
+
+
 	//class Hook_ItemRemove
 	//{
 	//public:

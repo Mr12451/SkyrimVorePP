@@ -44,8 +44,10 @@ namespace Vore
 		static inline bool digest_protected = true;
 		static inline bool digest_essential = true;
 		static inline bool swallow_auto = true;
+		static inline bool companion_disposal = true;
 		static inline float size_softcap = 700.0f;
 		static inline float size_softcap_power = 0.45f;
+
 
 		// sound
 		static inline bool enable_sound = true;
@@ -202,6 +204,29 @@ namespace Vore
 			{ 0.0, 0.0, 1.0, 0.0 },
 			{ 0.0, 0.5, 0.5, 0.0 },
 			{ 0.0, 0.1, 0.1, 0.5 } } };
+
+		
+		//distr
+		//main toggles
+		static inline float dist_female = 40;
+		static inline float dist_male = 20;
+		static inline float dist_creature = 35;
+
+		static inline bool dist_size_influence = true;
+		// specific things
+		// previous toggles are multiplied by this percentage
+		static inline float dist_dragon = 5.0f;
+		static inline float dist_giant = 3.0f;
+		static inline float dist_creature_predator = 2.0f;
+		static inline float dist_creature_prey = 0.5f;
+		static inline float dist_vampire = 3.0f;
+		static inline float dist_daedra = 3.0f;
+		static inline float dist_robot = 0.3f;
+
+		static inline float dist_skeleton = 0.0f;
+		static inline float dist_ghost = 0.2f;
+		static inline float dist_undead = 0.4f;
+
 
 		static void LoadIniSettings();
 	};

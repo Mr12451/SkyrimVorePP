@@ -1,13 +1,13 @@
 #include "headers/voredata.h"
+#include "headers/dialogue.h"
 #include "headers/nutils.h"
 #include "headers/papyrusUtil.h"
 #include "headers/settings.h"
 #include "headers/sounds.h"
+#include "headers/staticforms.h"
 #include "headers/ui.h"
 #include "headers/voremain.h"
 #include "headers/vutils.h"
-#include "headers/dialogue.h"
-#include "headers/staticforms.h"
 
 #include <chrono>
 //#include <future>
@@ -339,6 +339,8 @@ namespace Vore
 		if (VoreData::Reforms.contains(preyData->get()->GetFormID()) && VoreData::Reforms[preyData->get()->GetFormID()] == predData->get()->GetFormID()) {
 			Core::StartReformation(preyData, predData);
 			VoreData::Reforms.erase(preyData->get()->GetFormID());
+		} else if (!predData->aIsPlayer && !preyData->aIsPlayer) {
+			Core::AutoRelease(preyData, predData);
 		}
 	}
 
@@ -407,7 +409,7 @@ namespace Vore
 		preyData->pyDigestProgress = 0.0;
 		predData->PlaySound(Sounds::Gurgle);
 		predData->EmoteSmile(5000);
-		
+
 		preyData->pyDigestion = predData->pdLoci[preyData->pyLocus];
 		preyData->aAlive = true;
 		if (preyData->aIsChar && !preyData->aIsPlayer) {
@@ -415,6 +417,9 @@ namespace Vore
 		}
 		preyData->CalcSlow();
 		preyData->CalcFast();
+		if (!predData->aIsPlayer && !preyData->aIsPlayer) {
+			Core::AutoRelease(preyData, predData);
+		}
 	}
 
 	void VoreDataEntry::SlowR(const double& delta)
@@ -433,14 +438,11 @@ namespace Vore
 		const double& newBase = reformBase > toReform ? toReform : reformBase;
 		pyDigestProgress -= newBase * reformMod;
 		if (pyDigestProgress <= 0.0) {
-			
 			FinishReformProcess(this, predData);
-			
 		}
 		if (pyLocus == Locus::lBowel) {
 			pyLocusProcess = 100 - pyDigestProgress;
 		}
-
 
 		// weight loss
 
@@ -751,8 +753,7 @@ namespace Vore
 			}
 		} else if (pyDigestion == hReformation) {
 			SlowU = &VoreDataEntry::SlowR;
-		}
-		else if (pyDigestProgress < 100) {
+		} else if (pyDigestProgress < 100) {
 			SlowU = &VoreDataEntry::SlowD;
 		} else {
 			SlowU = nullptr;
@@ -783,7 +784,6 @@ namespace Vore
 			}
 			CalcFast();
 			Dialogue::SetConsent(predA, preyA, willing, lethal);
-			
 		}
 	}
 
@@ -1513,7 +1513,6 @@ namespace Vore
 		//cosave version
 		s = s && a_intfc->WriteRecordData(&VORE_VERSION, sizeof(VORE_VERSION));
 
-
 		s = s && a_intfc->WriteRecordData(&PlayerPrefs::voreLoc, sizeof(PlayerPrefs::voreLoc));
 		s = s && a_intfc->WriteRecordData(&PlayerPrefs::regLoc, sizeof(PlayerPrefs::regLoc));
 		s = s && a_intfc->WriteRecordData(&PlayerPrefs::voreType, sizeof(PlayerPrefs::voreType));
@@ -1830,7 +1829,7 @@ namespace Vore
 
 					a_intfc->ReadRecordData(entry.pyLocusMovement);
 					flog::info("Locus: {}, ElimLocus: {}, Digestion: {}, Struggle: {} {} {}, Movement: {}",
-						(uint8_t)entry.pyLocus, (uint8_t)entry.pyElimLocus, (uint8_t)entry.pyDigestion, entry.pyStruggleResource, entry.pyConsentEndo, entry.pyConsentLethal, (uint8_t) entry.pyLocusMovement);
+						(uint8_t)entry.pyLocus, (uint8_t)entry.pyElimLocus, (uint8_t)entry.pyDigestion, entry.pyStruggleResource, entry.pyConsentEndo, entry.pyConsentLethal, (uint8_t)entry.pyLocusMovement);
 					a_intfc->ReadRecordData(entry.pyDigestProgress);
 					a_intfc->ReadRecordData(entry.pySwallowProcess);
 					a_intfc->ReadRecordData(entry.pyLocusProcess);

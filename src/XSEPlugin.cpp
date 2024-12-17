@@ -10,6 +10,7 @@
 #include "headers/dialogue.h"
 #include "headers/papyrusUtil.h"
 #include "headers/staticforms.h"
+#include "headers/distribute.h"
 
 const SKSE::MessagingInterface* g_messaging;
 
@@ -62,6 +63,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 	case SKSE::MessagingInterface::kPostLoadGame:
 		flog::trace("Save file successfuly loaded? {}", static_cast<bool>(a_msg->data));
 		Vore::Plugin::SetInGame(true);
+		Vore::Dist::DistrNPC(RE::PlayerCharacter::GetSingleton());
 		break;
 	case SKSE::MessagingInterface::kSaveGame:
 		flog::trace("Game saved: {}", static_cast<char*>(a_msg->data));
@@ -75,6 +77,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 	case SKSE::MessagingInterface::kNewGame:
 		flog::trace("New game started");
 		Vore::Plugin::SetInGame(true);
+		Vore::Dist::DistrNPC(RE::PlayerCharacter::GetSingleton());
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
 		flog::trace("Data loaded");
@@ -84,6 +87,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 		Vore::Dialogue::CheckPlugin();
 		Vore::PapyrusAPI::Register();
 		Vore::StaticForms::Initialize();
+		Vore::Dist::Initialize();
 		break;
 	}
 }

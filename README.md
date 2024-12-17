@@ -90,30 +90,32 @@ Credits go to gherking on Discord for the original dialogue plugin
 * Basic reformation
 * Inventory vore (not for player, also items may disappear on release. Will fix when adding animations) MB look at display tweeks for better menu even handling
 * Limit WG to certain NPC categories
+* Pred/prey faction distribution (aka my own SPID)
+* NPC auto-diposal
 ### Plans
 #### Currently working on
-* Ui - hide debug info
-* Vore personalities and preferences for NPCs (need a whole new dialogue plugin)
 * Better WG (food, sprint, etc. should affect WG/Loss)
-* NPC auto-diposal
-* Player-as-prey internal view - attach camera to belly node? also disable actor fade out on closeup
-#### For the future
-* Basic Animations
-* Basic VFX
-* Reformation of skulls
-* Struggle minigame for prey and pred
-* Swallow minigame
-* Find more people
-* Compatibility with futa mods
-* Compatibility with needs / survival mods
-* Compatibility with ostim?
-* Compatibility with devourment sound mod
-* NPC Vore in combat
-* Non-combat NPC vore (dialogue plugin includes this, but maybe add something more)
-* Capacity limits
-* Spells/Perks/Vore leveling
-* Struggle damage
 * Vore gives stats/skill xp
+* Spells/Perks/Vore leveling
+#### For the future
+* Find more people
+* Vore personalities and preferences for NPCs (need a whole new dialogue plugin)
+* Basic Animations
+* Struggle minigame for prey and ?pred?
+* Swallow minigame
+* Basic VFX
+* NPC Vore in combat
+* Non-combat NPC vore (for the new dialogue plugin: random npc vore, approach)
+* Capacity limits
+* Update commonlib
+* Item disposal/digestion
+* Struggle damage
+* Compatibility with needs / survival mods
+* Compatibility with futa mods
+* Player-as-prey internal view - attach camera to belly node? also disable actor fade out on closeup (hook cam update)
 * Become your killer - look into [this mod](https://www.nexusmods.com/skyrimspecialedition/mods/62934)
+* Compatibility with devourment sound mod
+* Reformation of skulls
+* Compatibility with ostim?
 * MCM
 * Fix menu disappearing on cell change

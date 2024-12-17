@@ -143,6 +143,7 @@ namespace Vore
 		cini::get_value(ini, digest_protected, section2, "Digest protected", ";Protected NPCs can be digested");
 		cini::get_value(ini, digest_essential, section2, "Digest essential", ";Essential NPCs can be digested. Fun, but can softlock the game");
 		cini::get_value(ini, swallow_auto, section2, "Auto swallow", ";Disables swallow minigame. DON'T DISABLE, SWALLOW MINIGAME IS NOT IMPLEMENTED YET!");
+		cini::get_value(ini, companion_disposal, section2, "Auto disposal companions", ";Conpanions will automatically use disposal when they finish digesting a prey");
 		cini::get_value(ini, size_softcap, section2, "Size softcap", ";Default human size is 100\n;NPCs whose size is bigger than the softcap will have their size reduced exponentially");
 		cini::get_value(ini, size_softcap_power, section2, "Size softcap power", ";Power for size softcap. The lower this is, the harder the softcap is. Set to 1 to disable\n;If this is disabled, the size of a dragon will be 300 times that of a human, which isn't good for the gameplay");
 
@@ -235,6 +236,28 @@ namespace Vore
 				i++;
 			}
 		}
+
+		static const char* section6 = "Distribution";
+
+		cini::get_value(ini, dist_female, section6, "Female base", ";The base percentage of an NPC being chosen as pred");
+		cini::get_value(ini, dist_male, section6, "Male base", ";");
+		cini::get_value(ini, dist_creature, section6, "Creature base", ";For non-humanoids");
+
+		cini::get_value(ini, dist_size_influence, section6, "Size influence", ";If larger NPCs get a higher chance of becoming a pred. Only height is used");
+
+		cini::get_value(ini, dist_dragon, section6, "Dragon probability", ";Probability modifier for certain NPC types, the base probability is multiplied by this");
+		cini::get_value(ini, dist_giant, section6, "Giant probability", ";Also for mammoths");
+		cini::get_value(ini, dist_creature_predator, section6, "Predator probability", ";Hostile animals");
+		cini::get_value(ini, dist_creature_prey, section6, "Prey probability", ";Neutral animals");
+		cini::get_value(ini, dist_vampire, section6, "Vampire probability", ";Also for hagraven");
+		cini::get_value(ini, dist_daedra, section6, "Daedra probability", ";");
+		cini::get_value(ini, dist_robot, section6, "Robot probability", ";Dwemer constructs mostly");
+
+		cini::get_value(ini, dist_skeleton, section6, "Skeleton probability", ";");
+		cini::get_value(ini, dist_ghost, section6, "Ghost probability", ";");
+		cini::get_value(ini, dist_undead, section6, "Undead probability", ";");
+
+
 
 		(void)ini.SaveFile(path);
 	}

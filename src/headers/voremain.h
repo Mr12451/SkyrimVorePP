@@ -23,12 +23,16 @@ namespace Vore
 		bool CanBeRegurgitated(const VoreDataEntry* prey);
 		void MoveToLocus(const RE::FormID& pred, const RE::FormID& prey, const Locus& locus, const Locus& locusSource = Locus::lNone);
 		void SetPreyVisibility(RE::TESObjectREFR* preyObj, RE::Actor* pred, bool show, VoreDataEntry* preyData);
+
 		void Swallow(RE::Actor* pred, std::vector<RE::TESObjectREFR*> preys, Locus locus, VoreDataEntry::VoreState ldType, bool fullswallow = false);
 		void Swallow(RE::Actor* pred, RE::TESObjectREFR* prey, Locus locus, VoreDataEntry::VoreState ldType, bool fullswallow = false);
 		void SwallowTarget(RE::Actor* pred, Locus locus, VoreDataEntry::VoreState ldType, bool fullswallow = false);
 		void Regurgitate(RE::Actor* pred, std::vector<RE::FormID> preys, RegType rtype);
 		void Regurgitate(RE::Actor* pred, RE::FormID prey, RegType rtype);
 		void RegurgitateAll(RE::Actor* pred, Locus locus = Locus::lNone, RegType rtype = RegType::rNormal);
+
+		void AutoRelease(VoreDataEntry* preyData, VoreDataEntry* predData);
+
 		void SetupTimers();
 		void SetupBellies();
 		void MegaDigest(const double& delta);

@@ -80,7 +80,7 @@ namespace Vore::UI
 				text += Name::GetName(pyData->get());
 			}
 
-			if (pyData->aIsChar) {
+			if (pyData->aIsChar && pyData->aAlive) {
 				WriteStats(text, pyData->get()->As<RE::Actor>());
 			}
 			text += "\n";
@@ -155,7 +155,7 @@ namespace Vore::UI
 				if (VoreData::IsPrey(playerId)) {
 					VoreDataEntry& playerData = VoreData::Data[playerId];
 					VoreDataEntry& predData = VoreData::Data[playerData.pred];
-					text += "Pred\n";
+					text += "Pred: ";
 
 					if (_charIndex == _lastCharCount) {
 						text += "--> ";

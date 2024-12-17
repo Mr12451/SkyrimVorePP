@@ -56,7 +56,7 @@ namespace Vore::Core
 			if (predData->get()->GetFormID() != VoreGlobals::player_camera_owner) {
 				VoreGlobals::player_camera_owner = predData->get()->GetFormID();
 				RE::Actor* predA = predData->get()->As<RE::Actor>();
-				RE::PlayerCamera* camera = RE::PlayerCamera::GetSingleton(); 
+				RE::PlayerCamera* camera = RE::PlayerCamera::GetSingleton();
 				camera->cameraTarget = predA->GetHandle();
 				camera->ForceFirstPerson();
 				camera->PushCameraState(RE::CameraState::kFirstPerson);
@@ -64,7 +64,7 @@ namespace Vore::Core
 				camera->cameraRoot->world.translate = predA->GetPosition();
 				RE::NiUpdateData ctx;
 				camera->cameraRoot->UpdateWorldData(&ctx);*/
-				
+
 				/*RE::bhkCollisionFilter* filter = static_cast<RE::bhkCollisionFilter*>(world->GetWorld2()->collisionFilter);
 				filter->layerBitfields[static_cast<uint8_t>(COL_LAYER::kCamera)] &= ~(static_cast<uint64_t>(1) << static_cast<uint64_t>(COL_LAYER::kBiped));
 				filter->layerBitfields[static_cast<uint8_t>(COL_LAYER::kCamera)] &= ~(static_cast<uint64_t>(1) << static_cast<uint64_t>(COL_LAYER::kCharController));*/
@@ -81,10 +81,6 @@ namespace Vore::Core
 						}
 					}
 				}*/
-
-
-				
-
 			}
 		} else if (VoreGlobals::player_camera_owner != 0) {
 			VoreGlobals::player_camera_owner = 0;
@@ -770,6 +766,15 @@ namespace Vore::Core
 			return;
 		}
 		Regurgitate(pred, FilterPrey(pred->GetFormID(), locus, true), rtype);
+	}
+
+	void AutoRelease(VoreDataEntry* preyData, VoreDataEntry* predData)
+	{
+		RE::Actor* predA = predData->get()->As<RE::Actor>();
+		if (!VoreSettings::companion_disposal && predA->IsPlayerTeammate()) {
+			return;
+		}
+		Regurgitate(predA, preyData->get()->GetFormID(), rAll);
 	}
 
 	//updates dead characters and idle preds
