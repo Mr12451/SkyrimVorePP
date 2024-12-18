@@ -134,6 +134,10 @@ namespace Vore::Core
 		VoreDataEntry* playerData = VoreData::IsValidGet(player->GetFormID());
 		if (playerData && !playerData->aAlive) {
 			AV::DamageAV(player, RE::ActorValue::kHealth, AV::GetAV(player, RE::ActorValue::kHealth) + 1.0f);
+			VoreDataEntry* predData = VoreData::IsValidGet(playerData->pred);
+			if (predData) {
+				Regurgitate(predData->get()->As<RE::Actor>(), player->GetFormID(), RegType::rAll);
+			}
 		}
 	}
 
@@ -181,7 +185,8 @@ namespace Vore::Core
 					pyData->pyDigestion = dType;
 					if (pyData->aIsChar) {
 					} else if (pyData->pyDigestion == VoreDataEntry::hLethal) {
-						pyData->aAlive = false;
+						//start digesting items
+						pyData->DigestLive();
 					}
 					pyData->CalcFast();
 					pyData->CalcSlow();
@@ -347,8 +352,8 @@ namespace Vore::Core
 						prey->RemoveItem(i, j.first, RE::ITEM_REMOVE_REASON::kStoreInContainer, nullptr, bones);
 					}
 
-					flog::critical("RELEASING {}", Name::GetName(prey));
-					flog::critical("Is prey persistent? {}", prey->IsPersistent());
+					flog::info("RELEASING {}", Name::GetName(prey));
+					flog::info("Is prey persistent? {}", prey->IsPersistent());
 
 				} else {
 					Funcs::MoveTo(prey, pred);
@@ -366,23 +371,23 @@ namespace Vore::Core
 
 					flog::info("Ref cound {}", refCound);
 
-					flog::critical("RELEASING {}", Name::GetName(preyObj));
+					flog::info("RELEASING {}", Name::GetName(preyObj));
 					//finish this!!!!!!!!
 				} else {
-					if (preyData && preyData->aIsContainer) {
+					if (preyData && preyData->aDeleteWhenDone) {
 						//RE::NiPoint3 predPos{ pred->GetPosition() };
-						flog::info("Releasing stomach container");
-						//auto* player = RE::PlayerCharacter::GetSingleton();
-						//flog::info("player pos {} {} {}", player->GetPositionX(), player->GetPositionY(), player->GetPositionZ());
-						for (auto& [i, j] : preyObj->GetInventory()) {
-							auto itemPreyRefr = preyObj->RemoveItem(i, j.first, RE::ITEM_REMOVE_REASON::kDropping, nullptr, nullptr);
-							auto iobj = pred->PlaceObjectAtMe(i, false);
-							flog::info("Releaing {}", iobj->GetDisplayFullName());
-							//RE::TESObjectREFR* itemReft = itemPreyRefr.get().get();
-							//flog::info("Item: {} pos {} {} {}", itemReft->GetDisplayFullName(), itemReft->GetPositionX(), itemReft->GetPositionY(), itemReft->GetPositionZ());
+						if (preyObj->GetInventory().size() > 0) {
+							flog::info("Releasing stomach container");
+							//auto* player = RE::PlayerCharacter::GetSingleton();
+							//flog::info("player pos {} {} {}", player->GetPositionX(), player->GetPositionY(), player->GetPositionZ());
+							for (auto& [i, j] : preyObj->GetInventory()) {
+								auto itemPreyRefr = preyObj->RemoveItem(i, j.first, RE::ITEM_REMOVE_REASON::kDropping, nullptr, nullptr);
+								auto iobj = pred->PlaceObjectAtMe(i, false);
+								flog::info("Releaing {}", iobj->GetDisplayFullName());
+								//RE::TESObjectREFR* itemReft = itemPreyRefr.get().get();
+								//flog::info("Item: {} pos {} {} {}", itemReft->GetDisplayFullName(), itemReft->GetPositionX(), itemReft->GetPositionY(), itemReft->GetPositionZ());
+							}
 						}
-						preyObj->SetDelete(true);
-						VoreData::HardDelete(preyObj->GetFormID());
 					} else {
 						Funcs::MoveTo(preyObj, pred);
 					}
@@ -391,7 +396,65 @@ namespace Vore::Core
 		}
 	}
 
-	void Swallow(RE::Actor* pred, std::vector<RE::TESObjectREFR*> preys, Locus locus, VoreDataEntry::VoreState ldType, bool fullswallow)
+	void AddFakeFood(RE::Actor* pred, RE::AlchemyItem* item)
+	{
+		VoreDataEntry* predData = VoreData::IsValidGet(VoreData::MakeData(pred));
+		if (!predData) {
+			return;
+		}
+		RE::AlchemyItem* fakeFood = RE::TESDataHandler::GetSingleton()->LookupForm<RE::AlchemyItem>(0x88875, "SkyrimVorePP.esp");
+		bool foundFF = false;
+		double itemSize = GetItemSize(item); 
+		if (!predData->prey.empty()) {
+			
+			for (auto& el : predData->prey) {
+				if (VoreDataEntry* preyData = VoreData::IsValidGet(el)) {
+					if (preyData->get()->GetBaseObject() == fakeFood && preyData->pyLocus == lStomach) {
+						flog::debug("Adding to existing fake food");
+						// how much weight has been digested
+						double x = preyData->aSize * preyData->pyDigestProgress;
+						preyData->aSize += itemSize;
+						preyData->pyDigestProgress = x / preyData->aSize;
+						foundFF = true;
+						break;
+					}
+					
+				}
+			}
+		}
+		if (!foundFF) {
+
+			RE::TESObjectREFR* itemCell = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESObjectREFR>(0x28556, "SkyrimVorePP.esp");
+			RE::TESObjectREFR* ffRefr = itemCell->PlaceObjectAtMe(fakeFood, false).get();
+			VoreDataEntry* ffData = VoreData::IsValidGet(VoreData::MakeData(ffRefr));
+			ffData->aSize = itemSize;
+			ffData->aSizeDefault = itemSize;
+			ffData->aDeleteWhenDone = true;
+			Swallow(pred, ffRefr, lStomach, VoreDataEntry::hSafe, true, false);
+			ffData->DigestLive();
+		}
+
+		// check if pred has
+	}
+
+	void InstantWg(RE::Actor* pred, double amount)
+	{
+		if (VoreDataEntry* predData = VoreData::IsValidGet(VoreData::MakeData(pred))) {
+			if (predData->pdWGAllowed) {
+				predData->pdFat += amount * VoreSettings::wg_fattemp;
+				predData->pdFatgrowth += amount * VoreSettings::wg_fattemp;
+				predData->SetPredUpdate(true);
+				//predData->pdSizegrowth += amount * 100.0;
+			}
+		}
+	}
+
+	void InstantWgItem(RE::Actor* pred, RE::AlchemyItem* item)
+	{
+		InstantWg(pred, GetItemSize(item));
+	}
+
+	void Swallow(RE::Actor* pred, std::vector<RE::TESObjectREFR*> preys, Locus locus, VoreDataEntry::VoreState ldType, bool fullswallow, bool safeSwitch)
 	{
 		flog::info("Swallow start");
 		if (!pred) {
@@ -400,6 +463,10 @@ namespace Vore::Core
 		}
 		if (preys.empty()) {
 			flog::warn("Missing preys");
+			return;
+		}
+		if (ldType == VoreDataEntry::hNone) {
+			flog::error("Trying to swallow with a wrong digestion type");
 			return;
 		}
 
@@ -446,9 +513,9 @@ namespace Vore::Core
 					VoreGlobals::delete_queue.erase(preyId);
 				}
 
-				//inset prey
+				//inset prey to PRED
 				predData.prey.insert(preyId);
-
+				//----------
 				preyData.aAlive = !(preyA->IsDead());
 
 				preyData.pred = predId;
@@ -489,7 +556,7 @@ namespace Vore::Core
 
 			} else {
 				RE::TESBoundObject* base = prey->GetBaseObject();
-				// check if the object is valid bc it can be a stomach contaner with pre-created voredata, but it's form type isn't usually allowed for swallowing
+				// check if the object is valid bc it can be a stomach contaner with pre-created voredata or fake food, but it's form type isn't usually allowed for swallowing
 				if (VoreData::IsValid(prey->GetFormID()) || VoreGlobals::allowed_pickup.contains(base->GetFormType())) {
 					flog::info("Pred {}, prey {}, eatable object", Name::GetName(pred), Name::GetName(prey));
 
@@ -562,7 +629,7 @@ namespace Vore::Core
 			//VoreGlobals::body_morphs->UpdateModelWeight(pred);
 			predData.pdUpdateGoal = true;
 			Dialogue::OnSwallow_Pred(pred);
-			SwitchToDigestion(predId, locus, ldType, true);
+			SwitchToDigestion(predId, locus, ldType, safeSwitch);
 			if (fullswallow) {
 				predData.UpdateSliderGoals();
 				predData.PlayStomachSounds();
@@ -578,10 +645,10 @@ namespace Vore::Core
 		flog::info("Swallow end");
 	}
 
-	void Swallow(RE::Actor* pred, RE::TESObjectREFR* prey, Locus locus, VoreDataEntry::VoreState ldType, bool fullswallow)
+	void Swallow(RE::Actor* pred, RE::TESObjectREFR* prey, Locus locus, VoreDataEntry::VoreState ldType, bool fullswallow, bool safeSwitch)
 	{
 		std::vector<RE::TESObjectREFR*> preys = { prey };
-		Swallow(pred, preys, locus, ldType, fullswallow);
+		Swallow(pred, preys, locus, ldType, fullswallow, safeSwitch);
 	}
 
 	void SwallowTarget(RE::Actor* pred, Locus locus, VoreDataEntry::VoreState ldType, bool fullswallow)
@@ -591,9 +658,9 @@ namespace Vore::Core
 		//Swallow(pred, target)
 
 		if (pred == RE::PlayerCharacter::GetSingleton()) {
-			Swallow(pred, Vore::Utils::GetCrosshairObject(), locus, ldType, fullswallow);
+			Swallow(pred, Vore::Utils::GetCrosshairObject(), locus, ldType, fullswallow, true);
 		} else {
-			Swallow(pred, Vore::Utils::GetFrontObjects(pred, 1), locus, ldType, fullswallow);
+			Swallow(pred, Vore::Utils::GetFrontObjects(pred, 1), locus, ldType, fullswallow, true);
 		}
 	}
 
@@ -710,7 +777,7 @@ namespace Vore::Core
 		}
 		// nested vore
 		if (!preysToSwallow.empty()) {
-			Swallow(skyrim_cast<RE::Actor*>(VoreData::Data[topPred].get()), preysToSwallow, predData.pyLocus, predData.pyDigestion, true);
+			Swallow(skyrim_cast<RE::Actor*>(VoreData::Data[topPred].get()), preysToSwallow, predData.pyLocus, predData.pyDigestion, true, false);
 		}
 		// regurgitation
 		for (auto& [prey, pData] : preysToDelete) {
@@ -821,6 +888,9 @@ namespace Vore::Core
 							flog::info("found 3d, clearing body morphs");
 							VoreGlobals::body_morphs->ClearBodyMorphKeys(VoreData::Data[*it].get(), VoreGlobals::MORPH_KEY);
 						}
+					}
+					if (VoreData::Data[*it].aDeleteWhenDone) {
+						VoreData::Data[*it].get()->SetDelete(true);
 					}
 					VoreData::Data.erase(*it);
 					flog::info("Deleting {} from VoreData", Name::GetName(*it));

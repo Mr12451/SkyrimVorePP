@@ -122,7 +122,7 @@ namespace Vore
 		float aScaleDefault = 0.0f;
 		bool aIsChar = false;
 		bool aIsPlayer = false;
-		bool aIsContainer = false;
+		bool aDeleteWhenDone = false;
 		bool aAlive = false;
 		bool aEssential = false;
 		bool aProtected = false;

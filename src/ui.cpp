@@ -47,7 +47,7 @@ namespace Vore::UI
 		return ui ? ui->GetMenu<VoreMenu>(VoreMenu::MENU_NAME) : nullptr;
 	}
 
-	void VoreMenu::SetText(std::string_view text)
+	void VoreMenu::SetText()
 	{
 		RE::GFxValue newText{ text };
 		uiMovie->Invoke("Menu.setText", nullptr, &newText, 1);
@@ -140,8 +140,8 @@ namespace Vore::UI
 		case (VoreMenuMode::kPredPrey):
 			{
 				_lastCharCount = 0;
-				std::string text{ "" };
-				text.reserve(256);
+				
+				text = "";
 				text += "Up [";
 				text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_1);
 				text += "] Down [";
@@ -182,7 +182,6 @@ namespace Vore::UI
 					_lastCharCount++;
 
 					if (otherPrey.size() > 1) {
-						text.reserve(512);
 						text += "\nOther prey";
 						for (RE::FormID& prey : otherPrey) {
 							if (prey != playerId) {
@@ -193,7 +192,6 @@ namespace Vore::UI
 					}
 				}
 				if ((VoreData::IsPred(playerId, true))) {
-					text.reserve(512);
 					VoreDataEntry& playerData = VoreData::Data[playerId];
 					text += "Your prey:";
 					for (auto& prey : playerData.prey) {
@@ -211,7 +209,7 @@ namespace Vore::UI
 					}
 				}
 
-				thisMenu->SetText(text);
+				thisMenu->SetText();
 				break;
 			}
 		case (VoreMenuMode::kInfo):
@@ -221,8 +219,8 @@ namespace Vore::UI
 				_iFullTour = false;
 				if (!_infoTarget.get()) {
 					_firstInfoUpdate = false;
-					std::string text{ "No target (THIS SHOULD NEVER BE DISPLAYED!)" };
-					thisMenu->SetText(text);
+					text = "No target (THIS SHOULD NEVER BE DISPLAYED!)";
+					thisMenu->SetText();
 					return;
 				}
 				RE::TESObjectREFR* target = _infoTarget.get().get();
@@ -234,24 +232,22 @@ namespace Vore::UI
 				}
 				_firstInfoUpdate = false;
 				if (target->GetFormType() == RE::FormType::Reference) {
-					std::string text{ "Object Info:\n\n" };
-					text.reserve(512);
+					text = "Object Info:\n\n";
 					text += "Name: ";
 					text += target->GetDisplayFullName();
 					text += "\nSize: ";
 
 					text += std::format("{:.4f}, {:.4f}", GetObjectSize(target), GetModelScale(target));
 
-					thisMenu->SetText(text);
+					thisMenu->SetText();
 					return;
 				} else if (target->GetFormType() != RE::FormType::ActorCharacter) {
-					std::string text{ "Incorrect form type!" };
-					thisMenu->SetText(text);
+					text = "Incorrect form type!";
+					thisMenu->SetText();
 					return;
 				}
 
-				std::string text{ "Character Info:\n\n" };
-				text.reserve(512);
+				text = "Character Info:\n\n";
 
 				RE::Actor* actr = target->As<RE::Actor>();
 				text += "Name: ";
@@ -368,7 +364,7 @@ namespace Vore::UI
 				text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_i_menu);
 				text += "]";
 
-				thisMenu->SetText(text);
+				thisMenu->SetText();
 				break;
 			}
 		}
@@ -376,7 +372,7 @@ namespace Vore::UI
 
 	void VoreMenu::WriteSwallowMenu()
 	{
-		std::string text{ "Player preferences:\n\n" };
+		text = "Player preferences:\n\n";
 
 		text += "Current modes:\n\n";
 		text += "Swallow: ";
@@ -393,7 +389,7 @@ namespace Vore::UI
 		text += KeyUtil::Interpreter::GetKeyName(VoreSettings::k_menu_3);
 		text += "]";
 
-		SetText(text);
+		SetText();
 	}
 
 	void VoreMenu::SetMenuMode(VoreMenuMode mode, bool ignoreInfoCrosshair)
@@ -615,7 +611,7 @@ namespace Vore::UI
 					case (MenuAction::kMenuA2):
 						if (VoreDataEntry* preyData = VoreData::IsValidGet(_infoTarget.get().get()->GetFormID())) {
 							if (preyData->aAlive) {
-								Core::Swallow(RE::PlayerCharacter::GetSingleton(), preyData->get(), PlayerPrefs::voreLoc, PlayerPrefs::voreType, false);
+								Core::Swallow(RE::PlayerCharacter::GetSingleton(), preyData->get(), PlayerPrefs::voreLoc, PlayerPrefs::voreType, false, true);
 								SetMenuMode(kDefault);
 							}
 						}

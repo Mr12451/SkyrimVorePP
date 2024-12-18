@@ -1,6 +1,7 @@
 #include "headers/vutils.h"
 #include "headers/nutils.h"
 #include "headers/settings.h"
+#include "headers/staticforms.h"
 
 namespace Vore::Log
 {
@@ -219,6 +220,24 @@ namespace Vore
 		return totalSize;
 	}
 
+	double GetItemSize(RE::TESBoundObject* target)
+	{
+		RE::NiPoint3 bounds = {
+			(float)(target->boundData.boundMax.x - target->boundData.boundMin.x),
+			(float)(target->boundData.boundMax.y - target->boundData.boundMin.y),
+			(float)(target->boundData.boundMax.z - target->boundData.boundMin.z),
+		};
+		// this number converts one type of coordinates to another (bounds to havok)
+		float totalSize = bounds.x * bounds.y * bounds.z / 343000.0f;
+		// this adjusts size so 1 person with 1.0 height is 100 in size
+		totalSize = totalSize / 0.1538f * 100.0f;
+
+		if (totalSize > VoreSettings::size_softcap) {
+			totalSize = std::pow(totalSize / VoreSettings::size_softcap, VoreSettings::size_softcap_power) * VoreSettings::size_softcap;
+		}
+		return (double)totalSize;
+	}
+
 	std::vector<RE::FormID> FilterPrey(RE::FormID pred, Locus locus, bool noneIsAny)
 	{
 		std::vector<RE::FormID> preys = {};
@@ -342,5 +361,31 @@ namespace Vore
 				manager->UnequipObject(target, armor, nullptr, 1, nullptr, true, false, false);
 			}
 		}
+	}
+	bool CalcWgEnabled(RE::Actor* target)
+	{
+		if (VoreSettings::wg_allowed) {
+			bool sexAllowed = false;
+
+			if (VoreSettings::wg_creature && !target->IsHumanoid()) {
+				sexAllowed = true;
+			} else if (VoreSettings::wg_female && target->GetActorBase()->GetSex() == RE::SEX::kFemale) {
+				sexAllowed = true;
+			} else if (VoreSettings::wg_male && target->GetActorBase()->GetSex() == RE::SEX::kMale) {
+				sexAllowed = true;
+			}
+			if (sexAllowed) {
+				if (VoreSettings::wg_player && target->IsPlayerRef()) {
+					return true;
+				} else if (VoreSettings::wg_followers && (target->IsPlayerTeammate() || target->IsInFaction(StaticForms::potential_follower))) {
+					return true;
+				} else if (VoreSettings::wg_unique && target->GetActorBase()->IsUnique()) {
+					return true;
+				} else if (VoreSettings::wg_other) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }

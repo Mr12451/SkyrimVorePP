@@ -12,7 +12,8 @@ namespace Vore
 		public RE::BSTEventSink<RE::TESWaitStopEvent>,
 		public RE::BSTEventSink<RE::TESSleepStartEvent>,
 		public RE::BSTEventSink<RE::TESSleepStopEvent>,
-		public RE::BSTEventSink<RE::TESFastTravelEndEvent>
+		public RE::BSTEventSink<RE::TESFastTravelEndEvent>,
+		public RE::BSTEventSink<RE::TESEquipEvent>
 	{
 		// Pretty typical singleton setup
 		// *Private* constructor/destructor
@@ -54,6 +55,9 @@ namespace Vore
 
 		RE::BSEventNotifyControl ProcessEvent(const RE::TESFastTravelEndEvent* event,
 			RE::BSTEventSource<RE::TESFastTravelEndEvent>*) override;
+
+		RE::BSEventNotifyControl ProcessEvent(const RE::TESEquipEvent* event,
+			RE::BSTEventSource<RE::TESEquipEvent>*) override;
 
 	private:
 		float _waitHours{ 0 };

@@ -52,8 +52,8 @@ namespace Vore
 		// sound
 		static inline bool enable_sound = true;
 		static inline bool play_scream = false;
-		static inline float burp_rate = 0.2f;
-		static inline float gurgle_rate = 0.2f;
+		static inline float burp_rate = 0.07f;
+		static inline float gurgle_rate = 0.1f;
 
 		//static inline double digestion_amount_base = 0.03;
 		static inline double digestion_amount_base = 1.0;
@@ -78,10 +78,10 @@ namespace Vore
 		static inline bool wg_female = true;
 		static inline bool wg_male = false;
 		static inline bool wg_creature = false;
-		static inline double wg_fattemp = 0.02;
-		static inline double wg_fatlong = 0.005;
-		static inline double wg_locusgrowth = 0.008;
-		static inline double wg_sizegrowth = 0.0001;
+		static inline double wg_fattemp = 5.0;
+		static inline double wg_fatlong = 0.5;
+		static inline double wg_locusgrowth = 1.0;
+		static inline double wg_sizegrowth = 0.8;
 
 
 		// 6 humans/hour
@@ -89,10 +89,14 @@ namespace Vore
 		// 30/hour
 		// 1/2 minute
 		// 1/120 second ~ 0.008
-		static inline double wg_loss_temp = 0.0001;
-		static inline double wg_loss_long = 0.00001;
-		static inline double wg_loss_locus = 0.00001;
-		static inline double wg_loss_size = 0.000002;
+		static inline double wg_loss_temp = 0.001;
+		static inline double wg_loss_long = 0.00003;
+		static inline double wg_loss_locus = 0.00006;
+		static inline double wg_loss_size = 0.00008;
+
+		// fake food
+		static inline bool fake_food_player = true;
+		static inline bool fake_food_team = true;
 
 		//sliders
 

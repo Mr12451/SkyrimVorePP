@@ -212,6 +212,25 @@ namespace Vore
 		return RE::BSEventNotifyControl::kContinue;
 	}
 
+
+	RE::BSEventNotifyControl EventProcessor::ProcessEvent(const RE::TESEquipEvent* a_event, RE::BSTEventSource<RE::TESEquipEvent>*)
+	{
+		if (!a_event || !a_event->actor || a_event->actor->GetFormType() != RE::FormType::ActorCharacter) {
+			return RE::BSEventNotifyControl::kContinue;
+		}
+		RE::AlchemyItem* alchemyItem = RE::TESForm::LookupByID<RE::AlchemyItem>(a_event->baseObject);
+		if (alchemyItem) {
+			RE::Actor* actorA = a_event->actor->As<RE::Actor>();
+			if (VoreSettings::fake_food_player && actorA->IsPlayerRef() || VoreSettings::fake_food_team && actorA->IsPlayerTeammate()) {
+				Core::AddFakeFood(a_event->actor->As<RE::Actor>(), alchemyItem);
+			} else if (CalcWgEnabled(actorA)) {
+				Core::InstantWgItem(actorA, alchemyItem);
+			}
+		}
+
+		return RE::BSEventNotifyControl::kContinue;
+	}
+
 	EventProcessor::EventProcessor(){};
 	EventProcessor::~EventProcessor(){};
 	EventProcessor::EventProcessor(const EventProcessor&){};

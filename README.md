@@ -69,7 +69,7 @@ Credits go to gherking on Discord for the original dialogue plugin
 * Basic ui
 * Highly customizable belly visuals
 * Struggle visuals
-* Basic WG
+* Highly customizable Weight gain
 * Proper damage and death handling
 * Assault (Combat) on vore
 * Wait/Sleep/Travel/Timescale/Global time multiplier support
@@ -92,9 +92,9 @@ Credits go to gherking on Discord for the original dialogue plugin
 * Limit WG to certain NPC categories
 * Pred/prey faction distribution (aka my own SPID)
 * NPC auto-diposal
+* Realistic digestion of consumed items
 ### Plans
 #### Currently working on
-* Better WG (food, sprint, etc. should affect WG/Loss)
 * Vore gives stats/skill xp
 * Spells/Perks/Vore leveling
 #### For the future
@@ -111,6 +111,7 @@ Credits go to gherking on Discord for the original dialogue plugin
 * Item disposal/digestion
 * Struggle damage
 * Compatibility with needs / survival mods
+* vampire / dragon quest compatibility
 * Compatibility with futa mods
 * Player-as-prey internal view - attach camera to belly node? also disable actor fade out on closeup (hook cam update)
 * Become your killer - look into [this mod](https://www.nexusmods.com/skyrimspecialedition/mods/62934)

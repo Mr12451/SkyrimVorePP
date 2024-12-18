@@ -28,6 +28,7 @@ inline void InitializeEvents()
 	RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::TESSleepStartEvent>(&eventProcessor);
 	RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::TESSleepStopEvent>(&eventProcessor);
 	RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::TESFastTravelEndEvent>(&eventProcessor);
+	RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::TESEquipEvent>(&eventProcessor);
 	//RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::BGSFootstepEvent>(&eventProcessor);
 	Vore::VEventProcessor::Hook();
 	flog::trace("End event initialization");

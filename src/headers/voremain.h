@@ -24,8 +24,30 @@ namespace Vore
 		void MoveToLocus(const RE::FormID& pred, const RE::FormID& prey, const Locus& locus, const Locus& locusSource = Locus::lNone);
 		void SetPreyVisibility(RE::TESObjectREFR* preyObj, RE::Actor* pred, bool show, VoreDataEntry* preyData);
 
-		void Swallow(RE::Actor* pred, std::vector<RE::TESObjectREFR*> preys, Locus locus, VoreDataEntry::VoreState ldType, bool fullswallow = false);
-		void Swallow(RE::Actor* pred, RE::TESObjectREFR* prey, Locus locus, VoreDataEntry::VoreState ldType, bool fullswallow = false);
+		void AddFakeFood(RE::Actor* pred, RE::AlchemyItem* item);
+		void InstantWg(RE::Actor* pred, double amount);
+		void InstantWgItem(RE::Actor* pred, RE::AlchemyItem* item);
+
+		/// <summary>
+		/// Swallows a list of preys
+		/// </summary>
+		/// <param name="pred">Actor who does the swallowing</param>
+		/// <param name="preys">A list of preys. Can be actors or object refs</param>
+		/// <param name="locus">Organ where preys will end up</param>
+		/// <param name="ldType">Digestion type</param>
+		/// <param name="fullswallow">Skip swallow process</param>
+		/// <param name="safeSwitch">Stop digestion if ldType is set to safe and it's already happening</param>
+		void Swallow(RE::Actor* pred, std::vector<RE::TESObjectREFR*> preys, Locus locus, VoreDataEntry::VoreState ldType, bool fullswallow, bool safeSwitch);
+		/// <summary>
+		/// Swallows a prey
+		/// </summary>
+		/// <param name="pred">Actor who does the swallowing</param>
+		/// <param name="prey">A prey. Can be actor or object ref</param>
+		/// <param name="locus">Organ where prey will end up</param>
+		/// <param name="ldType">Digestion type</param>
+		/// <param name="fullswallow">Skip swallow process</param>
+		/// <param name="safeSwitch">Stop digestion if ldType is set to safe and it's already happening</param>
+		void Swallow(RE::Actor* pred, RE::TESObjectREFR* prey, Locus locus, VoreDataEntry::VoreState ldType, bool fullswallow, bool safeSwitch);
 		void SwallowTarget(RE::Actor* pred, Locus locus, VoreDataEntry::VoreState ldType, bool fullswallow = false);
 		void Regurgitate(RE::Actor* pred, std::vector<RE::FormID> preys, RegType rtype);
 		void Regurgitate(RE::Actor* pred, RE::FormID prey, RegType rtype);

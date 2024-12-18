@@ -178,14 +178,20 @@ namespace Vore
 		cini::get_value(ini, wg_male, section4, "WG for males", ";Allows wg for male humanoids. Works on top of other toggles");
 		cini::get_value(ini, wg_creature, section4, "WG for creatures", ";Allows wg for non humanoids. Works on top of other toggles");
 		
-		cini::get_value(ini, wg_fattemp, section4, "Temp weight gain", ";All values in this category are PER SECOND\n;Short-term weight gain");
-		cini::get_value(ini, wg_fatlong, section4, "Long-term weight gain", ";");
-		cini::get_value(ini, wg_locusgrowth, section4, "Body part WG", ";Weight gain for a specific body part (depends on vore type)");
-		cini::get_value(ini, wg_sizegrowth, section4, "Size gain", ";Pred height increase.");
+		cini::get_value(ini, wg_fattemp, section4, "Fast weight gain", ";All values in this category are PER SECOND\n;Short-term weight gain. You gain it much faster, but doing physical activities will burn it faster");
+		cini::get_value(ini, wg_fatlong, section4, "Slow weight gain", ";You gain this weight type slower, and doing physical activities has less effect on it.");
+		cini::get_value(ini, wg_locusgrowth, section4, "Body part WG", ";Weight gain for a specific body part (depends on vore type). Only happens during vore - item consumption does not affect this");
+		cini::get_value(ini, wg_sizegrowth, section4, "Size gain", ";Pred height increase. Only happens during vore - item consumption does not affect this");
 		cini::get_value(ini, wg_loss_temp, section4, "Weight loss (temp)", ";");
 		cini::get_value(ini, wg_loss_long, section4, "Weight loss (long)", ";");
 		cini::get_value(ini, wg_loss_locus, section4, "Weight loss (body part)", ";");
 		cini::get_value(ini, wg_loss_size, section4, "Size loss", ";");
+
+
+		static const char* sectionFF = "Fake Food";
+
+		cini::get_value(ini, fake_food_player, sectionFF, "Add fake food (player)", ";Consuming an item will add a fake food item to the stomach. Basically realistic food digestion");
+		cini::get_value(ini, fake_food_team, sectionFF, "Add fake food (followers)", ";");
 
 		static const char* section5 = "Sliders";
 

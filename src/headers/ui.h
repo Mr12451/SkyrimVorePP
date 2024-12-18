@@ -34,7 +34,7 @@ namespace Vore::UI
 		static void Hide();
 		static RE::GPtr<VoreMenu> GetVoreMenu();
 
-		void SetText(std::string_view text);
+		void SetText();
 		static void Update();
 		static void SetMenuMode(VoreMenuMode mode, bool ignoreInfoCrosshair = false);
 		static void DoMenuAction(MenuAction action);
@@ -76,6 +76,7 @@ namespace Vore::UI
 		static inline bool _exists { false };
 		static inline bool _loadedOnce { false };
 		static inline bool _firstInfoUpdate { false };
+		static inline std::string text{ "" };
 
 
 		void WriteSwallowMenu();

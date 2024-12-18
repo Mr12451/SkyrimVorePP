@@ -69,7 +69,7 @@ namespace Vore
 			dig = (VoreDataEntry::VoreState)digestionType;
 		}
 		
-		Core::Swallow(pred, prey, loc, dig, fullSwallow);
+		Core::Swallow(pred, prey, loc, dig, fullSwallow, true);
 	}
 
 	void PapyrusAPI::Regurgitate(RE::StaticFunctionTag*, RE::Actor* pred, RE::TESObjectREFR* prey)
@@ -184,7 +184,7 @@ namespace Vore
 	RE::TESObjectREFR* PapyrusAPI::MakeSC(RE::StaticFunctionTag*)
 	{
 		RE::TESObjectREFR* itemCell = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESObjectREFR>(0x28556, "SkyrimVorePP.esp");
-		TESObjectCONT* scForm = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESObjectCONT>(0x28569, "SkyrimVorePP.esp");
+		RE::TESObjectCONT* scForm = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESObjectCONT>(0x28569, "SkyrimVorePP.esp");
 
 		auto ic = itemCell->PlaceObjectAtMe(scForm, false).get();
 
@@ -204,22 +204,9 @@ namespace Vore
 			flog::error("Can't make voredata entry for stomach container");
 		}
 		scData->aSize = 0;
-		scData->aIsContainer = true;
+		scData->aDeleteWhenDone = true;
 		for (auto& [item, el] : sc->GetInventory()) {
-			RE::NiPoint3 bounds = {
-				(float)(item->boundData.boundMax.x - item->boundData.boundMin.x),
-				(float)(item->boundData.boundMax.y - item->boundData.boundMin.y),
-				(float)(item->boundData.boundMax.z - item->boundData.boundMin.z),
-			};
-			// this number converts one type of coordinates to another (bounds to havok)
-			double totalSize = bounds.x * bounds.y * bounds.z / 343000.0f;
-			// this adjusts size so 1 person with 1.0 height is 100 in size
-			totalSize = totalSize / 0.1538f * 100.0f;
-
-			if (totalSize > VoreSettings::size_softcap) {
-				totalSize = std::pow(totalSize / VoreSettings::size_softcap, VoreSettings::size_softcap_power) * VoreSettings::size_softcap;
-			}
-			scData->aSize += totalSize;
+			scData->aSize += GetItemSize(item);
 			//sc->RemoveItem(item, el.first, RE::ITEM_REMOVE_REASON::kStoreInContainer, nullptr, bones);
 		}
 		scData->aSizeDefault = scData->aSize;
@@ -227,7 +214,7 @@ namespace Vore
 		if (loc >= NUMOFLOCI) {
 			loc = lStomach;
 		}
-		Core::Swallow(pred, sc, loc, VoreDataEntry::hSafe, false);
+		Core::Swallow(pred, sc, loc, VoreDataEntry::hSafe, false, false);
 	}
 
 	void PapyrusAPI::Strip(RE::StaticFunctionTag*, RE::Actor* target)

@@ -50,6 +50,8 @@ namespace Vore
 				//asActor->KillImmediate();
 				HandlePreyDeathImmidiate();
 			}
+		} else if (aAlive) {
+			HandlePreyDeathImmidiate();
 		}
 	}
 	void VoreDataEntry::HandlePreyDeathImmidiate()
@@ -62,12 +64,14 @@ namespace Vore
 		CalcFast();
 		CalcSlow();
 
-		if (VoreDataEntry* predData = VoreData::IsValidGet(pred)) {
-			predData->EmoteSmile(5000);
-		}
-		if (aIsPlayer) {
-			Dialogue::PlayerDied();
-			Core::SwitchToDigestion(pred, pyLocus, VoreState::hSafe, false);
+		if (aIsChar) {
+			if (VoreDataEntry* predData = VoreData::IsValidGet(pred)) {
+				predData->EmoteSmile(5000);
+			}
+			if (aIsPlayer) {
+				Dialogue::PlayerDied();
+				Core::SwitchToDigestion(pred, pyLocus, VoreState::hSafe, false);
+			}
 		}
 	}
 
@@ -118,7 +122,6 @@ namespace Vore
 			DigestLive();
 
 			predData->pdUpdateStruggleGoal = true;
-			return;
 			//
 		} else {
 			AV::DamageAV(asActor, RE::ActorValue::kHealth, VoreSettings::acid_damage * delta * acidMulti);
@@ -350,43 +353,41 @@ namespace Vore
 		if (!predData) {
 			return;
 		}
-		double digestBase = VoreSettings::digestion_amount_base * delta;
+		// digest delta is the precentage of digesting process that happens this tick
+		// mods digestion time based on size. The bigger the size, the longer digestion is
+		// however pow here is used to make digestion of very big prey no to absurdly long
+		// and 0.6 is for small prey. Even if they are very small, they shouldn't be digested instantly because that's not how biology works
+		double digestDelta = VoreSettings::digestion_amount_base * delta / std::max(std::pow(aSize / VoreGlobals::slider_one, 0.5), 0.6);
 		if (aIsPlayer) {
-			digestBase *= VoreSettings::player_digest_multi;
+			digestDelta *= VoreSettings::player_digest_multi;
 		}
-		//aWeight can increase / decrease digestion time
-		//calculate speed -> (100 - val.pyDigestProgress) / VoreSettings::digestion_amount_base * 100 / val.aSize
-		//get actual digestion time
-		// multiply it by speed
-		double digestMod = 1 / std::max(std::pow(aSize / VoreGlobals::slider_one, 0.5), 0.6);
-		double toDigest = (100 - pyDigestProgress) / digestMod;
-		const double& newBase = digestBase > toDigest ? toDigest : digestBase;
-		pyDigestProgress += newBase * digestMod;
-		if (pyDigestProgress >= 100) {
+		if (digestDelta > 100.0 - pyDigestProgress) {
+			digestDelta = 100.0 - pyDigestProgress;
+		}
+
+		pyDigestProgress += digestDelta;
+		if (pyDigestProgress >= 100.0) {
 			FinishDigestionProcess(this, predData);
 		}
 		if (pyLocus == Locus::lBowel) {
-			pyLocusProcess = 100 - pyDigestProgress;
+			pyLocusProcess = 100.0 - pyDigestProgress;
 		}
-		if (pyLocus == lStomach && pyDigestProgress > 30) {
+		if (pyLocus == lStomach && pyDigestProgress > 30.0) {
 			Core::MoveToLocus(pred, get()->GetFormID(), Locus::lBowel);
 			predData->PlaySound(Sounds::Gurgle);
 		}
 
 		// weight gain
-
-		// locus increase
-		// fat
-		// fat growth
-		// height (size) increase; (for me) check gts for info
 		if (predData->pdWGAllowed) {
+			double wgBase = digestDelta * aSize / 10000.0;
 			for (uint8_t i = 0; i < 4; i++) {
-				predData->pdGrowthLocus[i] += newBase * VoreSettings::voretypes_partgain[pyElimLocus][i] * VoreSettings::wg_locusgrowth;
+				predData->pdGrowthLocus[i] += wgBase * VoreSettings::voretypes_partgain[pyElimLocus][i] * VoreSettings::wg_locusgrowth;
 			}
 
-			predData->pdFat += newBase * VoreSettings::wg_fattemp;
-			predData->pdFatgrowth += newBase * VoreSettings::wg_fatlong;
-			predData->pdSizegrowth += newBase * VoreSettings::wg_sizegrowth;
+			predData->pdFat += wgBase * VoreSettings::wg_fattemp;
+			predData->pdFatgrowth += wgBase * VoreSettings::wg_fatlong;
+			flog::info("SIZE GAIN {}", VoreSettings::wg_sizegrowth);
+			predData->pdSizegrowth += wgBase * VoreSettings::wg_sizegrowth;
 		}
 		predData->pdUpdateGoal = true;
 		predData->pdHasDigestion = true;
@@ -428,45 +429,48 @@ namespace Vore
 		if (!predData) {
 			return;
 		}
-		double reformBase = VoreSettings::digestion_amount_base * delta;
-		if (aIsPlayer) {
-			reformBase *= VoreSettings::player_digest_multi;
-		}
 
-		double reformMod = 1 / std::max(std::pow(aSize / VoreGlobals::slider_one, 0.5), 0.6);
+		/*double reformMod = 1 / std::max(std::pow(aSize / VoreGlobals::slider_one, 0.5), 0.6);
 		double toReform = pyDigestProgress / reformMod;
 		const double& newBase = reformBase > toReform ? toReform : reformBase;
-		pyDigestProgress -= newBase * reformMod;
+		pyDigestProgress -= newBase * reformMod;*/
+
+
+		double reformDelta = VoreSettings::digestion_amount_base * delta / std::max(std::pow(aSize / VoreGlobals::slider_one, 0.5), 0.6);
+		if (aIsPlayer) {
+			reformDelta *= VoreSettings::player_digest_multi;
+		}
+		if (reformDelta > pyDigestProgress) {
+			reformDelta = pyDigestProgress;
+		}
+
+		pyDigestProgress -= reformDelta;
 		if (pyDigestProgress <= 0.0) {
 			FinishReformProcess(this, predData);
 		}
 		if (pyLocus == Locus::lBowel) {
-			pyLocusProcess = 100 - pyDigestProgress;
+			pyLocusProcess = 100.0 - pyDigestProgress;
 		}
 
 		// weight loss
-
-		// locus increase
-		// fat
-		// fat growth
-		// height (size) increase; (for me) check gts for info
 		if (predData->pdWGAllowed) {
+			double wlBase = reformDelta * aSize / 10000.0;
 			for (uint8_t i = 0; i < 4; i++) {
-				predData->pdGrowthLocus[i] -= newBase * VoreSettings::voretypes_partgain[pyElimLocus][i] * VoreSettings::wg_locusgrowth;
+				predData->pdGrowthLocus[i] -= wlBase * VoreSettings::voretypes_partgain[pyElimLocus][i] * VoreSettings::wg_locusgrowth;
 				if (predData->pdGrowthLocus[i] < 0) {
 					predData->pdGrowthLocus[i] = 0;
 				}
 			}
 
-			predData->pdFat -= newBase * VoreSettings::wg_fattemp;
+			predData->pdFat -= wlBase * VoreSettings::wg_fattemp;
 			if (predData->pdFat < 0) {
 				predData->pdFat = 0;
 			}
-			predData->pdFatgrowth -= newBase * VoreSettings::wg_fatlong;
+			predData->pdFatgrowth -= wlBase * VoreSettings::wg_fatlong;
 			if (predData->pdFatgrowth < 0) {
 				predData->pdFatgrowth = 0;
 			}
-			predData->pdSizegrowth -= newBase * VoreSettings::wg_sizegrowth;
+			predData->pdSizegrowth -= wlBase * VoreSettings::wg_sizegrowth;
 			if (predData->pdSizegrowth < 0) {
 				predData->pdSizegrowth = 0;
 			}
@@ -621,20 +625,26 @@ namespace Vore
 		//flog::info("pred slow");
 		bool doGoalUpdate = false;
 		bool stopSlow = true;
+		//reduce fat
 		if (pdWGAllowed) {
-			//reduce wg
+			RE::Actor* asActor = get()->As<RE::Actor>();
+			double wlMulti = 0.0;
+			if (asActor->Is3DLoaded()) {
+				wlMulti = asActor->IsInCombat() + asActor->IsSprinting() + asActor->IsAttacking() + asActor->IsInMidair();
+			}
 			if (pdFat > 0) {
-				pdFat = std::max(pdFat - VoreSettings::wg_loss_temp * delta, 0.0);
+				// doing physical activities will reduce weight faster
+				pdFat = std::max(pdFat - (1.0 + wlMulti) * VoreSettings::wg_loss_temp * delta, 0.0);
 				doGoalUpdate = true;
 				stopSlow = false;
 			}
 			if (pdFatgrowth > 0) {
-				pdFatgrowth = std::max(pdFatgrowth - VoreSettings::wg_loss_long * delta, 0.0);
+				pdFatgrowth = std::max(pdFatgrowth - (1.0 + wlMulti / 2.0) * VoreSettings::wg_loss_long * delta, 0.0);
 				doGoalUpdate = true;
 				stopSlow = false;
 			}
 			if (pdSizegrowth > 0) {
-				pdSizegrowth = std::max(pdFat - VoreSettings::wg_loss_size * delta, 0.0);
+				pdSizegrowth = std::max(pdSizegrowth - VoreSettings::wg_loss_size * delta, 0.0);
 				stopSlow = false;
 				// DO SIZE UPDATE
 				UpdatePredScale();
@@ -1045,6 +1055,9 @@ namespace Vore
 
 		float burpBurden = pdGoal[0] + pdGoal[1] / 3.0f;
 		burpBurden *= VoreSettings::burp_rate;
+		if (burpBurden <= 0) {
+			return;
+		}
 		if (pdHasDigestion) {
 			burpBurden *= 3.0f;
 		}
@@ -1083,6 +1096,9 @@ namespace Vore
 
 		float gurgleBurden = pdGoal[1] + pdGoal[0] / 3.0f;
 		gurgleBurden *= VoreSettings::gurgle_rate;
+		if (gurgleBurden <= 0) {
+			return;
+		}
 		if (pdHasDigestion) {
 			gurgleBurden *= 2.0f;
 		}
@@ -1330,28 +1346,7 @@ namespace Vore
 
 				// calculate if wg is allowed
 
-				if (VoreSettings::wg_allowed) {
-					bool sexAllowed = false;
-
-					if (VoreSettings::wg_creature && value.aSex == RE::SEX::kNone) {
-						sexAllowed = true;
-					} else if (VoreSettings::wg_female && value.aSex == RE::SEX::kFemale) {
-						sexAllowed = true;
-					} else if (VoreSettings::wg_male && value.aSex == RE::SEX::kMale) {
-						sexAllowed = true;
-					}
-					if (sexAllowed) {
-						if (VoreSettings::wg_player && value.aIsPlayer) {
-							value.pdWGAllowed = true;
-						} else if (VoreSettings::wg_followers && (asActor->IsPlayerTeammate() || asActor->IsInFaction(StaticForms::potential_follower))) {
-							value.pdWGAllowed = true;
-						} else if (VoreSettings::wg_unique && asActor->GetActorBase()->IsUnique()) {
-							value.pdWGAllowed = true;
-						} else if (VoreSettings::wg_other) {
-							value.pdWGAllowed = true;
-						}
-					}
-				}
+				value.pdWGAllowed = CalcWgEnabled(asActor);
 
 				VM::GetSingleton()->CreateObject2("Actor", value.meVm);
 				VM::GetSingleton()->BindObject(value.meVm, GetHandle(target), false);
@@ -1590,7 +1585,7 @@ namespace Vore
 
 			// save size, important
 			s = s && a_intfc->WriteRecordData(&vde.aSizeDefault, sizeof(vde.aSizeDefault));
-			s = s && a_intfc->WriteRecordData(&vde.aIsContainer, sizeof(vde.aIsContainer));
+			s = s && a_intfc->WriteRecordData(&vde.aDeleteWhenDone, sizeof(vde.aDeleteWhenDone));
 
 			//universal stats, not saved
 			flog::info("Char type: {}, player {}, alive {}, size {}", (int)vde.aIsChar, vde.aIsPlayer, vde.aAlive, vde.aSize);
@@ -1808,7 +1803,7 @@ namespace Vore
 
 					a_intfc->ReadRecordData(entry.aSizeDefault);
 					entry.aSize = entry.aSizeDefault;
-					a_intfc->ReadRecordData(entry.aIsContainer);
+					a_intfc->ReadRecordData(entry.aDeleteWhenDone);
 
 					flog::info("Char type: {}, is player: {}, alive {}, size {}", (int)entry.aIsChar, entry.aIsPlayer, entry.aAlive, entry.aSize);
 
