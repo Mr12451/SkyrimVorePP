@@ -329,9 +329,7 @@ namespace Vore::Core
 					//
 					// switching race doesn't work for dead actors
 					// plus I don't think it's healthy for the game
-					// so I'll use the good 'ol bone piles
-					// RE::TESRace* skeleRace = RE::TESForm::LookupByEditorID<RE::TESRace>("SkeletonRace");
-					// prey->SwitchRace(skeleRace, prey->IsPlayerRef());
+					// so I'll use the bone piles
 
 					std::string_view bonesName = VoreGlobals::race_remains.contains(prey->GetRace()->GetFormEditorID()) ?
 					                                 VoreGlobals::race_remains[prey->GetRace()->GetFormEditorID()] :

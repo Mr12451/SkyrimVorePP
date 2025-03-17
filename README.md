@@ -93,9 +93,9 @@ Credits go to gherking on Discord for the original dialogue plugin
 * Pred/prey faction distribution (aka my own SPID)
 * NPC auto-diposal
 * Realistic digestion of consumed items
+* Vore gives stats/skill xp
 ### Plans
 #### Currently working on
-* Vore gives stats/skill xp
 * Spells/Perks/Vore leveling
 #### For the future
 * Find more people
@@ -106,6 +106,7 @@ Credits go to gherking on Discord for the original dialogue plugin
 * Basic VFX
 * NPC Vore in combat
 * Non-combat NPC vore (for the new dialogue plugin: random npc vore, approach)
+* Non-combat NPC voire routine?
 * Capacity limits
 * Update commonlib
 * Item disposal/digestion

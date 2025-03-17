@@ -47,6 +47,8 @@ namespace Vore
 		static inline bool companion_disposal = true;
 		static inline float size_softcap = 700.0f;
 		static inline float size_softcap_power = 0.45f;
+		static inline int gain_stats_base = 1;
+		static inline float gain_skill_base = 1;
 
 
 		// sound

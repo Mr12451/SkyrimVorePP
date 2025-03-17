@@ -146,6 +146,8 @@ namespace Vore
 		cini::get_value(ini, companion_disposal, section2, "Auto disposal companions", ";Conpanions will automatically use disposal when they finish digesting a prey");
 		cini::get_value(ini, size_softcap, section2, "Size softcap", ";Default human size is 100\n;NPCs whose size is bigger than the softcap will have their size reduced exponentially");
 		cini::get_value(ini, size_softcap_power, section2, "Size softcap power", ";Power for size softcap. The lower this is, the harder the softcap is. Set to 1 to disable\n;If this is disabled, the size of a dragon will be 300 times that of a human, which isn't good for the gameplay");
+		cini::get_value(ini, gain_stats_base, section2, "Stat gain", ";Gain stats when finishing digestion. You will get this amount of the highest pred's stat (compared to yours) that's higher than your stat.\n;Set to 0 to disable.");
+		cini::get_value(ini, gain_skill_base, section2, "Skill gain", ";Same as Stat gain but for skills");
 
 		static const char* sectionS = "Sound";
 		cini::get_value(ini, enable_sound, sectionS, "Enable Sound", ";Enables sounds. Works only if you have devourment dummy plugin installed, otherwise does nothing");

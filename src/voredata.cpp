@@ -70,7 +70,11 @@ namespace Vore
 			}
 			if (aIsPlayer) {
 				Dialogue::PlayerDied();
+				// add hide player ui
 				Core::SwitchToDigestion(pred, pyLocus, VoreState::hSafe, false);
+			} else {
+				// add skill equal to highest prey skill + stamina
+				// nah I'll do it on digestion end
 			}
 		}
 	}
@@ -327,6 +331,44 @@ namespace Vore
 		}
 	}
 
+	static void StatSkillGain(VoreDataEntry* preyData, VoreDataEntry* predData)
+	{
+		if (VoreSettings::gain_stats_base > 0) {
+			static const std::array<RE::ActorValue, 3> avStats = { RE::ActorValue::kHealth, RE::ActorValue::kMagicka, RE::ActorValue::kStamina };
+			RE::ActorValue maxStat = RE::ActorValue::kNone;
+			double maxdiff = 0;
+			for (auto& av : avStats) {
+				double thisdiff = AV::GetMaxAV(preyData->get()->As<RE::Actor>(), av) - AV::GetMaxAV(predData->get()->As<RE::Actor>(), av);
+				if (thisdiff > maxdiff) {
+					maxStat = av;
+					maxdiff = thisdiff;
+				}
+			}
+			if (maxdiff > 0) {
+				AV::ModAV(predData->get()->As<RE::Actor>(), maxStat, (double)VoreSettings::gain_stats_base);
+			}
+		}
+		if (VoreSettings::gain_skill_base > 0) {
+			static const std::array<RE::ActorValue, 18> avSkills = { RE::ActorValue::kIllusion, RE::ActorValue::kConjuration, RE::ActorValue::kDestruction, RE::ActorValue::kRestoration, RE::ActorValue::kAlteration, RE::ActorValue::kEnchanting,
+				RE::ActorValue::kSmithing, RE::ActorValue::kHeavyArmor, RE::ActorValue::kBlock, RE::ActorValue::kTwoHanded, RE::ActorValue::kOneHanded, RE::ActorValue::kArchery,
+				RE::ActorValue::kLightArmor, RE::ActorValue::kSneak, RE::ActorValue::kLockpicking, RE::ActorValue::kPickpocket, RE::ActorValue::kSpeech, RE::ActorValue::kAlchemy };
+			RE::ActorValue maxSkill = RE::ActorValue::kNone;
+			double maxdiff = 0;
+			for (auto& av : avSkills) {
+				double thisdiff = AV::GetMaxAV(preyData->get()->As<RE::Actor>(), av) - AV::GetMaxAV(predData->get()->As<RE::Actor>(), av);
+				if (thisdiff > maxdiff) {
+					maxSkill = av;
+					maxdiff = thisdiff;
+				}
+			}
+			if (maxdiff > 0) {
+				AV::ModAV(predData->get()->As<RE::Actor>(), maxSkill, (double)VoreSettings::gain_skill_base);
+			}
+		}
+		
+		//if (AV::GetMaxAV(preyData->get()->As<RE::Actor>(), RE::ActorValue::kHealth) > AV::GetMaxAV(preyData->get()->As<RE::Actor>(), RE::ActorValue::kHealth))
+	}
+
 	static void FinishDigestionProcess(VoreDataEntry* preyData, VoreDataEntry* predData)
 	{
 		//play some sound
@@ -337,6 +379,9 @@ namespace Vore
 		if (!preyData->aIsChar) {
 			return;
 		}
+
+		StatSkillGain(preyData, predData);
+
 		predData->PlaySound(Sounds::Gurgle);
 		predData->EmoteSmile(5000);
 		if (VoreData::Reforms.contains(preyData->get()->GetFormID()) && VoreData::Reforms[preyData->get()->GetFormID()] == predData->get()->GetFormID()) {
@@ -434,7 +479,6 @@ namespace Vore
 		double toReform = pyDigestProgress / reformMod;
 		const double& newBase = reformBase > toReform ? toReform : reformBase;
 		pyDigestProgress -= newBase * reformMod;*/
-
 
 		double reformDelta = VoreSettings::digestion_amount_base * delta / std::max(std::pow(aSize / VoreGlobals::slider_one, 0.5), 0.6);
 		if (aIsPlayer) {
