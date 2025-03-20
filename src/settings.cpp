@@ -148,6 +148,8 @@ namespace Vore
 		cini::get_value(ini, size_softcap_power, section2, "Size softcap power", ";Power for size softcap. The lower this is, the harder the softcap is. Set to 1 to disable\n;If this is disabled, the size of a dragon will be 300 times that of a human, which isn't good for the gameplay");
 		cini::get_value(ini, gain_stats_base, section2, "Stat gain", ";Gain stats when finishing digestion. You will get this amount of the highest pred's stat (compared to yours) that's higher than your stat.\n;Set to 0 to disable.");
 		cini::get_value(ini, gain_skill_base, section2, "Skill gain", ";Same as Stat gain but for skills");
+		cini::get_value(ini, gain_pd_multi, section2, "Pred leveling multiplier", ";Next level threshold is multiplied by this value. The larger the value, the more difficult leveling is");
+		cini::get_value(ini, gain_py_multi, section2, "Prey leveling multiplier", ";");
 
 		static const char* sectionS = "Sound";
 		cini::get_value(ini, enable_sound, sectionS, "Enable Sound", ";Enables sounds. Works only if you have devourment dummy plugin installed, otherwise does nothing");

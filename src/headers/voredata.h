@@ -3,19 +3,37 @@
 
 namespace Vore
 {
+	class VoreCharStats
+	{
+	public:
+		float predLevel = 0.0f;
+		float predXp = 0.0f;
+		float predThreshold = 0.0f;
+
+		float preyLevel = 0.0f;
+		float preyXp = 0.0f;
+		float preyThreshold = 0.0f;
+
+		RE::FormID reformer = 0;
+
+		void CalcThreshold(bool predSkill);
+		void AdvSkill(bool predSkill, float xp);
+	};
 	class VoreData
 	{
 		//presistent data will be saved here
 	public:
 		static inline std::unordered_map<RE::FormID, Vore::VoreDataEntry> Data{};
-		static inline std::unordered_map<RE::FormID, RE::FormID> Reforms{};
+		static inline std::unordered_map<RE::FormID, Vore::VoreCharStats> Stats{};
 
 		static bool IsValid(RE::FormID character);
 		static VoreDataEntry* IsValidGet(RE::FormID character);
+		static VoreDataEntry* GetDataOrMake(RE::TESObjectREFR* character);
+		static VoreCharStats* IsValidStatGet(RE::FormID character);
+		static VoreCharStats* GetStatOrMake(RE::TESObjectREFR* character);
 		static bool IsPred(RE::FormID character, bool onlyActive);
 		static bool IsPrey(RE::FormID character);
 
-		static RE::FormID MakeData(RE::TESObjectREFR* character);
 		static void SoftDelete(RE::FormID character, bool leaveOnlyActive = false);
 		static void HardDelete(RE::FormID character);
 

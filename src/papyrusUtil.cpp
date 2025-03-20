@@ -161,18 +161,16 @@ namespace Vore
 	void PapyrusAPI::PlanReformation(RE::StaticFunctionTag*, RE::Actor* pred, RE::Actor* prey)
 	{
 		flog::info("PPAPI PlanReformation");
-		VoreData::Reforms[prey->GetFormID()] = pred->GetFormID();
-		//placeholder
-		//placeholder
-		//placeholder
-		//placeholder
-		//placeholder
+		VoreCharStats* preyStats = VoreData::GetStatOrMake(prey);
+		if (preyStats) {
+			preyStats->reformer = pred->GetFormID();
+		}
 	}
 
 	void PapyrusAPI::UnplanReformation(RE::StaticFunctionTag*, [[maybe_unused]] RE::Actor* pred, RE::Actor* prey)
 	{
-		if (VoreData::Reforms.contains(prey->GetFormID())) {
-			VoreData::Reforms.erase(prey->GetFormID());
+		if (VoreCharStats* preyStats = VoreData::IsValidStatGet(prey->GetFormID())) {
+			preyStats->reformer = 0;
 		}
 	}
 
@@ -199,9 +197,10 @@ namespace Vore
 			flog::warn("Empty stomach container - won't swallow");
 			return;
 		}
-		VoreDataEntry* scData = VoreData::IsValidGet(VoreData::MakeData(sc));
+		VoreDataEntry* scData = VoreData::GetDataOrMake(sc);
 		if (!scData) {
 			flog::error("Can't make voredata entry for stomach container");
+			return;
 		}
 		scData->aSize = 0;
 		scData->aDeleteWhenDone = true;

@@ -382,10 +382,14 @@ namespace Vore
 
 		predData->PlaySound(Sounds::Gurgle);
 		predData->EmoteSmile(5000);
-		if (VoreData::Reforms.contains(preyData->get()->GetFormID()) && VoreData::Reforms[preyData->get()->GetFormID()] == predData->get()->GetFormID()) {
-			Core::StartReformation(preyData, predData);
-			VoreData::Reforms.erase(preyData->get()->GetFormID());
-		} else if (!predData->aIsPlayer && !preyData->aIsPlayer) {
+		if (VoreCharStats* preyStats = VoreData::IsValidStatGet(preyData->get()->GetFormID())) {
+			if (preyStats->reformer == predData->get()->GetFormID()) {
+				preyStats->reformer = 0;
+				Core::StartReformation(preyData, predData);
+				return;
+			}
+		}
+		if (!predData->aIsPlayer && !preyData->aIsPlayer) {
 			Core::AutoRelease(preyData, predData);
 		}
 	}

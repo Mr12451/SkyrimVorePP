@@ -9,6 +9,42 @@
 namespace Vore
 {
 
+	void VoreCharStats::CalcThreshold(bool predSkill)
+	{
+		//get level
+		//calc threshold for level
+
+		if (predSkill) {
+			predThreshold = VoreSettings::gain_pd_multi * std::pow(predLevel, 1.95f) + 100.0f;
+		} else {
+			preyThreshold = VoreSettings::gain_py_multi * std::pow(preyLevel, 1.95f) + 100.0f;
+		}
+	}
+
+	void VoreCharStats::AdvSkill(bool predSkill, float xp)
+	{
+		if (xp < 0) {
+			return;
+		}
+		if (predSkill) {
+			predXp += xp;
+			if (predThreshold <= predXp) {
+				predXp -= predThreshold;
+				predLevel++;
+				CalcThreshold(predSkill);
+				AdvSkill(predSkill, 0);
+			}
+		} else {
+			preyXp += xp;
+			if (preyThreshold <= preyXp) {
+				preyXp -= preyThreshold;
+				preyLevel++;
+				CalcThreshold(predSkill);
+				AdvSkill(predSkill, 0);
+			}
+		}
+	}
+
 	bool VoreData::IsValid(RE::FormID character)
 	{
 		if (!character) {
@@ -31,6 +67,100 @@ namespace Vore
 			return &(it->second);
 		} else {
 			return nullptr;
+		}
+	}
+
+	VoreDataEntry* VoreData::GetDataOrMake(RE::TESObjectREFR* character)
+	{
+		if (!character) {
+			flog::warn("Trying to make data for null character");
+			return 0;
+		}
+		auto it{ VoreData::Data.find(character->GetFormID()) };
+		if (it != std::end(VoreData::Data)) {
+			return &(it->second);
+		} else {
+			VoreDataEntry value = {};
+			value.aIsChar = character->GetFormType() == RE::FormType::ActorCharacter;
+			if (value.aIsChar) {
+				RE::Actor* asActor = character->As<RE::Actor>();
+
+				value.aIsPlayer = asActor->IsPlayerRef();
+				value.aAlive = !(asActor->IsDead());
+				if (character->IsHumanoid()) {
+					value.aSex = asActor->GetActorBase()->GetSex();
+				} else {
+					value.aSex = RE::SEX::kNone;
+				}
+				value.aEssential = asActor->IsEssential();
+				value.aProtected = asActor->IsProtected();
+
+				value.aScaleDefault = GetModelScale(asActor);
+
+				// calculate if wg is allowed
+
+				value.pdWGAllowed = CalcWgEnabled(asActor);
+
+				VM::GetSingleton()->CreateObject2("Actor", value.meVm);
+				VM::GetSingleton()->BindObject(value.meVm, GetHandle(character), false);
+			} else {
+				VM::GetSingleton()->CreateObject2("ObjectReference", value.meVm);
+				VM::GetSingleton()->BindObject(value.meVm, GetHandle(character), false);
+			}
+			float mySize = GetObjectSize(character);
+			// this might happen when vore happens outside of render distance?
+			// idk how 3d and actor processing is connected
+			// still, better have a fallback algorithm
+			// size should never be 0, because we divide by it (I think)
+			if (!mySize) {
+				if (!value.aIsChar) {
+					value.aSizeDefault = 5.0;
+				} else {
+					if (character->IsDragon()) {
+						value.aSizeDefault = 3000.0;
+					} else {
+						value.aSizeDefault = 100.0;
+					}
+				}
+			} else {
+				value.aSizeDefault = (double)mySize;
+			}
+			value.aSize = value.aSizeDefault;
+
+			value.me = character->GetHandle();
+
+			for (auto& el : value.pdLoci) {
+				el = VoreDataEntry::VoreState::hSafe;
+			}
+			flog::trace("Making new vore data entry for {}", Name::GetName(character));
+			Data.emplace(character->GetFormID(), value);
+			return &Data[character->GetFormID()];
+		}
+	}
+
+	VoreCharStats* VoreData::IsValidStatGet(RE::FormID character)
+	{
+		auto it{ VoreData::Stats.find(character) };
+		if (it != std::end(VoreData::Stats)) {
+			return &(it->second);
+		} else {
+			return nullptr;
+		}
+	}
+
+	VoreCharStats* VoreData::GetStatOrMake(RE::TESObjectREFR* character)
+	{
+		if (!character) {
+			flog::warn("Trying to make stats for null character");
+			return 0;
+		}
+		auto it{ VoreData::Stats.find(character->GetFormID()) };
+		if (it != std::end(VoreData::Stats)) {
+			return &(it->second);
+		} else {
+			VoreCharStats value = {};
+			Stats.emplace(character->GetFormID(), value);
+			return &Stats[character->GetFormID()];
 		}
 	}
 
@@ -94,75 +224,6 @@ namespace Vore
 				pData->GetSize(size);
 			}
 		}
-	}
-
-	RE::FormID VoreData::MakeData(RE::TESObjectREFR* target)
-	{
-		if (!target) {
-			flog::warn("Trying to make data for null character");
-			return 0;
-		}
-		VoreDataEntry value = {};
-		RE::FormID chid = target->GetFormID();
-		if (Data.contains(chid)) {
-			flog::trace("Using existing entry for {}", Name::GetName(target));
-		} else {
-			value.aIsChar = target->GetFormType() == RE::FormType::ActorCharacter;
-			if (value.aIsChar) {
-				RE::Actor* asActor = target->As<RE::Actor>();
-
-				//character->ref
-				value.aIsPlayer = asActor->IsPlayerRef();
-				value.aAlive = !(asActor->IsDead());
-				if (target->IsHumanoid()) {
-					value.aSex = asActor->GetActorBase()->GetSex();
-				} else {
-					value.aSex = RE::SEX::kNone;
-				}
-				value.aEssential = asActor->IsEssential();
-				value.aProtected = asActor->IsProtected();
-
-				value.aScaleDefault = GetModelScale(asActor);
-
-				// calculate if wg is allowed
-
-				value.pdWGAllowed = CalcWgEnabled(asActor);
-
-				VM::GetSingleton()->CreateObject2("Actor", value.meVm);
-				VM::GetSingleton()->BindObject(value.meVm, GetHandle(target), false);
-			} else {
-				VM::GetSingleton()->CreateObject2("ObjectReference", value.meVm);
-				VM::GetSingleton()->BindObject(value.meVm, GetHandle(target), false);
-			}
-			float mySize = GetObjectSize(target);
-			// this might happen when vore happens outside of render distance?
-			// idk how 3d and actor processing is connected
-			// still, better have a fallback algorithm
-			// size should never be 0, because we divide by it (I think)
-			if (!mySize) {
-				if (!value.aIsChar) {
-					value.aSizeDefault = 5.0;
-				} else {
-					if (target->IsDragon()) {
-						value.aSizeDefault = 3000.0;
-					} else {
-						value.aSizeDefault = 100.0;
-					}
-				}
-			} else {
-				value.aSizeDefault = (double)mySize;
-			}
-			value.aSize = value.aSizeDefault;
-
-			value.me = target->GetHandle();
-
-			for (auto& el : value.pdLoci) {
-				el = VoreDataEntry::VoreState::hSafe;
-			}
-			flog::trace("Making new vore data entry for {}", Name::GetName(target));
-			Data.emplace(chid, value);
-		}
-		return chid;
 	}
 
 	void VoreData::SoftDelete(RE::FormID character, bool leaveOnlyActive)
@@ -292,13 +353,13 @@ namespace Vore
 		s = s && a_intfc->WriteRecordData(&PlayerPrefs::regLoc, sizeof(PlayerPrefs::regLoc));
 		s = s && a_intfc->WriteRecordData(&PlayerPrefs::voreType, sizeof(PlayerPrefs::voreType));
 
-		size_t size = Reforms.size();
-		flog::info("Reforms, size: {}", size);
+		size_t size = Stats.size();
+		flog::info("Vore Stats, size: {}", size);
 		s = s && a_intfc->WriteRecordData(&size, sizeof(size));
 
-		for (auto& [pyId, pdId] : Reforms) {
-			s = s && SaveFormId(pyId, a_intfc);
-			s = s && SaveFormId(pdId, a_intfc);
+		for (auto& [fid, vds] : Stats) {
+			s = s && SaveFormId(fid, a_intfc);
+			s = s && SaveFormId(vds.reformer, a_intfc);
 		}
 
 		//size of Data
@@ -483,16 +544,21 @@ namespace Vore
 
 				size_t size;
 				a_intfc->ReadRecordData(size);
-				flog::info("Reforms, sise: {}", size);
+				flog::info("Stats, size: {}", size);
 
 				//read reforms
 				for (; size > 0; --size) {
-					RE::TESObjectREFR* preyRef = GetObjectPtr(a_intfc);
-					RE::TESObjectREFR* predRef = GetObjectPtr(a_intfc);
-					if (!preyRef || !predRef) {
-						continue;
+					//write stats to VoreData or to an empty local variable
+					RE::TESObjectREFR* statOwner = GetObjectPtr(a_intfc);
+					Vore::VoreCharStats statsEmpty = {};
+					Vore::VoreCharStats* charStats = GetStatOrMake(statOwner);
+					flog::info("Name {}", Name::GetName(statOwner));
+					if (!charStats) {
+						charStats = &statsEmpty;
 					}
-					Reforms[preyRef->GetFormID()] = predRef->GetFormID();
+					RE::TESObjectREFR* reformer = GetObjectPtr(a_intfc);
+					charStats->reformer = reformer->GetFormID();
+					flog::info("Reformer {}", Name::GetName(reformer));
 				}
 
 				//size of Data
@@ -504,28 +570,24 @@ namespace Vore
 
 					flog::info("New Entry");
 
-					// in case we read a broken ref, data goes here
+					//write entry to VoreData or to an empty local variable
+					RE::TESObjectREFR* entryOwner = GetObjectPtr(a_intfc);
 					Vore::VoreDataEntry entryEmpty = {};
-
-					RE::TESObjectREFR* entryPtr = GetObjectPtr(a_intfc);
-					flog::info("Name {}", Name::GetName(entryPtr));
-					// we make a new VoreData entry if we get a valid pointer, otherwise we read the data but never use it
-					if (entryPtr) {
-						MakeData(entryPtr);
-						flog::info("Making a new data entry");
-					} else {
-						flog::info("Skipping entry");
+					Vore::VoreDataEntry* entry = GetDataOrMake(entryOwner);
+					flog::info("Name {}", Name::GetName(entryOwner));
+					if (!entry) {
+						entry = &entryEmpty;
+						flog::info("Skipping data entry");
 					}
-					Vore::VoreDataEntry& entry = entryPtr ? Data[entryPtr->GetFormID()] : entryEmpty;
 
 					// start reading actual vore data entry
 
 					auto* tpred = GetObjectPtr(a_intfc);
 					if (tpred) {
-						entry.pred = tpred->GetFormID();
+						entry->pred = tpred->GetFormID();
 						flog::info("Pred {}", Name::GetName(tpred));
 					} else {
-						entry.pred = 0U;
+						entry->pred = 0U;
 						flog::info("No Pred");
 					}
 
@@ -536,7 +598,7 @@ namespace Vore
 						RE::TESObjectREFR* prey = nullptr;
 						prey = GetObjectPtr(a_intfc);
 						if (prey) {
-							entry.prey.insert(prey->GetFormID());
+							entry->prey.insert(prey->GetFormID());
 							flog::info("Prey {}", Name::GetName(prey));
 						}
 					}
@@ -547,7 +609,7 @@ namespace Vore
 					for (int i = 0; i < sizeLoci; i++) {
 						VoreDataEntry::VoreState locus = VoreDataEntry::VoreState::hNone;
 						a_intfc->ReadRecordData(locus);
-						entry.pdLoci[i] = locus;
+						entry->pdLoci[i] = locus;
 						flog::info("Locus {} {}", i, (uint8_t)locus);
 					}
 
@@ -557,7 +619,7 @@ namespace Vore
 					for (int i = 0; i < sizeLocAcid; i++) {
 						double locus = 0;
 						a_intfc->ReadRecordData(locus);
-						entry.pdAcid[i] = locus;
+						entry->pdAcid[i] = locus;
 						flog::info("Locus {} {}", i, locus);
 					}
 
@@ -567,7 +629,7 @@ namespace Vore
 					for (int i = 0; i < sizeLocStruggle; i++) {
 						double locus = 0;
 						a_intfc->ReadRecordData(locus);
-						entry.pdIndigestion[i] = locus;
+						entry->pdIndigestion[i] = locus;
 						flog::info("Locus {} {}", i, locus);
 					}
 
@@ -577,44 +639,38 @@ namespace Vore
 					for (int i = 0; i < sizeGrowth; i++) {
 						double growth = 0;
 						a_intfc->ReadRecordData(growth);
-						entry.pdGrowthLocus[i] = growth;
+						entry->pdGrowthLocus[i] = growth;
 						flog::info("Growth {} {}", i, growth);
 					}
 
-					a_intfc->ReadRecordData(entry.aSizeDefault);
-					entry.aSize = entry.aSizeDefault;
-					a_intfc->ReadRecordData(entry.aDeleteWhenDone);
+					a_intfc->ReadRecordData(entry->aSizeDefault);
+					entry->aSize = entry->aSizeDefault;
+					a_intfc->ReadRecordData(entry->aDeleteWhenDone);
 
-					flog::info("Char type: {}, is player: {}, alive {}, size {}", (int)entry.aIsChar, entry.aIsPlayer, entry.aAlive, entry.aSize);
+					flog::info("Char type: {}, is player: {}, alive {}, size {}", (int)entry->aIsChar, entry->aIsPlayer, entry->aAlive, entry->aSize);
 
 					flog::info("Pred");
-					a_intfc->ReadRecordData(entry.pdFat);
-					a_intfc->ReadRecordData(entry.pdFatgrowth);
-					a_intfc->ReadRecordData(entry.pdSizegrowth);
-					flog::info("Fat: {}, Fat Growth: {}, Size Growth: {}", entry.pdFat, entry.pdFatgrowth, entry.pdSizegrowth);
+					a_intfc->ReadRecordData(entry->pdFat);
+					a_intfc->ReadRecordData(entry->pdFatgrowth);
+					a_intfc->ReadRecordData(entry->pdSizegrowth);
+					flog::info("Fat: {}, Fat Growth: {}, Size Growth: {}", entry->pdFat, entry->pdFatgrowth, entry->pdSizegrowth);
 
 					flog::info("Prey");
-					a_intfc->ReadRecordData(entry.pyLocus);
-					a_intfc->ReadRecordData(entry.pyElimLocus);
-					a_intfc->ReadRecordData(entry.pyDigestion);
+					a_intfc->ReadRecordData(entry->pyLocus);
+					a_intfc->ReadRecordData(entry->pyElimLocus);
+					a_intfc->ReadRecordData(entry->pyDigestion);
 
-					a_intfc->ReadRecordData(entry.pyStruggleResource);
-					a_intfc->ReadRecordData(entry.pyConsentEndo);
-					a_intfc->ReadRecordData(entry.pyConsentLethal);
+					a_intfc->ReadRecordData(entry->pyStruggleResource);
+					a_intfc->ReadRecordData(entry->pyConsentEndo);
+					a_intfc->ReadRecordData(entry->pyConsentLethal);
 
-					a_intfc->ReadRecordData(entry.pyLocusMovement);
+					a_intfc->ReadRecordData(entry->pyLocusMovement);
 					flog::info("Locus: {}, ElimLocus: {}, Digestion: {}, Struggle: {} {} {}, Movement: {}",
-						(uint8_t)entry.pyLocus, (uint8_t)entry.pyElimLocus, (uint8_t)entry.pyDigestion, entry.pyStruggleResource, entry.pyConsentEndo, entry.pyConsentLethal, (uint8_t)entry.pyLocusMovement);
-					a_intfc->ReadRecordData(entry.pyDigestProgress);
-					a_intfc->ReadRecordData(entry.pySwallowProcess);
-					a_intfc->ReadRecordData(entry.pyLocusProcess);
-					flog::info("Digestion Process: {}, Swallow Process: {}, Locus Process: {}", entry.pyDigestProgress, entry.pySwallowProcess, entry.pyLocusProcess);
-
-					if (entryPtr) {
-						flog::info("Finished loading {}", Name::GetName(entryPtr));
-					} else {
-						flog::warn("Skipping this character");
-					}
+						(uint8_t)entry->pyLocus, (uint8_t)entry->pyElimLocus, (uint8_t)entry->pyDigestion, entry->pyStruggleResource, entry->pyConsentEndo, entry->pyConsentLethal, (uint8_t)entry->pyLocusMovement);
+					a_intfc->ReadRecordData(entry->pyDigestProgress);
+					a_intfc->ReadRecordData(entry->pySwallowProcess);
+					a_intfc->ReadRecordData(entry->pyLocusProcess);
+					flog::info("Digestion Process: {}, Swallow Process: {}, Locus Process: {}", entry->pyDigestProgress, entry->pySwallowProcess, entry->pyLocusProcess);
 
 					flog::trace("\n\n");
 				}
@@ -635,7 +691,7 @@ namespace Vore
 		UI::VoreMenu::_setModeAfterShow = UI::kNone;
 		UI::VoreMenu::_infoTarget = {};
 		flog::info("reverting, clearing data");
-		Reforms.clear();
+		Stats.clear();
 		Data.clear();
 	}
 }

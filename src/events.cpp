@@ -88,8 +88,14 @@ namespace Vore
 				} else if (keyCode == VoreSettings::k_sw_menu) {
 					UI::VoreMenu::SetMenuMode(UI::VoreMenuMode::kSwallow);
 				} else if (keyCode == VoreSettings::k_test) {
-					Log::PrintVoreData();
-					Funcs::MoveTo(RE::PlayerCharacter::GetSingleton(), nullptr);
+					flog::info("pd lvl {}", VoreData::GetStatOrMake(RE::PlayerCharacter::GetSingleton())->predLevel);
+					flog::info("pd xp {}", VoreData::GetStatOrMake(RE::PlayerCharacter::GetSingleton())->predXp);
+					flog::info("pd t {}", VoreData::GetStatOrMake(RE::PlayerCharacter::GetSingleton())->predThreshold);
+					flog::info("py lvl {}", VoreData::GetStatOrMake(RE::PlayerCharacter::GetSingleton())->preyLevel);
+					flog::info("py xp {}", VoreData::GetStatOrMake(RE::PlayerCharacter::GetSingleton())->preyXp);
+					flog::info("py t {}", VoreData::GetStatOrMake(RE::PlayerCharacter::GetSingleton())->preyThreshold);
+					//Log::PrintVoreData();
+					//Funcs::MoveTo(RE::PlayerCharacter::GetSingleton(), nullptr);
 					/*for (auto& i : RE::PlayerCharacter::GetSingleton()->addedSpells) {
 						flog::info("found spell {}", i->GetFullName());
 					}*/

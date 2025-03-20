@@ -49,6 +49,8 @@ namespace Vore
 		static inline float size_softcap_power = 0.45f;
 		static inline int gain_stats_base = 1;
 		static inline float gain_skill_base = 1;
+		static inline float gain_pd_multi = 2.0f;
+		static inline float gain_py_multi = 2.0f;
 
 
 		// sound

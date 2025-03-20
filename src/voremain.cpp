@@ -396,7 +396,7 @@ namespace Vore::Core
 
 	void AddFakeFood(RE::Actor* pred, RE::AlchemyItem* item)
 	{
-		VoreDataEntry* predData = VoreData::IsValidGet(VoreData::MakeData(pred));
+		VoreDataEntry* predData = VoreData::GetDataOrMake(pred);
 		if (!predData) {
 			return;
 		}
@@ -424,12 +424,16 @@ namespace Vore::Core
 
 			RE::TESObjectREFR* itemCell = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESObjectREFR>(0x28556, "SkyrimVorePP.esp");
 			RE::TESObjectREFR* ffRefr = itemCell->PlaceObjectAtMe(fakeFood, false).get();
-			VoreDataEntry* ffData = VoreData::IsValidGet(VoreData::MakeData(ffRefr));
-			ffData->aSize = itemSize;
-			ffData->aSizeDefault = itemSize;
-			ffData->aDeleteWhenDone = true;
-			Swallow(pred, ffRefr, lStomach, VoreDataEntry::hSafe, true, false);
-			ffData->DigestLive();
+			VoreDataEntry* ffData = VoreData::GetDataOrMake(ffRefr);
+			if (ffData) {
+				ffData->aSize = itemSize;
+				ffData->aSizeDefault = itemSize;
+				ffData->aDeleteWhenDone = true;
+				Swallow(pred, ffRefr, lStomach, VoreDataEntry::hSafe, true, false);
+				ffData->DigestLive();
+			} else {
+				flog::error("Could not make fake food for {}!", Name::GetName(pred));
+			}
 		}
 
 		// check if pred has
@@ -437,7 +441,7 @@ namespace Vore::Core
 
 	void InstantWg(RE::Actor* pred, double amount)
 	{
-		if (VoreDataEntry* predData = VoreData::IsValidGet(VoreData::MakeData(pred))) {
+		if (VoreDataEntry* predData = VoreData::GetDataOrMake(pred)) {
 			if (predData->pdWGAllowed) {
 				predData->pdFat += amount * VoreSettings::wg_fattemp;
 				predData->pdFatgrowth += amount * VoreSettings::wg_fattemp;
@@ -471,12 +475,10 @@ namespace Vore::Core
 		//initialize pred
 
 		flog::info("Pred {}", Name::GetName(pred));
-		RE::FormID predId = VoreData::MakeData(pred);
-		if (!predId) {
+		Vore::VoreDataEntry* predData = VoreData::GetDataOrMake(pred);
+		if (!predData) {
 			flog::warn("Bad pred, aborting!");
-			return;
 		}
-		Vore::VoreDataEntry& predData = VoreData::Data[predId];
 
 		int preyCount = 0;
 		for (auto& prey : preys) {
@@ -491,63 +493,62 @@ namespace Vore::Core
 
 				//initialize prey
 
-				RE::FormID preyId = VoreData::MakeData(preyA);
-				if (!preyId) {
-					flog::warn("broken prey");
+				Vore::VoreDataEntry* preyData = VoreData::GetDataOrMake(preyA);
+				if (!preyData) {
+					flog::warn("Bad prey, skipping!");
 					continue;
 				}
-				Vore::VoreDataEntry& preyData = VoreData::Data[preyId];
 
-				RE::FormID oldPred = preyData.pred;
+				RE::FormID oldPred = preyData->pred;
 
 				if (oldPred) {
-					if (VoreData::Data.contains(oldPred) && VoreData::Data[oldPred].prey.contains(preyId)) {
-						Regurgitate(VoreData::Data[oldPred].get()->As<RE::Actor>(), preyId, RegType::rTransfer);
+					if (VoreData::Data.contains(oldPred) && VoreData::Data[oldPred].prey.contains(preyA->GetFormID())) {
+						Regurgitate(VoreData::Data[oldPred].get()->As<RE::Actor>(), preyA->GetFormID(), RegType::rTransfer);
 					}
 				}
 
 				// don't delete a prey if we're planning on using them
-				if (VoreGlobals::delete_queue.contains(preyId)) {
-					VoreGlobals::delete_queue.erase(preyId);
+				if (VoreGlobals::delete_queue.contains(preyA->GetFormID())) {
+					VoreGlobals::delete_queue.erase(preyA->GetFormID());
 				}
 
 				//inset prey to PRED
-				predData.prey.insert(preyId);
+				predData->prey.insert(preyA->GetFormID());
 				//----------
-				preyData.aAlive = !(preyA->IsDead());
+				preyData->aAlive = !(preyA->IsDead());
 
-				preyData.pred = predId;
-				preyData.pyLocus = locus;
-				preyData.pyElimLocus = locus;
-				preyData.pyDigestion = ldType;
+				preyData->pred = pred->GetFormID();
+				preyData->pyLocus = locus;
+				preyData->pyElimLocus = locus;
+				preyData->pyDigestion = ldType;
 				//preyData.pyPendingReformation = false;
 
-				preyData.pyStruggleResource = 4;
+				preyData->pyStruggleResource = 4;
 
 				// prey will be willing if they are a friend or if they are in a special faction from dialogue plugin
-				preyData.pyConsentLethal = CalculateConsent(pred, preyA, true);
-				preyData.pyConsentEndo = CalculateConsent(pred, preyA, false);
+				preyData->pyConsentLethal = CalculateConsent(pred, preyA, true);
+				preyData->pyConsentEndo = CalculateConsent(pred, preyA, false);
 
-				preyData.pyDigestProgress = 0;
-				preyData.pySwallowProcess = fullswallow || !preyData.aAlive ? 100 : 20;
+				preyData->pyDigestProgress = 0;
+				preyData->pySwallowProcess = fullswallow || !preyData->aAlive ? 100 : 20;
 
 				//full tour related shit
-				preyData.pyLocusMovement = (preyData.pyLocus == Locus::lBowel) ? VoreDataEntry::mIncrease : VoreDataEntry::mStill;
-				preyData.pyLocusProcess = 0;
+				preyData->pyLocusMovement = (preyData->pyLocus == Locus::lBowel) ? VoreDataEntry::mIncrease : VoreDataEntry::mStill;
+				preyData->pyLocusProcess = 0;
 
 				//crime / combat when prey is unwilling
-				if (ldType == VoreDataEntry::hLethal && !preyData.pyConsentLethal) {
+				if (ldType == VoreDataEntry::hLethal && !preyData->pyConsentLethal) {
 					Funcs::Attacked(preyA, pred);
-				} else if (ldType != VoreDataEntry::hLethal && !preyData.pyConsentEndo) {
+				} else if (ldType != VoreDataEntry::hLethal && !preyData->pyConsentEndo) {
 					Funcs::Attacked(preyA, pred);
 				}
 
 				if (!oldPred) {
-					SetPreyVisibility(preyA, pred, false, &preyData);
+					SetPreyVisibility(preyA, pred, false, preyData);
 				}
 
-				preyData.CalcFast();
-				preyData.CalcSlow();
+				preyData->CalcFast();
+				preyData->CalcSlow();
 				Dialogue::OnSwallow_Prey(pred, prey);
 
 				preyCount++;
@@ -558,47 +559,50 @@ namespace Vore::Core
 				if (VoreData::IsValid(prey->GetFormID()) || VoreGlobals::allowed_pickup.contains(base->GetFormType())) {
 					flog::info("Pred {}, prey {}, eatable object", Name::GetName(pred), Name::GetName(prey));
 
-					RE::FormID preyId = VoreData::MakeData(prey);
-					Vore::VoreDataEntry& preyData = VoreData::Data[preyId];
+					Vore::VoreDataEntry* preyData = VoreData::GetDataOrMake(prey);
+					if (!preyData) {
+						flog::warn("Bad prey, skipping!");
+						continue;
+					}
 
-					RE::FormID oldPred = preyData.pred;
+					RE::FormID oldPred = preyData->pred;
 
 					if (oldPred) {
-						if (VoreData::Data.contains(oldPred) && VoreData::Data[oldPred].prey.contains(preyId)) {
-							Regurgitate(VoreData::Data[oldPred].get()->As<RE::Actor>(), preyId, RegType::rTransfer);
+						if (VoreData::Data.contains(oldPred) && VoreData::Data[oldPred].prey.contains(prey->GetFormID())) {
+							Regurgitate(VoreData::Data[oldPred].get()->As<RE::Actor>(), prey->GetFormID(), RegType::rTransfer);
 						}
 					} else {
-						SetPreyVisibility(prey, pred, false, &preyData);
+						SetPreyVisibility(prey, pred, false, preyData);
 					}
 					//auto* scForm = RE::TESForm::LookupByEditorID<RE::TESObjectCONT>("StomachContainer");
 					//auto* scPtr = pred->PlaceObjectAtMe(scForm, false).get();
 					//auto * pyItem = prey->
 					//scPtr->GetContainer()->
 
-					predData.prey.insert(preyId);
+					predData->prey.insert(prey->GetFormID());
 
 					// items that are "alive" are endoed items
 					// dead items are items that are being digested
-					preyData.aAlive = true;
+					preyData->aAlive = true;
 
-					preyData.pred = predId;
-					preyData.pyLocus = locus;
-					preyData.pyElimLocus = locus;
-					preyData.pyDigestion = ldType;
+					preyData->pred = pred->GetFormID();
+					preyData->pyLocus = locus;
+					preyData->pyElimLocus = locus;
+					preyData->pyDigestion = ldType;
 
-					preyData.pyDigestProgress = 0;
+					preyData->pyDigestProgress = 0;
 
-					preyData.pyConsentEndo = true;
-					preyData.pyConsentLethal = true;
+					preyData->pyConsentEndo = true;
+					preyData->pyConsentLethal = true;
 
-					preyData.pySwallowProcess = fullswallow || !preyData.aAlive ? 100 : 20;
+					preyData->pySwallowProcess = fullswallow || !preyData->aAlive ? 100 : 20;
 
 					//full tour related shit
-					preyData.pyLocusMovement = (preyData.pyLocus == Locus::lBowel) ? VoreDataEntry::mIncrease : VoreDataEntry::mStill;
-					preyData.pyLocusProcess = 0;
+					preyData->pyLocusMovement = (preyData->pyLocus == Locus::lBowel) ? VoreDataEntry::mIncrease : VoreDataEntry::mStill;
+					preyData->pyLocusProcess = 0;
 
-					preyData.CalcFast();
-					preyData.CalcSlow();
+					preyData->CalcFast();
+					preyData->CalcSlow();
 
 					preyCount++;
 				}
@@ -625,19 +629,19 @@ namespace Vore::Core
 		if (preyCount > 0) {
 			//VoreGlobals::body_morphs->SetMorph(pred, "Vore prey belly", VoreGlobals::MORPH_KEY, 1.0);
 			//VoreGlobals::body_morphs->UpdateModelWeight(pred);
-			predData.pdUpdateGoal = true;
+			predData->pdUpdateGoal = true;
 			Dialogue::OnSwallow_Pred(pred);
-			SwitchToDigestion(predId, locus, ldType, safeSwitch);
+			SwitchToDigestion(pred->GetFormID(), locus, ldType, safeSwitch);
 			if (fullswallow) {
-				predData.UpdateSliderGoals();
-				predData.PlayStomachSounds();
+				predData->UpdateSliderGoals();
+				predData->PlayStomachSounds();
 			}
-			predData.SetPredUpdate(true);
+			predData->SetPredUpdate(true);
 		} else {
 			flog::warn("No prey were swallowed");
 		}
 
-		predData.PlaySwallow();
+		predData->PlaySwallow();
 		UI::VoreMenu::SetMenuMode(UI::kDefault);
 		Log::PrintVoreData();
 		flog::info("Swallow end");
