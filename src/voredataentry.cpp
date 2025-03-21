@@ -13,66 +13,25 @@
 
 namespace Vore
 {
-	void VoreDataEntry::DigestLive()
-	{
-		if (pred && aAlive && aIsChar) {
-			RE::Actor* asActor = get()->As<RE::Actor>();
-			VoreDataEntry* predData = VoreData::IsValidGet(pred);
-			if (!predData) {
-				return;
-			}
-			if (aIsPlayer) {
-				AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth) - 5.0f);
-				HandlePreyDeathImmidiate();
-			} else if (asActor->IsEssential()) {
-				if (VoreSettings::digest_essential) {
-					//asActor->boolFlags = (unsigned int)(asActor->boolFlags) & ~(unsigned int)RE::Actor::BOOL_FLAGS::kEssential;
-					asActor->GetActorBase()->actorData.actorBaseFlags.reset(RE::ACTOR_BASE_DATA::Flag::kEssential);
-					AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth) + 1.0f);
-					//this is necessary for long deltas to work
-					HandlePreyDeathImmidiate();
-				} else {
-					Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
-				}
-			} else if (asActor->IsProtected()) {
-				if (VoreSettings::digest_protected) {
-					asActor->GetActorBase()->actorData.actorBaseFlags.reset(RE::ACTOR_BASE_DATA::Flag::kProtected);
-					AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth) + 1.0f);
-					//this is necessary for long deltas to work
-					HandlePreyDeathImmidiate();
-				} else {
-					Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
-				}
-			} else {
-				AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth) + 1.0f);
-				//asActor->KillImmediate();
-				HandlePreyDeathImmidiate();
-			}
-		} else if (aAlive) {
-			HandlePreyDeathImmidiate();
-		}
-	}
+
 	void VoreDataEntry::HandlePreyDeathImmidiate()
 	{
 		aAlive = false;
 		pyDigestProgress = 0.0;
 		pyElimLocus = pyLocus;
 		pyLocusMovement = mStill;
-		pyDigestion = hLethal;
-		CalcFast();
-		CalcSlow();
+		SetMyDigestion(hLethal, true);
 
 		if (aIsChar) {
 			if (VoreDataEntry* predData = VoreData::IsValidGet(pred)) {
 				predData->EmoteSmile(5000);
+				predData->UpdateStats(true);
 			}
+			UpdateStats(false);
 			if (aIsPlayer) {
 				Dialogue::PlayerDied();
 				// add hide player ui
-				Core::SwitchToDigestion(pred, pyLocus, VoreState::hSafe, false);
-			} else {
-				// add skill equal to highest prey skill + stamina
-				// nah I'll do it on digestion end
+				//Core::SwitchToDigestion(pred, pyLocus, VoreState::hSafe, false);
 			}
 		}
 	}
@@ -137,7 +96,7 @@ namespace Vore
 
 	RE::TESObjectREFR* VoreDataEntry::get() const
 	{
-		return this->me.get().get();
+		return me.get().get();
 	}
 
 	void VoreDataEntry::BellyUpdate(const double& delta)
@@ -374,6 +333,8 @@ namespace Vore
 		preyData->pyDigestProgress = 100.0;
 		preyData->CalcSlow();
 		preyData->CalcFast();
+		preyData->UpdateStats(false);
+		predData->UpdateStats(true);
 		if (!preyData->aIsChar) {
 			return;
 		}
@@ -420,7 +381,7 @@ namespace Vore
 			pyLocusProcess = 100.0 - pyDigestProgress;
 		}
 		if (pyLocus == lStomach && pyDigestProgress > 30.0) {
-			Core::MoveToLocus(pred, get()->GetFormID(), Locus::lBowel);
+			Core::MoveToLocus(get()->GetFormID(), Locus::lBowel);
 			predData->PlaySound(Sounds::Gurgle);
 		}
 
@@ -449,22 +410,22 @@ namespace Vore
 
 	static void FinishReformProcess(VoreDataEntry* preyData, VoreDataEntry* predData)
 	{
-		//play some sound
 		flog::info("{} was reformed", Name::GetName(preyData->get()));
-		if (!preyData->aIsChar) {
-			return;
-		}
 		preyData->pyDigestProgress = 0.0;
+		//preyData->CalcSlow();
+		//preyData->CalcFast();
+		preyData->aAlive = true;
+		preyData->UpdateStats(false);
+		predData->UpdateStats(true);
+		//for dialogue plugin remove reform?
+		/*Core::SwitchToDigestion(preyData->pred, preyData->pyLocus, VoreDataEntry::hSafe, false);*/
+		preyData->SetMyDigestion(VoreDataEntry::hNone, true);
 		predData->PlaySound(Sounds::Gurgle);
 		predData->EmoteSmile(5000);
 
-		preyData->pyDigestion = predData->pdLoci[preyData->pyLocus];
-		preyData->aAlive = true;
 		if (preyData->aIsChar && !preyData->aIsPlayer) {
 			preyData->get()->As<RE::Actor>()->Resurrect(false, false);
 		}
-		preyData->CalcSlow();
-		preyData->CalcFast();
 		if (!predData->aIsPlayer && !preyData->aIsPlayer) {
 			Core::AutoRelease(preyData, predData);
 		}
@@ -1274,5 +1235,141 @@ namespace Vore
 			t.detach();
 		}
 	}
+	void VoreDataEntry::DigestLive()
+	{
+		if (pred && aAlive && aIsChar) {
+			RE::Actor* asActor = get()->As<RE::Actor>();
+			VoreDataEntry* predData = VoreData::IsValidGet(pred);
+			if (!predData) {
+				return;
+			}
+			if (aIsPlayer) {
+				AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth) - 5.0f);
+				HandlePreyDeathImmidiate();
+			} else if (asActor->IsEssential()) {
+				if (VoreSettings::digest_essential) {
+					//asActor->boolFlags = (unsigned int)(asActor->boolFlags) & ~(unsigned int)RE::Actor::BOOL_FLAGS::kEssential;
+					asActor->GetActorBase()->actorData.actorBaseFlags.reset(RE::ACTOR_BASE_DATA::Flag::kEssential);
+					AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth) + 1.0f);
+					//this is necessary for long deltas to work
+					HandlePreyDeathImmidiate();
+				} else {
+					Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
+				}
+			} else if (asActor->IsProtected()) {
+				if (VoreSettings::digest_protected) {
+					asActor->GetActorBase()->actorData.actorBaseFlags.reset(RE::ACTOR_BASE_DATA::Flag::kProtected);
+					AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth) + 1.0f);
+					//this is necessary for long deltas to work
+					HandlePreyDeathImmidiate();
+				} else {
+					Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
+				}
+			} else {
+				AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth) + 1.0f);
+				//asActor->KillImmediate();
+				HandlePreyDeathImmidiate();
+			}
+		} else if (aAlive) {
+			HandlePreyDeathImmidiate();
+		}
+	}
+	void VoreDataEntry::SetDigestionAsPred(const Locus locus, VoreDataEntry::VoreState dType, const bool forceStopDigestion, bool doDialogueUpd)
+	{
+		if (dType == VoreDataEntry::hNone) {
+			flog::warn("Switching to None digestion type! Returning.: {}", Name::GetName(get()));
+			return;
+		}
+		if (locus == Locus::lNone) {
+			for (uint8_t i = 0; i < Locus::NUMOFLOCI; i++) {
+				SetDigestionAsPred((Locus)i, dType, forceStopDigestion, false);
+			}
+			if (doDialogueUpd) {
+				Dialogue::OnDigestionChange(get()->As<RE::Actor>());
+			}
+			return;
+		}
+		// this allows the usage of switching to safe digestion as a way to stop digestion
+		if (!forceStopDigestion && dType == VoreDataEntry::hSafe) {
+			for (const RE::FormID el : prey) {
+				if (VoreDataEntry* pyData = VoreData::IsValidGet(el)) {
+					if (pyData->aAlive && locus == pyData->pyLocus) {
+						if (pyData->pyDigestion == VoreDataEntry::hLethal) {
+							dType = VoreDataEntry::hLethal;
+							break;
+						} else if (pyData->pyDigestion == VoreDataEntry::hReformation) {
+							dType = VoreDataEntry::hReformation;
+							break;
+						}
+					}
+				}
+			}
+		}
+		pdLoci[locus] = dType;
+		for (const RE::FormID el : prey) {
+			if (VoreDataEntry* pyData = VoreData::IsValidGet(el)) {
+				// digestion of dead prey shouldn't be changed from here, nor does it affect the digestion of live prey
+				// it should be changed only through SetMyDigestion()
+				if (!pyData->aAlive || locus != pyData->pyLocus) {
+					continue;
+				}
+				if (pyData->pyDigestion != dType) {
+					pyData->SetMyDigestion(dType, false);
+					flog::info("Prey {} digestion set to {}", Name::GetName(pyData->get()), (uint8_t)pyData->pyDigestion);
+				}
+			}
+		}
+		if (doDialogueUpd) {
+			Dialogue::OnDigestionChange(get()->As<RE::Actor>());
+		}
+	}
+	void VoreDataEntry::SetMyDigestion(VoreDataEntry::VoreState dType, bool updateSounds)
+	{
+		if (dType == VoreDataEntry::hNone) {
+			if (VoreDataEntry* pdData = VoreData::IsValidGet(pred)) {
+				// pred's digestion for locus where I am
+				dType = pdData->pdLoci[pyLocus];
+			}
+		}
+		if (dType == VoreDataEntry::hNone) {
+			flog::error("Trying to set digestion to none for {}!", Name::GetName(get()));
+			return;
+		}
+		pyDigestion = dType;
+		//start digesting items
+		if (!aIsChar && aAlive && pyDigestion == VoreDataEntry::hLethal) {
+			DigestLive();
+			//Calc fast/slow is called from DigestLive()
+			return;
+		}
+		if (aIsChar && updateSounds) {
+			if (VoreDataEntry* pdData = VoreData::IsValidGet(pred)) {
+				Dialogue::OnDigestionChange(pdData->get()->As<RE::Actor>());
+			}
+		}
+		CalcFast();
+		CalcSlow();
 
+	}
+	void VoreDataEntry::UpdateStats(bool isPred)
+	{
+		if (!aIsChar) {
+			return;
+		}
+		if (isPred) {
+			if (pdXP > 0) {
+				if (VoreCharStats* preyStats = VoreData::GetStatOrMake(get())) {
+					preyStats->AdvSkillAndSync(true, pdXP, get()->As<RE::Actor>());
+					pdXP = 0.0f;
+				}
+			}
+		} else {
+			if (pyXP > 0) {
+				if (VoreCharStats* preyStats = VoreData::GetStatOrMake(get())) {
+					preyStats->AdvSkillAndSync(false, pyXP, get()->As<RE::Actor>());
+					pyXP = 0.0f;
+				}
+			}
+		}
+	}
 }

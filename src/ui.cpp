@@ -255,6 +255,20 @@ namespace Vore::UI
 				text += "\nRace: ";
 				text += actr->GetRace()->GetFullName();
 				RE::FormID charId = actr->GetFormID();
+				if (VoreCharStats* actorStats = VoreData::IsValidStatGet(charId)) {
+					text += "\nPred Skill: ";
+					text += std::format("{:.4f}, ",actorStats->predLevel);
+					text += " ";
+					text += std::format("{:.4f}, ", actorStats->predXp);
+					text += " ";
+					text += std::format("{:.4f}, ", actorStats->predThreshold);
+					text += "\nPrey Skill: ";
+					text += std::format("{:.4f}, ", actorStats->preyLevel);
+					text += " ";
+					text += std::format("{:.4f}, ", actorStats->preyXp);
+					text += " ";
+					text += std::format("{:.4f}, ", actorStats->preyThreshold);
+				}
 
 				if (VoreDataEntry* actorData = VoreData::IsValidGet(charId)) {
 					text += "\nHas vore data: true";
@@ -569,12 +583,14 @@ namespace Vore::UI
 						break;
 					case (MenuAction::kMenuA2):
 						{
-							if (VoreDataEntry* preyData = VoreData::IsValidGet(_infoTarget.get().get()->GetFormID())) {
+							VoreDataEntry* preyData = VoreData::IsValidGet(_infoTarget.get().get()->GetFormID());
+							VoreDataEntry* playerData = VoreData::IsValidGet(RE::PlayerCharacter::GetSingleton()->GetFormID());
+							if (preyData && playerData) {
 								if (preyData->aAlive) {
 									if (preyData->pyDigestion == VoreDataEntry::hLethal) {
-										Core::SwitchToDigestion(RE::PlayerCharacter::GetSingleton()->GetFormID(), preyData->pyLocus, VoreDataEntry::hSafe, true);
+										playerData->SetDigestionAsPred(preyData->pyLocus, VoreDataEntry::hSafe, false);
 									} else {
-										Core::SwitchToDigestion(RE::PlayerCharacter::GetSingleton()->GetFormID(), preyData->pyLocus, VoreDataEntry::hLethal, true);
+										playerData->SetDigestionAsPred(preyData->pyLocus, VoreDataEntry::hLethal, false);
 									}
 									Update();
 								}
@@ -590,7 +606,7 @@ namespace Vore::UI
 					case (MenuAction::kMenuA4):
 						if (_iFullTour) {
 							if (VoreDataEntry* preyData = VoreData::IsValidGet(_infoTarget.get().get()->GetFormID())) {
-								Core::MoveToLocus(RE::PlayerCharacter::GetSingleton()->GetFormID(), _infoTarget.get().get()->GetFormID(), lBowel, lStomach);
+								Core::MoveToLocus(_infoTarget.get().get()->GetFormID(), lBowel);
 								preyData->pyLocusMovement = VoreDataEntry::mDecrease;
 								Update();
 							}

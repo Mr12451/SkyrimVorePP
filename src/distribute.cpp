@@ -38,6 +38,46 @@ namespace Vore
 		static inline constexpr std::size_t size{ 0x10 };
 	};
 
+	int8_t Dist::GetPRank(bool isPred, RE::Actor* target)
+	{
+		if (isPred) {
+			if (target->IsInFaction(f_predator)) {
+				return (int8_t)target->GetFactionRank(f_predator, target->IsPlayerRef());
+			} else {
+				return -2;
+			}
+		} else {
+			if (target->IsInFaction(f_prey)) {
+				return (int8_t)target->GetFactionRank(f_prey, target->IsPlayerRef());
+			} else {
+				return -2;
+			}
+		}
+	}
+
+	void Dist::SetPRank(bool isPred, RE::Actor* target, int8_t rank)
+	{
+		int8_t prank = GetPRank(isPred, target);
+		if (prank == rank) {
+			return;
+		}
+		if (isPred) {
+			if (prank > -2) {
+				target->RemoveFromFaction(f_predator);
+			}
+			if (rank > -2) {
+				target->AddToFaction(f_predator, rank);
+			}
+		} else {
+			if (prank > -2) {
+				target->RemoveFromFaction(f_prey);
+			}
+			if (rank > -2) {
+				target->AddToFaction(f_prey, rank);
+			}
+		}
+	}
+
 	void Dist::DistrNPC(RE::Character* target)
 	{
 		// the idea is this
@@ -56,6 +96,9 @@ namespace Vore
 		// npcs will have their preferenses stored in a separate map
 		// the map will be filled when vore is initiated for the npc the first time
 
+		if (!f_predator) {
+			return;
+		}
 		if (!target) {
 			return;
 		}
@@ -105,10 +148,12 @@ namespace Vore
 
 		float random = Math::randfloat(0.0f, 100.0f);
 		if (random < prob) {
-			target->AddToFaction(f_predator, 0);
+			target->AddToFaction(f_predator, 1);
+			target->AddToFaction(f_prey, 0);
 			flog::trace("PREDATOR: {}, height {}, prob {}", target->GetName(), heightMod, prob);
 		} else {
-			target->AddToFaction(f_prey, 0);
+			target->AddToFaction(f_predator, 0);
+			target->AddToFaction(f_prey, 1);
 			flog::trace("PREY: {}, height {}, prob {}", target->GetName(), heightMod, prob);
 		}
 	}
@@ -116,7 +161,6 @@ namespace Vore
 	void Dist::Initialize()
 	{
 		Hooks::write_vtable_func<RE::Character, ShouldBackgroundClone>();
-		// probably don't need this. we'll see
 		Hooks::write_vtable_func<RE::Character, InitLoadGame>();
 
 		flog::info("Installed actor load hooks");

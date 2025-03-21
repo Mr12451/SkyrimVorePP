@@ -16,12 +16,11 @@ namespace Vore
 		void HidePrey(RE::Actor* target);
 		void UnhidePrey(RE::Actor* target);
 		void FinishPlayerDigestion();
-		void SwitchToDigestion(const RE::FormID pred, const Locus locus, const VoreDataEntry::VoreState dType, const bool forceStopDigestion, bool doDialogueUpd = true);
 		void StartReformation(VoreDataEntry* preyData, VoreDataEntry* predData);
 		void InventoryVore(RE::Actor* pred);
 		bool CanMoveToLocus(const RE::FormID& pred, const RE::FormID& prey, const Locus& locus, const Locus& locusSource);
 		bool CanBeRegurgitated(const VoreDataEntry* prey);
-		void MoveToLocus(const RE::FormID& pred, const RE::FormID& prey, const Locus& locus, const Locus& locusSource = Locus::lNone);
+		void MoveToLocus(const RE::FormID prey, const Locus locus);
 		void SetPreyVisibility(RE::TESObjectREFR* preyObj, RE::Actor* pred, bool show, VoreDataEntry* preyData);
 
 		void AddFakeFood(RE::Actor* pred, RE::AlchemyItem* item);

@@ -116,7 +116,9 @@ namespace Vore
 		if (VoreDataEntry* targetData = VoreData::IsValidGet(target->GetFormID())) {
 			uint8_t intDig = static_cast<uint8_t>(digestionType);
 			if (intDig > VoreDataEntry::hNone && intDig <= VoreDataEntry::hReformation) {
-				Core::SwitchToDigestion(targetData->pred, targetData->pyLocus, (VoreDataEntry::VoreState)intDig, true);
+				if (VoreDataEntry* predData = VoreData::IsValidGet(targetData->pred)) {
+					predData->SetDigestionAsPred(targetData->pyLocus, (VoreDataEntry::VoreState)intDig, true);
+				}
 			}
 		}
 	}
@@ -127,7 +129,7 @@ namespace Vore
 		if (VoreDataEntry* targetData = VoreData::IsValidGet(target->GetFormID())) {
 			uint8_t intDig = static_cast<uint8_t>(digestionType);
 			if (intDig > VoreDataEntry::hNone && intDig <= VoreDataEntry::hReformation) {
-				Core::SwitchToDigestion(target->GetFormID(), lNone, (VoreDataEntry::VoreState)intDig, true);
+				targetData->SetDigestionAsPred(lNone, (VoreDataEntry::VoreState)intDig, true);
 				if (forceNoEscape) {
 					for (auto& prey : targetData->prey) {
 						if (VoreDataEntry* preyData = VoreData::IsValidGet(prey)) {

@@ -16,8 +16,11 @@ namespace Vore
 
 		RE::FormID reformer = 0;
 
-		void CalcThreshold(bool predSkill);
-		void AdvSkill(bool predSkill, float xp);
+		void CalcThreshold(bool isPred);
+		void AdvSkill(bool isPred, float xp);
+		void SetLvl(bool isPred, float lvl);
+		void SyncWithActor(bool isPred, RE::Actor* actor) const;
+		void AdvSkillAndSync(bool isPred, float xp, RE::Actor* actor);
 	};
 	class VoreData
 	{

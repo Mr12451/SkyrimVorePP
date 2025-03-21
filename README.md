@@ -76,7 +76,7 @@ Credits go to gherking on Discord for the original dialogue plugin
 * A better way to hide actors during vore (needs testing)
 * Disposal skeleton (for humanoids)
 * Prey persistence (needs testing)
-* Acid levels (maybe make switching digestion dependent on acid level)
+* Acid levels
 * INI settings
 * Prey size calculation using havok data (idk how to calculate kMOPP and kConvexVertices, so for some objects I use bounds instead)
 * Item vore
@@ -84,11 +84,11 @@ Credits go to gherking on Discord for the original dialogue plugin
 * Add dragon soul on digestion (look into dragon quest)
 * Sounds (plugin)
 * Fixed Talk to prey/pred
-* Dialogue plugin (fully supported)
+* Devourment Dialogue plugin support
 * Papyrus API
 * Player as Prey
 * Basic reformation
-* Inventory vore (not for player, also items may disappear on release. Will fix when adding animations) MB look at display tweeks for better menu even handling
+* Inventory vore (horrible imlementation, but it works)
 * Limit WG to certain NPC categories
 * Pred/prey faction distribution (aka my own SPID)
 * NPC auto-diposal
@@ -97,27 +97,32 @@ Credits go to gherking on Discord for the original dialogue plugin
 ### Plans
 #### Currently working on
 * Spells/Perks/Vore leveling
-#### For the future
-* Find more people
 * Vore personalities and preferences for NPCs (need a whole new dialogue plugin)
+* Capacity limits
+* Struggle damage
+#### For the future
+* Find more people for new dialogue plugin
 * Basic Animations
 * Struggle minigame for prey and ?pred?
 * Swallow minigame
-* Basic VFX
 * NPC Vore in combat
 * Non-combat NPC vore (for the new dialogue plugin: random npc vore, approach)
 * Non-combat NPC voire routine?
-* Capacity limits
-* Update commonlib
-* Item disposal/digestion
-* Struggle damage
+* Basic VFX
+* inventory vore for player (hotkey or smth)
+* Item digestion to other items, item disposal, fix items disappearing on release
 * Compatibility with needs / survival mods
 * vampire / dragon quest compatibility
 * Compatibility with futa mods
 * Player-as-prey internal view - attach camera to belly node? also disable actor fade out on closeup (hook cam update)
 * Become your killer - look into [this mod](https://www.nexusmods.com/skyrimspecialedition/mods/62934)
-* Compatibility with devourment sound mod
-* Reformation of skulls
+* Compatibility with devourment world interactions
+* Reformation of skulls / something similar
 * Compatibility with ostim?
 * MCM
+#### Other
 * Fix menu disappearing on cell change
+* Don't forget about updating commonlib
+* maybe make switching digestion dependent on acid level
+* More skeletons and skeleton scaling
+* MB look at display tweeks for better menu even handling for inventory vore

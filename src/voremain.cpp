@@ -141,79 +141,18 @@ namespace Vore::Core
 		}
 	}
 
-	void SwitchToDigestion(const RE::FormID pred, const Locus locus, const VoreDataEntry::VoreState dType, const bool forceStopDigestion, bool doDialogueUpd)
-	{
-		VoreDataEntry* predData = VoreData::IsValidGet(pred);
-		if (!predData) {
-			flog::warn("Switching to digestion failed: bad pred: {}", Name::GetName(predData->get()));
-			return;
-		}
-		if (dType == VoreDataEntry::hNone) {
-			flog::warn("Switching to None digestion type! Returning.: {}", Name::GetName(predData->get()));
-			return;
-		}
-		if (locus == Locus::lNone) {
-			for (uint8_t i = 0; i < Locus::NUMOFLOCI; i++) {
-				SwitchToDigestion(pred, (Locus)i, dType, forceStopDigestion, false);
-			}
-			if (doDialogueUpd) {
-				Dialogue::OnDigestionChange(predData->get()->As<RE::Actor>());
-			}
-			return;
-		}
-		bool allowChange = true;
-		std::vector<RE::FormID> locusPreys = FilterPrey(pred, locus, false);
-		if (!forceStopDigestion && dType == VoreDataEntry::hSafe) {
-			for (const RE::FormID& el : locusPreys) {
-				if (VoreDataEntry* pyData = VoreData::IsValidGet(el)) {
-					if (pyData->aAlive && (pyData->pyDigestion == VoreDataEntry::hLethal || pyData->pyDigestion == VoreDataEntry::hReformation)) {
-						flog::trace("Can't switch locus {} from {} for {}", (uint8_t)locus, (uint8_t)predData->pdLoci[locus], Name::GetName(predData->get()));
-						allowChange = false;
-						break;
-					}
-				}
-			}
-		}
-		if (allowChange) {
-			predData->pdLoci[locus] = dType;
-			for (const RE::FormID& el : locusPreys) {
-				if (VoreDataEntry* pyData = VoreData::IsValidGet(el)) {
-					// digestion of dead prey shouldn't be changed, nor does it affect the digestion of live prey
-					if (!pyData->aAlive) {
-						continue;
-					}
-					pyData->pyDigestion = dType;
-					if (pyData->aIsChar) {
-					} else if (pyData->pyDigestion == VoreDataEntry::hLethal) {
-						//start digesting items
-						pyData->DigestLive();
-					}
-					pyData->CalcFast();
-					pyData->CalcSlow();
-
-					flog::info("Prey {} digestion set to {}", Name::GetName(pyData->get()), (uint8_t)pyData->pyDigestion);
-				}
-			}
-			flog::info("Pred {} digestion in locus {} set to {}", Name::GetName(predData->get()), (uint8_t)locus, (uint8_t)predData->pdLoci[locus]);
-		}
-		if (doDialogueUpd) {
-			Dialogue::OnDigestionChange(predData->get()->As<RE::Actor>());
-		}
-	}
 
 	void StartReformation(VoreDataEntry* preyData, VoreDataEntry* predData)
 	{
 		if (!preyData->aIsChar) {
 			return;
 		}
-		preyData->pyDigestion = VoreDataEntry::hReformation;
 		preyData->pyLocusMovement = VoreDataEntry::mStill;
 		preyData->pyElimLocus = preyData->pyLocus;
 		preyData->aAlive = false;
 		preyData->pyDigestProgress = 99.999;
+		preyData->SetMyDigestion(VoreDataEntry::hReformation, true);
 		Dialogue::SetupForReform(predData->get()->As<RE::Actor>(), preyData->get()->As<RE::Actor>());
-		preyData->CalcFast();
-		preyData->CalcSlow();
 	}
 
 	void InventoryVore(RE::Actor* pred)
@@ -263,25 +202,22 @@ namespace Vore::Core
 		return false;
 	}
 
-	void MoveToLocus(const RE::FormID& pred, const RE::FormID& prey, const Locus& locus, const Locus& locusSource)
+	void MoveToLocus(const RE::FormID prey, const Locus locus)
 	{
-		if (!VoreData::IsValid(pred) || !VoreData::IsValid(prey)) {
-			return;
-		}
-		if (CanMoveToLocus(pred, prey, locus, locusSource)) {
-			auto& pyData = VoreData::Data[prey];
-			pyData.pyLocus = locus;
-			if (pyData.aAlive) {
-				pyData.pyDigestion = VoreData::Data[pred].pdLoci[locus];
+		if (VoreDataEntry* pyData = VoreData::IsValidGet(prey)) {
+
+			if (CanMoveToLocus(pyData->pred, prey, locus, pyData->pyLocus)) {
+				pyData->pyLocus = locus;
+				if (pyData->aAlive) {
+					pyData->SetMyDigestion(VoreDataEntry::hNone, true);
+				}
+				if (locus == lBowel) {
+					pyData->pyLocusProcess = 100.0;
+				} else {
+					pyData->pyLocusProcess = 0.0;
+				}
+				flog::info("Moved Prey {} to Locus {}", Name::GetName(pyData->get()), (uint8_t)locus);
 			}
-			if (locus == lBowel) {
-				pyData.pyLocusProcess = 100.0;
-			} else {
-				pyData.pyLocusProcess = 0.0;
-			}
-			pyData.CalcFast();
-			pyData.CalcSlow();
-			flog::info("Moved Prey {} to Locus {}", Name::GetName(pyData.get()), (uint8_t)locus);
 		}
 	}
 
@@ -520,7 +456,7 @@ namespace Vore::Core
 				preyData->pred = pred->GetFormID();
 				preyData->pyLocus = locus;
 				preyData->pyElimLocus = locus;
-				preyData->pyDigestion = ldType;
+
 				//preyData.pyPendingReformation = false;
 
 				preyData->pyStruggleResource = 4;
@@ -546,9 +482,12 @@ namespace Vore::Core
 				if (!oldPred) {
 					SetPreyVisibility(preyA, pred, false, preyData);
 				}
-
+				//py_Digestion is changed here to avoid ctrl+f
+				/*preyData->py_Digestion = ldType;
 				preyData->CalcFast();
-				preyData->CalcSlow();
+				preyData->CalcSlow();*/
+				preyData->SetMyDigestion(ldType, false);
+
 				Dialogue::OnSwallow_Prey(pred, prey);
 
 				preyCount++;
@@ -588,7 +527,6 @@ namespace Vore::Core
 					preyData->pred = pred->GetFormID();
 					preyData->pyLocus = locus;
 					preyData->pyElimLocus = locus;
-					preyData->pyDigestion = ldType;
 
 					preyData->pyDigestProgress = 0;
 
@@ -601,8 +539,11 @@ namespace Vore::Core
 					preyData->pyLocusMovement = (preyData->pyLocus == Locus::lBowel) ? VoreDataEntry::mIncrease : VoreDataEntry::mStill;
 					preyData->pyLocusProcess = 0;
 
+					//py_Digestion is changed here to avoid ctrl+f
+					/*preyData->py_Digestion = ldType;
 					preyData->CalcFast();
-					preyData->CalcSlow();
+					preyData->CalcSlow();*/
+					preyData->SetMyDigestion(ldType, false);
 
 					preyCount++;
 				}
@@ -631,7 +572,7 @@ namespace Vore::Core
 			//VoreGlobals::body_morphs->UpdateModelWeight(pred);
 			predData->pdUpdateGoal = true;
 			Dialogue::OnSwallow_Pred(pred);
-			SwitchToDigestion(pred->GetFormID(), locus, ldType, safeSwitch);
+			predData->SetDigestionAsPred(locus, ldType, safeSwitch);
 			if (fullswallow) {
 				predData->UpdateSliderGoals();
 				predData->PlayStomachSounds();
@@ -684,10 +625,13 @@ namespace Vore::Core
 			return;
 		}
 
-		Vore::VoreDataEntry& predData = VoreData::Data[predId];
+		Vore::VoreDataEntry* predData = VoreData::IsValidGet(pred->GetFormID());
+		if (!predData) {
+			flog::warn("Bad pred, aborting regurgitation!");
+		}
 
 		//for nested vore
-		RE::FormID topPred = predData.pred;
+		RE::FormID topPred = predData->pred;
 
 		//these preys are broken and will be deleted from the system
 		std::vector<RE::FormID> preysToErase = {};
@@ -709,7 +653,7 @@ namespace Vore::Core
 			}
 			if (!VoreData::IsPrey(prey)) {
 				flog::warn("ERASING BAD PREY");
-				predData.prey.erase(prey);
+				predData->prey.erase(prey);
 				preysToErase.push_back(prey);
 				SetPreyVisibility(preyData->get(), pred, true, preyData);
 				if (preyData->aIsChar) {
@@ -728,7 +672,7 @@ namespace Vore::Core
 				continue;
 			}
 
-			predData.prey.erase(prey);
+			predData->prey.erase(prey);
 
 			//clear prey
 
@@ -739,7 +683,6 @@ namespace Vore::Core
 			}
 			preyData->pyLocus = Locus::lNone;
 			preyData->pyElimLocus = Locus::lNone;
-			preyData->pyDigestion = VoreDataEntry::hNone;
 			//preyData->pyPendingReformation = false;
 
 			preyData->pyStruggleResource = 0;
@@ -751,8 +694,10 @@ namespace Vore::Core
 			preyData->pySwallowProcess = 0;
 			preyData->pyLocusProcess = 0;
 
+			preyData->pyDigestion = VoreDataEntry::hNone;
 			preyData->CalcFast(true);
 			preyData->CalcSlow(true);
+			preyData->UpdateStats(false);
 
 			if (rtype == RegType::rTransfer) {
 				preyData->pyDigestProgress = 0;
@@ -779,7 +724,7 @@ namespace Vore::Core
 		}
 		// nested vore
 		if (!preysToSwallow.empty()) {
-			Swallow(skyrim_cast<RE::Actor*>(VoreData::Data[topPred].get()), preysToSwallow, predData.pyLocus, predData.pyDigestion, true, false);
+			Swallow(skyrim_cast<RE::Actor*>(VoreData::Data[topPred].get()), preysToSwallow, predData->pyLocus, predData->pyDigestion, true, false);
 		}
 		// regurgitation
 		for (auto& [prey, pData] : preysToDelete) {
@@ -787,32 +732,35 @@ namespace Vore::Core
 			pData->pyDigestProgress = 0;
 		}
 
-		predData.pdUpdateGoal = true;
+		predData->pdUpdateGoal = true;
 
 		// reset indigestion
 		std::array<bool, Locus::NUMOFLOCI> indigestion = { false };
-		for (const RE::FormID& prey : predData.prey) {
+		for (const RE::FormID& prey : predData->prey) {
 			if (VoreDataEntry* pyData = VoreData::IsValidGet(prey); pyData->pyLocus < Locus::NUMOFLOCI) {
 				indigestion[pyData->pyLocus] = true;
 			}
 		}
 		for (uint8_t l = Locus::lStomach; l < Locus::NUMOFLOCI; l++) {
 			if (!indigestion[l]) {
-				predData.pdIndigestion[l] = 0.0;
+				predData->pdIndigestion[l] = 0.0;
 			}
 		}
-		SwitchToDigestion(predId, Locus::lNone, VoreDataEntry::hSafe, false);
+		// commit vore xp
+		predData->UpdateStats(true);
+		// update digestion sounds
+		Dialogue::OnDigestionChange(pred);
 
 		if (playVomit) {
-			predData.PlayRegurgitation(false);
+			predData->PlayRegurgitation(false);
 		}
 		if (playDisposal) {
-			predData.PlayRegurgitation(true);
+			predData->PlayRegurgitation(true);
 		}
 
 		Dialogue::Clear_Pred(pred);
 
-		VoreData::SoftDelete(predId, !predData.aAlive);
+		VoreData::SoftDelete(predId, !predData->aAlive);
 		UI::VoreMenu::SetMenuMode(UI::kDefault);
 		Log::PrintVoreData();
 		flog::info("End of Regurgitation");

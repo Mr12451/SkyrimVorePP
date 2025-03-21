@@ -5,44 +5,98 @@
 #include "headers/ui.h"
 #include "headers/voremain.h"
 #include "headers/vutils.h"
+#include "headers/distribute.h"
 
 namespace Vore
 {
 
-	void VoreCharStats::CalcThreshold(bool predSkill)
+	void VoreCharStats::CalcThreshold(bool isPred)
 	{
 		//get level
 		//calc threshold for level
 
-		if (predSkill) {
+		if (isPred) {
 			predThreshold = VoreSettings::gain_pd_multi * std::pow(predLevel, 1.95f) + 100.0f;
 		} else {
 			preyThreshold = VoreSettings::gain_py_multi * std::pow(preyLevel, 1.95f) + 100.0f;
 		}
 	}
 
-	void VoreCharStats::AdvSkill(bool predSkill, float xp)
+	void VoreCharStats::AdvSkill(bool isPred, float xp)
 	{
 		if (xp < 0) {
 			return;
 		}
-		if (predSkill) {
+		if (isPred) {
+			if (predLevel == 100.0f) {
+				predXp = 0.0;
+				return;
+			}
 			predXp += xp;
 			if (predThreshold <= predXp) {
 				predXp -= predThreshold;
 				predLevel++;
-				CalcThreshold(predSkill);
-				AdvSkill(predSkill, 0);
+				CalcThreshold(isPred);
+				AdvSkill(isPred, 0);
 			}
 		} else {
+			if (preyLevel == 100.0f) {
+				preyXp = 0.0;
+				return;
+			}
 			preyXp += xp;
 			if (preyThreshold <= preyXp) {
 				preyXp -= preyThreshold;
 				preyLevel++;
-				CalcThreshold(predSkill);
-				AdvSkill(predSkill, 0);
+				CalcThreshold(isPred);
+				AdvSkill(isPred, 0);
 			}
 		}
+	}
+
+	void VoreCharStats::SetLvl(bool isPred, float lvl)
+	{
+		if (isPred) {
+			predLevel = std::clamp(std::trunc(lvl) ,0.0f, 100.0f);
+			predXp = 0.0f;
+			CalcThreshold(isPred);
+		} else {
+			preyLevel = std::clamp(std::trunc(lvl), 0.0f, 100.0f);
+			preyXp = 0.0f;
+			CalcThreshold(isPred);
+		}
+	}
+
+	void VoreCharStats::SyncWithActor(bool isPred, RE::Actor* actor) const
+	{
+		float level = 0.0f;
+		if (isPred) {
+			level = predLevel;
+		} else {
+			level = preyLevel;
+		}
+		if (level >= 100) {
+			Dist::SetPRank(isPred, actor, 6);
+		} else if (level >= 80) {
+			Dist::SetPRank(isPred, actor, 5);
+		} else if (level >= 60) {
+			Dist::SetPRank(isPred, actor, 4);
+		} else if (level >= 40) {
+			Dist::SetPRank(isPred, actor, 3);
+		} else if (level >= 25) {
+			Dist::SetPRank(isPred, actor, 2);
+		} else if (level >= 10) {
+			Dist::SetPRank(isPred, actor, 1);
+		} else if (level >= 0) {
+			Dist::SetPRank(isPred, actor, 0);
+		}
+
+	}
+
+	void VoreCharStats::AdvSkillAndSync(bool isPred, float xp, RE::Actor* actor)
+	{
+		AdvSkill(isPred, xp);
+		SyncWithActor(isPred, actor);
 	}
 
 	bool VoreData::IsValid(RE::FormID character)
@@ -148,17 +202,57 @@ namespace Vore
 		}
 	}
 
+	static void SetPLevelFromRank(bool isPred, int rank, VoreCharStats &value) {
+		switch (rank) {
+		case 0:
+			value.SetLvl(isPred, 0);
+			break;
+		case 1:
+			value.SetLvl(isPred, 10);
+			break;
+		case 2:
+			value.SetLvl(isPred, 25);
+			break;
+		case 3:
+			value.SetLvl(isPred, 40);
+			break;
+		case 4:
+			value.SetLvl(isPred, 60);
+			break;
+		case 5:
+			value.SetLvl(isPred, 80);
+			break;
+		case 6:
+			value.SetLvl(isPred, 100);
+			break;
+		default:
+			value.SetLvl(isPred, 0);
+			break;
+		}
+	}
+
 	VoreCharStats* VoreData::GetStatOrMake(RE::TESObjectREFR* character)
 	{
 		if (!character) {
 			flog::warn("Trying to make stats for null character");
-			return 0;
+			return nullptr;
 		}
 		auto it{ VoreData::Stats.find(character->GetFormID()) };
 		if (it != std::end(VoreData::Stats)) {
 			return &(it->second);
 		} else {
 			VoreCharStats value = {};
+			RE::Character* chara = character->As<RE::Character>();
+			if (!chara) {
+				return nullptr;
+			}
+			//first distr factions for base stats
+			Dist::DistrNPC(chara);
+			//rank to skill
+			int8_t pRank = Dist::GetPRank(true, chara);
+			SetPLevelFromRank(true, pRank, value);
+			pRank = Dist::GetPRank(false, chara);
+			SetPLevelFromRank(false, pRank, value);
 			Stats.emplace(character->GetFormID(), value);
 			return &Stats[character->GetFormID()];
 		}
@@ -267,7 +361,7 @@ namespace Vore
 	//todo - iterate and fix every character, setup loci
 	void VoreData::DataSetup()
 	{
-		// Fix characters
+		// Fix weird stuck characters in voredata (never happened to me, but who knows)
 		std::vector<RE::FormID> bad = {};
 		for (auto& [key, val] : Data) {
 			if (!val.pdWGAllowed) {
@@ -280,8 +374,34 @@ namespace Vore
 				bad.push_back(key);
 			}
 		}
-		for (auto& el : bad) {
-			Data.erase(el);
+		if (bad.size() > 0) {
+			flog::warn("Found {} bad VoreDataEntries!", bad.size());
+			for (auto& el : bad)
+			{
+				Data.erase(el);
+			}
+		}
+
+		// clear vore stats for irrelevant or broken npcs
+		bad.clear();
+		for (auto& [key, val] : Stats) {
+			RE::Actor* actor = RE::TESForm::LookupByID<RE::Actor>(key);
+			if (!actor) {
+				bad.push_back(key);
+				continue;
+			}
+			// if it's a dead non-unique or respawning npc
+			// player might resurrect non-unique npcs, so I don't reset their stats
+			if (actor->IsDead() && (actor->GetActorBase()->Respawns() || !actor->GetActorBase()->IsUnique())) {
+				bad.push_back(key);
+				continue;
+			}
+		}
+		if (bad.size() > 0) {
+			flog::info("Found {} bad or irrlevant Vore Stats (in most cases this is normal and should be ignored)", bad.size());
+			for (auto& el : bad) {
+				Stats.erase(el);
+			}
 		}
 
 		// Setup vore data
@@ -303,8 +423,10 @@ namespace Vore
 		}
 		UI::VoreMenu::SetMenuMode(UI::VoreMenuMode::kDefault);
 		// Final
-		flog::trace("Printing VoreData after loading is finished");
-		Log::PrintVoreData();
+		//flog::trace("Printing VoreData after loading is finished");
+		//Log::PrintVoreData();
+		flog::info("VoreData final size {}", VoreData::Data.size());
+		flog::info("VoreStats final size {}", VoreData::Stats.size());
 	}
 
 	inline bool static SaveFormIdFromRefr(RE::TESForm* character, SKSE::SerializationInterface* a_intfc)
@@ -360,6 +482,12 @@ namespace Vore
 		for (auto& [fid, vds] : Stats) {
 			s = s && SaveFormId(fid, a_intfc);
 			s = s && SaveFormId(vds.reformer, a_intfc);
+			s = s && a_intfc->WriteRecordData(&vds.predLevel, sizeof(vds.predLevel));
+			s = s && a_intfc->WriteRecordData(&vds.predXp, sizeof(vds.predXp));
+			s = s && a_intfc->WriteRecordData(&vds.predThreshold, sizeof(vds.predThreshold));
+			s = s && a_intfc->WriteRecordData(&vds.preyLevel, sizeof(vds.preyLevel));
+			s = s && a_intfc->WriteRecordData(&vds.preyXp, sizeof(vds.preyXp));
+			s = s && a_intfc->WriteRecordData(&vds.preyThreshold, sizeof(vds.preyThreshold));
 		}
 
 		//size of Data
@@ -407,7 +535,7 @@ namespace Vore
 			}
 			//save list of loci struggle
 			size = vde.pdIndigestion.size();
-			flog::info("Saving List of loci struggle process, size: {} (should be 6)", size);
+			flog::info("Saving List of loci indigestion process, size: {} (should be 6)", size);
 			s = s && a_intfc->WriteRecordData(&size, sizeof(size));
 			for (int8_t i = 0; i < Locus::NUMOFLOCI; i++) {
 				double locus = vde.pdIndigestion[i];
@@ -433,15 +561,17 @@ namespace Vore
 
 			//save pred stats
 			flog::info("Pred");
-			flog::info("Fat: {}, Fat Growth: {}, Size Growth: {}", vde.pdFat, vde.pdFatgrowth, vde.pdSizegrowth);
+			flog::info("XP: {}, Fat: {}, Fat Growth: {}, Size Growth: {}", vde.pdXP, vde.pdFat, vde.pdFatgrowth, vde.pdSizegrowth);
+			s = s && a_intfc->WriteRecordData(&vde.pdXP, sizeof(vde.pdXP));
 			s = s && a_intfc->WriteRecordData(&vde.pdFat, sizeof(vde.pdFat));
 			s = s && a_intfc->WriteRecordData(&vde.pdFatgrowth, sizeof(vde.pdFatgrowth));
 			s = s && a_intfc->WriteRecordData(&vde.pdSizegrowth, sizeof(vde.pdSizegrowth));
 
 			//save prey stats
 			flog::info("Prey");
-			flog::info("Locus: {}, ElimLocus: {}, Digestion: {}, Struggle {} {} {}, Movement: {}",
-				(uint8_t)vde.pyLocus, (uint8_t)vde.pyElimLocus, (uint8_t)vde.pyDigestion, vde.pyStruggleResource, vde.pyConsentEndo, vde.pyConsentLethal, (uint8_t)vde.pyLocusMovement);
+			flog::info("XP: {}, Locus: {}, ElimLocus: {}, Digestion: {}, Struggle {} {} {}, Movement: {}",
+				vde.pyXP, (uint8_t)vde.pyLocus, (uint8_t)vde.pyElimLocus, (uint8_t)vde.pyDigestion, vde.pyStruggleResource, vde.pyConsentEndo, vde.pyConsentLethal, (uint8_t)vde.pyLocusMovement);
+			s = s && a_intfc->WriteRecordData(&vde.pyXP, sizeof(vde.pyXP));
 			s = s && a_intfc->WriteRecordData(&vde.pyLocus, sizeof(vde.pyLocus));
 			s = s && a_intfc->WriteRecordData(&vde.pyElimLocus, sizeof(vde.pyElimLocus));
 			s = s && a_intfc->WriteRecordData(&vde.pyDigestion, sizeof(vde.pyDigestion));
@@ -558,7 +688,12 @@ namespace Vore
 					}
 					RE::TESObjectREFR* reformer = GetObjectPtr(a_intfc);
 					charStats->reformer = reformer->GetFormID();
-					flog::info("Reformer {}", Name::GetName(reformer));
+					a_intfc->ReadRecordData(charStats->predLevel);
+					a_intfc->ReadRecordData(charStats->predXp);
+					a_intfc->ReadRecordData(charStats->predThreshold);
+					a_intfc->ReadRecordData(charStats->preyLevel);
+					a_intfc->ReadRecordData(charStats->preyXp);
+					a_intfc->ReadRecordData(charStats->preyThreshold);
 				}
 
 				//size of Data
@@ -623,10 +758,10 @@ namespace Vore
 						flog::info("Locus {} {}", i, locus);
 					}
 
-					size_t sizeLocStruggle;
-					a_intfc->ReadRecordData(sizeLocStruggle);
-					flog::info("List of Loci Struggle process, size: {}", sizeLocStruggle);
-					for (int i = 0; i < sizeLocStruggle; i++) {
+					size_t sizeIndigestion;
+					a_intfc->ReadRecordData(sizeIndigestion);
+					flog::info("List of Loci indigestion process, size: {}", sizeIndigestion);
+					for (int i = 0; i < sizeIndigestion; i++) {
 						double locus = 0;
 						a_intfc->ReadRecordData(locus);
 						entry->pdIndigestion[i] = locus;
@@ -650,12 +785,14 @@ namespace Vore
 					flog::info("Char type: {}, is player: {}, alive {}, size {}", (int)entry->aIsChar, entry->aIsPlayer, entry->aAlive, entry->aSize);
 
 					flog::info("Pred");
+					a_intfc->ReadRecordData(entry->pdXP);
 					a_intfc->ReadRecordData(entry->pdFat);
 					a_intfc->ReadRecordData(entry->pdFatgrowth);
 					a_intfc->ReadRecordData(entry->pdSizegrowth);
-					flog::info("Fat: {}, Fat Growth: {}, Size Growth: {}", entry->pdFat, entry->pdFatgrowth, entry->pdSizegrowth);
+					flog::info("XP: {}, Fat: {}, Fat Growth: {}, Size Growth: {}", entry->pdXP, entry->pdFat, entry->pdFatgrowth, entry->pdSizegrowth);
 
 					flog::info("Prey");
+					a_intfc->ReadRecordData(entry->pyXP);
 					a_intfc->ReadRecordData(entry->pyLocus);
 					a_intfc->ReadRecordData(entry->pyElimLocus);
 					a_intfc->ReadRecordData(entry->pyDigestion);
@@ -665,8 +802,8 @@ namespace Vore
 					a_intfc->ReadRecordData(entry->pyConsentLethal);
 
 					a_intfc->ReadRecordData(entry->pyLocusMovement);
-					flog::info("Locus: {}, ElimLocus: {}, Digestion: {}, Struggle: {} {} {}, Movement: {}",
-						(uint8_t)entry->pyLocus, (uint8_t)entry->pyElimLocus, (uint8_t)entry->pyDigestion, entry->pyStruggleResource, entry->pyConsentEndo, entry->pyConsentLethal, (uint8_t)entry->pyLocusMovement);
+					flog::info("XP: {}, Locus: {}, ElimLocus: {}, Digestion: {}, Struggle: {} {} {}, Movement: {}",
+						entry->pyXP, (uint8_t)entry->pyLocus, (uint8_t)entry->pyElimLocus, (uint8_t)entry->pyDigestion, entry->pyStruggleResource, entry->pyConsentEndo, entry->pyConsentLethal, (uint8_t)entry->pyLocusMovement);
 					a_intfc->ReadRecordData(entry->pyDigestProgress);
 					a_intfc->ReadRecordData(entry->pySwallowProcess);
 					a_intfc->ReadRecordData(entry->pyLocusProcess);

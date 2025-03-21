@@ -94,18 +94,17 @@ namespace Vore
 		};
 
 		using VoreStateFunc = void (Vore::VoreDataEntry::*)(const double&);
-		//saved
+		// -------------------------------
+		//SAVED
+		// -------------------------------
+
 		// pred
 		RE::FormID pred = 0;
 		//set of prey
 		std::set<RE::FormID> prey = {};
-		/*
-		hNone = 0,
-		hSafe = 1,
-		hLethal = 2,
-		hReformation = 3,
-		*/
+		//locus digestion mode
 		std::array<VoreState, Locus::NUMOFLOCI> pdLoci = { VoreState::hNone };
+		//acid levels
 		std::array<double, Locus::NUMOFLOCI> pdAcid = { 0 };
 
 		//struggle process per locus
@@ -115,80 +114,90 @@ namespace Vore
 		std::array<double, 4> pdGrowthLocus = { 0 };
 
 		//universal stats
-		float aScaleDefault = 0.0f;
-		bool aIsChar = false;
-		bool aIsPlayer = false;
-		bool aDeleteWhenDone = false;
-		bool aAlive = false;
-		bool aEssential = false;
-		bool aProtected = false;
-		RE::SEX aSex = RE::SEX::kNone;
-		// how big this character is. changes stomach size
-		double aSize = 0;
-		double aSizeDefault = 0;
-		// used for scaling sliders for big sizes
-		//float aSizeScale = 1.0f;
 
-		bool aDialogue = false;
+		//volume before size gain
+		//calculated via colliders
+		double aSizeDefault = 0;
+		//delete object after vore end
+		//for placeholder items and item vore stomach container
+		bool aDeleteWhenDone = false;
+
 		//pred stats
-		//calculated on voredata creation and game reloading
-		//if char has wg but this is turned off, wg will be reset
-		bool pdWGAllowed = false;
+
+		//Accum xp; this updates Skills on digestion / vore end / prey death
+		float pdXP = 0;
 		//temp wg
 		double pdFat = 0;
 		//long-term wg; lower than normal wg, but lasts for much longer
 		double pdFatgrowth = 0;
+		//size gain. Size gain also reduces fat sliders because total model volume increases
 		double pdSizegrowth = 0;
 
 		//prey stats
+
+		float pyXP = 0;
 		Locus pyLocus = Locus::lNone;
+		// where prey died (if they died), used for locus-based wg
 		Locus pyElimLocus = Locus::lNone;
+		// current digestion mode. Do not change manually Do not change manually Do not change manually Do not change manually Do not change manually
+		// Do not change manually Do not change manually Do not change manually
+		// Do not change manually Do not change manually Do not change manually
 		VoreState pyDigestion = VoreState::hNone;
-		// prey will start reforming upon death
-		// bool pyPendingReformation = false;
-
+		// how many times they prey ran out of stamina
 		uint8_t pyStruggleResource = 0;
+		// calculated on swallow; remake the system later (for new dialogue plugin)
 		bool pyConsentEndo = false;
+		// calculated on swallow; remake the system later (for new dialogue plugin)
 		bool pyConsentLethal = false;
-		bool pyStruggling = false;
-
-		//full tour, only for lBowel
-		//mIncrease is when prey is moving towards stomach
+		//full tour, only for lBowel; mIncrease is when prey is moving towards stomach
 		FullTour pyLocusMovement = FullTour::mStill;
-
 		double pyDigestProgress = 0;
 		double pySwallowProcess = 0;
-		// full tour, only for lBowel
-		// if character is dead, this will be synced with digest in reverse with an offset
+		//full tour
 		double pyLocusProcess = 0;
 
-		//not saved
+		// -------------------------------
+		//NOT SAVED
+		// -------------------------------
+		bool aIsChar = false;
+		bool aIsPlayer = false;
+		bool aAlive = false;
+		bool aEssential = false;
+		bool aProtected = false;
+		RE::SEX aSex = RE::SEX::kNone;
+		double aSize = 0;
+		// for size gain
+		float aScaleDefault = 0.0f;
+		bool aDialogue = false;
 
+		// pred stats
+
+		//if char has wg but this is turned off, wg will be reset
+		bool pdWGAllowed = false;
 		//current slider values
-
 		std::array<float, LocusSliders::NUMOFSLIDERS> pdSliders = { 0 };
 		//slider goals
 		std::array<float, LocusSliders::NUMOFSLIDERS> pdGoal = { 0 };
 		std::array<float, LocusSliders::NUMOFSLIDERS> pdGoalStep = { 0 };
-
 		//struggle sliders per locus
 		std::array<float, Locus::NUMOFLOCI * struggle_sliders_per_locus> pdStruggleSliders = { 0 };
 		std::array<float, Locus::NUMOFLOCI * struggle_sliders_per_locus> pdStruggleGoal = { 0 };
 		std::array<float, Locus::NUMOFLOCI * struggle_sliders_per_locus> pdStruggleGoalStep = { 0 };
 		std::array<float, LocusSliders::NUMOFSLIDERS> pdAccumStruggle = { 0 };
-
 		bool pdUpdateGoal = false;
 		bool pdUpdateSlider = false;
 		bool pdUpdateStruggleGoal = 0;
-
 		bool pdUpdateStruggleSlider = false;
-
 		//this is to count the size of preys for sounds and slow effect
 		float pdFullBurden = 0.0f;
-		//used for struggle sounds
+		//used for struggle sounds; Maybe add an array later, when new sounds are done
 		RE::SEX pdStrugglePreySex = RE::SEX::kNone;
 		//used for stomach ambient sounds
 		bool pdHasDigestion = false;
+
+		//prey stats
+
+		bool pyStruggling = false;
 
 		// REF HANDLE !!!
 		RE::ObjectRefHandle me;
@@ -238,12 +247,12 @@ namespace Vore
 		void EmoteSmile(int duration_ms) const;
 
 		void GetSize(double& size);
-		/// <summary>
-		/// not implemented
-		/// </summary>
-		/// <param name="locus"></param>
-		/// <returns></returns>
 		void DigestLive();
+		// changes pred's digestion mode
+		void SetDigestionAsPred(const Locus locus, VoreDataEntry::VoreState dType, const bool forceStopDigestion, bool doDialogueUpd = true);
+		// use this to set digestion if dType = hNone, pred's current digestion will be used
+		void SetMyDigestion(VoreDataEntry::VoreState dType, bool updateSounds);
+		void UpdateStats(bool isPred);
 
 	private:
 		void HandlePreyDeathImmidiate();
