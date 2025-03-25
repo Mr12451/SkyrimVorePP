@@ -126,3 +126,4 @@ Credits go to gherking on Discord for the original dialogue plugin
 * maybe make switching digestion dependent on acid level
 * More skeletons and skeleton scaling
 * MB look at display tweeks for better menu even handling for inventory vore
+* Rework digestion during time skip for better multiprey and voreception support

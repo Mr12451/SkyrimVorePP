@@ -599,7 +599,7 @@ namespace Vore::UI
 						}
 					case (MenuAction::kMenuA3):
 						if (_iAllowReg) {
-							Core::Regurgitate(RE::PlayerCharacter::GetSingleton(), _infoTarget.get().get()->GetFormID(), Core::rNormal);
+							Core::Regurgitate(RE::PlayerCharacter::GetSingleton(), _infoTarget.get().get()->GetFormID(), Core::rNormal, false);
 							SetMenuMode(kDefault);
 						}
 						break;

@@ -102,9 +102,12 @@ namespace Vore
 		if (!target) {
 			return;
 		}
-		if (target->IsInFaction(f_predator) || target->IsInFaction(f_prey)) {
+		if (target->IsInFaction(f_predator)) {
+			// pred and prey factions are paired. If the target has one of those, then the distribution already took place
+			// if somehow one faction is missing, it was manually deleted, so it's not my problem
 			return;
 		}
+		//distr pred stats
 		float heightMod = 1.0f;
 		if (VoreSettings::dist_size_influence) {
 			heightMod = target->GetBaseHeight();

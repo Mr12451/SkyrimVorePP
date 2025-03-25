@@ -136,7 +136,7 @@ namespace Vore::Core
 			AV::DamageAV(player, RE::ActorValue::kHealth, AV::GetAV(player, RE::ActorValue::kHealth) + 1.0f);
 			VoreDataEntry* predData = VoreData::IsValidGet(playerData->pred);
 			if (predData) {
-				Regurgitate(predData->get()->As<RE::Actor>(), player->GetFormID(), RegType::rAll);
+				Regurgitate(predData->get()->As<RE::Actor>(), player->GetFormID(), RegType::rAll, false);
 			}
 		}
 	}
@@ -438,8 +438,10 @@ namespace Vore::Core
 				RE::FormID oldPred = preyData->pred;
 
 				if (oldPred) {
-					if (VoreData::Data.contains(oldPred) && VoreData::Data[oldPred].prey.contains(preyA->GetFormID())) {
-						Regurgitate(VoreData::Data[oldPred].get()->As<RE::Actor>(), preyA->GetFormID(), RegType::rTransfer);
+					if (VoreDataEntry* oldPredData = VoreData::IsValidGet(oldPred)) {
+						if (oldPredData->prey.contains(preyA->GetFormID())) {
+							Regurgitate(oldPredData->get()->As<RE::Actor>(), preyA->GetFormID(), RegType::rTransfer, false);
+						}
 					}
 				}
 
@@ -447,7 +449,8 @@ namespace Vore::Core
 				if (VoreGlobals::delete_queue.contains(preyA->GetFormID())) {
 					VoreGlobals::delete_queue.erase(preyA->GetFormID());
 				}
-
+				// get perks and levels
+				preyData->GetVStats();
 				//inset prey to PRED
 				predData->prey.insert(preyA->GetFormID());
 				//----------
@@ -479,14 +482,10 @@ namespace Vore::Core
 					Funcs::Attacked(preyA, pred);
 				}
 
+				preyData->SetMyDigestion(ldType, false);
 				if (!oldPred) {
 					SetPreyVisibility(preyA, pred, false, preyData);
 				}
-				//py_Digestion is changed here to avoid ctrl+f
-				/*preyData->py_Digestion = ldType;
-				preyData->CalcFast();
-				preyData->CalcSlow();*/
-				preyData->SetMyDigestion(ldType, false);
 
 				Dialogue::OnSwallow_Prey(pred, prey);
 
@@ -507,16 +506,17 @@ namespace Vore::Core
 					RE::FormID oldPred = preyData->pred;
 
 					if (oldPred) {
-						if (VoreData::Data.contains(oldPred) && VoreData::Data[oldPred].prey.contains(prey->GetFormID())) {
-							Regurgitate(VoreData::Data[oldPred].get()->As<RE::Actor>(), prey->GetFormID(), RegType::rTransfer);
+						if (VoreDataEntry* oldPredData = VoreData::IsValidGet(oldPred)) {
+							if (oldPredData->prey.contains(prey->GetFormID())) {
+								Regurgitate(oldPredData->get()->As<RE::Actor>(), prey->GetFormID(), RegType::rTransfer, false);
+							}
 						}
-					} else {
-						SetPreyVisibility(prey, pred, false, preyData);
 					}
-					//auto* scForm = RE::TESForm::LookupByEditorID<RE::TESObjectCONT>("StomachContainer");
-					//auto* scPtr = pred->PlaceObjectAtMe(scForm, false).get();
-					//auto * pyItem = prey->
-					//scPtr->GetContainer()->
+					if (VoreGlobals::delete_queue.contains(prey->GetFormID())) {
+						VoreGlobals::delete_queue.erase(prey->GetFormID());
+					}
+					// get perks and levels
+					preyData->GetVStats();
 
 					predData->prey.insert(prey->GetFormID());
 
@@ -539,39 +539,22 @@ namespace Vore::Core
 					preyData->pyLocusMovement = (preyData->pyLocus == Locus::lBowel) ? VoreDataEntry::mIncrease : VoreDataEntry::mStill;
 					preyData->pyLocusProcess = 0;
 
-					//py_Digestion is changed here to avoid ctrl+f
-					/*preyData->py_Digestion = ldType;
-					preyData->CalcFast();
-					preyData->CalcSlow();*/
 					preyData->SetMyDigestion(ldType, false);
+					if (!oldPred) {
+						SetPreyVisibility(prey, pred, false, preyData);
+					}
 
 					preyCount++;
 				}
-				//armor
-				//weapon
-				//misc
-				// alchemy
-				// ingredient
-				// book
-				// Scroll
-				// Ammo
-				// SoulGem
-				//
-				// gold?
-				// flora?
-				// Tree
-				//
-				//furnitre
-				//container
 				flog::info("Base form {}", (int)prey->GetBaseObject()->GetFormType());
 				flog::warn("not character, skipping for now");
 			}
 		}
 		if (preyCount > 0) {
-			//VoreGlobals::body_morphs->SetMorph(pred, "Vore prey belly", VoreGlobals::MORPH_KEY, 1.0);
-			//VoreGlobals::body_morphs->UpdateModelWeight(pred);
+
 			predData->pdUpdateGoal = true;
 			Dialogue::OnSwallow_Pred(pred);
+			predData->GetVStats();
 			predData->SetDigestionAsPred(locus, ldType, safeSwitch);
 			if (fullswallow) {
 				predData->UpdateSliderGoals();
@@ -607,7 +590,7 @@ namespace Vore::Core
 		}
 	}
 
-	void Regurgitate(RE::Actor* pred, std::vector<RE::FormID> preys, RegType rtype)
+	void Regurgitate(RE::Actor* pred, std::vector<RE::FormID> preys, RegType rtype, bool isEscape)
 	{
 		flog::info("Start of Regurgitation");
 
@@ -675,6 +658,17 @@ namespace Vore::Core
 			predData->prey.erase(prey);
 
 			//clear prey
+			//give prey XP
+			if (preyData->aIsChar) {
+				//give full xp IF
+				//1. prey escaped on their own
+				//2. prey is unwilling but got released, and the pred is not player
+				// this is to prevent player from power leveling preys or power leveling themselves
+				// also endo is significantly less risky so the xp is reduced
+				preyData->pyXP += VoreSettings::gain_py_release * predData->myStats.pdLvl / 10.0f *
+					(isEscape || !predData->aIsPlayer && (preyData->pyStruggling || preyData->pyStruggleResource == 0) ?
+						(preyData->pyDigestion == VoreDataEntry::hLethal ? 1.0f : 0.4f) : 0.1f);
+			}
 
 			if (preyData->pyLocus == Locus::lStomach) {
 				playVomit = true;
@@ -698,6 +692,7 @@ namespace Vore::Core
 			preyData->CalcFast(true);
 			preyData->CalcSlow(true);
 			preyData->UpdateStats(false);
+			preyData->GetVStats();
 
 			if (rtype == RegType::rTransfer) {
 				preyData->pyDigestProgress = 0;
@@ -748,6 +743,7 @@ namespace Vore::Core
 		}
 		// commit vore xp
 		predData->UpdateStats(true);
+		predData->GetVStats();
 		// update digestion sounds
 		Dialogue::OnDigestionChange(pred);
 
@@ -766,13 +762,13 @@ namespace Vore::Core
 		flog::info("End of Regurgitation");
 	}
 
-	void Regurgitate(RE::Actor* pred, RE::FormID prey, RegType rtype)
+	void Regurgitate(RE::Actor* pred, RE::FormID prey, RegType rtype, bool isEscape)
 	{
 		std::vector<RE::FormID> preys = { prey };
-		Regurgitate(pred, preys, rtype);
+		Regurgitate(pred, preys, rtype, isEscape);
 	}
 
-	void RegurgitateAll(RE::Actor* pred, Locus locus, RegType rtype)
+	void RegurgitateAll(RE::Actor* pred, Locus locus, RegType rtype, bool isEscape)
 	{
 		if (!pred) {
 			flog::warn("Regurgitation: Missing pred");
@@ -782,7 +778,7 @@ namespace Vore::Core
 			flog::warn("Regurgitation: {} is not a pred", Name::GetName(pred));
 			return;
 		}
-		Regurgitate(pred, FilterPrey(pred->GetFormID(), locus, true), rtype);
+		Regurgitate(pred, FilterPrey(pred->GetFormID(), locus, true), rtype, isEscape);
 	}
 
 	void AutoRelease(VoreDataEntry* preyData, VoreDataEntry* predData)
@@ -791,7 +787,7 @@ namespace Vore::Core
 		if (!VoreSettings::companion_disposal && predA->IsPlayerTeammate()) {
 			return;
 		}
-		Regurgitate(predA, preyData->get()->GetFormID(), rAll);
+		Regurgitate(predA, preyData->get()->GetFormID(), rAll, false);
 	}
 
 	//updates dead characters and idle preds

@@ -1,9 +1,10 @@
 #include "headers/voredataentry.h"
-#include "headers/voredata.h"
 #include "headers/dialogue.h"
+#include "headers/distribute.h"
 #include "headers/nutils.h"
 #include "headers/settings.h"
 #include "headers/sounds.h"
+#include "headers/voredata.h"
 #include "headers/voremain.h"
 #include "headers/vutils.h"
 
@@ -62,6 +63,7 @@ namespace Vore
 	void VoreDataEntry::HandleDamage(const double& delta, RE::Actor* asActor, VoreDataEntry* predData)
 	{
 		//predData->SetPredUpdate(true);
+		double remainingHP = AV::GetAV(asActor, RE::ActorValue::kHealth);
 		if (delta > 10 && pyStruggling) {
 			//can the prey struggle out while he lives
 			//this is not entirely accurate because it doesn't account for the struggles of other prey,
@@ -69,23 +71,32 @@ namespace Vore
 			//but it also doesn't account stamina drain and regen, so it's fine for the time being
 
 			predData->pdAcid[pyLocus] = 100;
-			double ttl = AV::GetAV(asActor, RE::ActorValue::kHealth) / VoreSettings::acid_damage;
+			double ttl = remainingHP / VoreSettings::acid_damage;
 			if (ttl <= delta && predData->pdIndigestion[pyLocus] + VoreSettings::struggle_amount * ttl > 100) {
-				Core::Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
+				Core::Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll, true);
 				return;
 			}
 		}
 		predData->pdAcid[pyLocus] = std::min(predData->pdAcid[pyLocus] + VoreSettings::acid_gain * delta, 100.0);
 		predData->pdHasDigestion = true;
 		double acidMulti = predData->pdAcid[pyLocus] / 100.0;
-		if (AV::GetAV(asActor, RE::ActorValue::kHealth) - VoreSettings::acid_damage * delta <= 0) {
-			// LATER implement entrapment for essential/protected instead of regurgitation NPCs
-			DigestLive();
 
+		if (remainingHP - VoreSettings::acid_damage * delta <= 0) {
+			//add vore xp to pred and prey
+			predData->pdXP += (float)remainingHP * VoreSettings::gain_pd_digestion_live;
+			pyXP += (float)remainingHP * VoreSettings::gain_py_digestion;
+			// LATER implement entrapment for essential/protected instead of regurgitation on near death
+			// aka add a new perk / status which will be stored in prey's VoreDataEntry until they are regurgitated, it will add 100% resistance to acid but disable struggling
+			DigestLive();
+			// idk why is this here
 			predData->pdUpdateStruggleGoal = true;
-			//
+
 		} else {
-			AV::DamageAV(asActor, RE::ActorValue::kHealth, VoreSettings::acid_damage * delta * acidMulti);
+			//add vore xp to pred and prey
+			double dmg = VoreSettings::acid_damage * delta * acidMulti;
+			predData->pdXP += (float)dmg * VoreSettings::gain_pd_digestion_live;
+			pyXP += (float)dmg * VoreSettings::gain_py_digestion;
+			AV::DamageAV(asActor, RE::ActorValue::kHealth, dmg);
 		}
 	}
 
@@ -385,17 +396,20 @@ namespace Vore
 			predData->PlaySound(Sounds::Gurgle);
 		}
 
-		// weight gain
+		// weight and xp gain
+		// digestion progress is a percentage from 0 to 100; default human size is 100
+		// so we divide it by 10000 to get total size multiplier
+		double digestSizeOne = digestDelta * aSize / 10000.0;
+		predData->pdXP += (float)digestSizeOne * VoreSettings::gain_pd_digestion_dead;
 		if (predData->pdWGAllowed) {
-			double wgBase = digestDelta * aSize / 10000.0;
 			for (uint8_t i = 0; i < 4; i++) {
-				predData->pdGrowthLocus[i] += wgBase * VoreSettings::voretypes_partgain[pyElimLocus][i] * VoreSettings::wg_locusgrowth;
+				predData->pdGrowthLocus[i] += digestSizeOne * VoreSettings::voretypes_partgain[pyElimLocus][i] * VoreSettings::wg_locusgrowth;
 			}
 
-			predData->pdFat += wgBase * VoreSettings::wg_fattemp;
-			predData->pdFatgrowth += wgBase * VoreSettings::wg_fatlong;
-			flog::info("SIZE GAIN {}", VoreSettings::wg_sizegrowth);
-			predData->pdSizegrowth += wgBase * VoreSettings::wg_sizegrowth;
+			predData->pdFat += digestSizeOne * VoreSettings::wg_fattemp;
+			predData->pdFatgrowth += digestSizeOne * VoreSettings::wg_fatlong;
+			//flog::info("SIZE GAIN {}", VoreSettings::wg_sizegrowth);
+			predData->pdSizegrowth += digestSizeOne * VoreSettings::wg_sizegrowth;
 		}
 		predData->pdUpdateGoal = true;
 		predData->pdHasDigestion = true;
@@ -459,25 +473,26 @@ namespace Vore
 			pyLocusProcess = 100.0 - pyDigestProgress;
 		}
 
-		// weight loss
+		// weight loss and xp gain
+		double reformSizeOne = reformDelta * aSize / 10000.0;
+		predData->pdXP += (float)reformDelta * VoreSettings::gain_pd_digestion_dead;
 		if (predData->pdWGAllowed) {
-			double wlBase = reformDelta * aSize / 10000.0;
 			for (uint8_t i = 0; i < 4; i++) {
-				predData->pdGrowthLocus[i] -= wlBase * VoreSettings::voretypes_partgain[pyElimLocus][i] * VoreSettings::wg_locusgrowth;
+				predData->pdGrowthLocus[i] -= reformSizeOne * VoreSettings::voretypes_partgain[pyElimLocus][i] * VoreSettings::wg_locusgrowth;
 				if (predData->pdGrowthLocus[i] < 0) {
 					predData->pdGrowthLocus[i] = 0;
 				}
 			}
 
-			predData->pdFat -= wlBase * VoreSettings::wg_fattemp;
+			predData->pdFat -= reformSizeOne * VoreSettings::wg_fattemp;
 			if (predData->pdFat < 0) {
 				predData->pdFat = 0;
 			}
-			predData->pdFatgrowth -= wlBase * VoreSettings::wg_fatlong;
+			predData->pdFatgrowth -= reformSizeOne * VoreSettings::wg_fatlong;
 			if (predData->pdFatgrowth < 0) {
 				predData->pdFatgrowth = 0;
 			}
-			predData->pdSizegrowth -= wlBase * VoreSettings::wg_sizegrowth;
+			predData->pdSizegrowth -= reformSizeOne * VoreSettings::wg_sizegrowth;
 			if (predData->pdSizegrowth < 0) {
 				predData->pdSizegrowth = 0;
 			}
@@ -507,15 +522,28 @@ namespace Vore
 
 	void VoreDataEntry::Struggle(const double& delta, RE::Actor* asActor, VoreDataEntry* predData)
 	{
+		// this is to avoid bugs after skipping time
+		// HandleDamage will kill the prey, but the struggle function is called afterwards
+		// they cannot be swaped because then the prey will always escape during long digestion time
+		// there's still the problem of multi-prey situations, but it's whatever, an edge use case
+		if (!aAlive || !pred) {
+			return;
+		}
 		if (pyStruggleResource > 0) {
 			if (pyStruggling) {
 				if (AV::GetAV(asActor, RE::ActorValue::kStamina) > 0) {
 					//damage prey's stamina and pred's struggle bar for this locus
-					AV::DamageAV(asActor, RE::ActorValue::kStamina, VoreSettings::struggle_stamina * delta);
-					predData->pdIndigestion[pyLocus] += VoreSettings::struggle_amount * delta;
-
-					if (predData->pdIndigestion[pyLocus] >= 100) {
-						Core::RegurgitateAll(predData->get()->As<RE::Actor>(), pyLocus);
+					double struggle_s_loss = VoreSettings::struggle_stamina * delta;
+					double struggle_i_gain = VoreSettings::struggle_amount * delta;
+					AV::DamageAV(asActor, RE::ActorValue::kStamina, struggle_s_loss);
+					predData->pdIndigestion[pyLocus] += struggle_i_gain;
+					//add xp
+					
+					predData->pdXP += myStats.pyLvl / 10.0f * (float)struggle_i_gain * VoreSettings::gain_pd_struggling;
+					pyXP += (float)struggle_s_loss * VoreSettings::gain_py_struggling;
+					
+					if (predData->pdIndigestion[pyLocus] >= 100.0) {
+						Core::RegurgitateAll(predData->get()->As<RE::Actor>(), pyLocus, Core::rNormal, true);
 					}
 				} else {
 					pyStruggling = false;
@@ -622,7 +650,7 @@ namespace Vore
 		//regurgitate prey because they escaped
 		else if (pySwallowProcess < 0) {
 			pySwallowProcess = 0;
-			Core::Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
+			Core::Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll, true);
 			return;
 		}
 	}
@@ -633,20 +661,20 @@ namespace Vore
 		bool doGoalUpdate = false;
 		bool stopSlow = true;
 		//reduce fat
+		double physicalActivities = 0.0;
+		RE::Actor* asActor = get()->As<RE::Actor>();
+		if (asActor->Is3DLoaded()) {
+			physicalActivities = asActor->IsInCombat() + asActor->IsSprinting() + asActor->IsAttacking() + asActor->IsInMidair();
+		}
 		if (pdWGAllowed) {
-			RE::Actor* asActor = get()->As<RE::Actor>();
-			double wlMulti = 0.0;
-			if (asActor->Is3DLoaded()) {
-				wlMulti = asActor->IsInCombat() + asActor->IsSprinting() + asActor->IsAttacking() + asActor->IsInMidair();
-			}
 			if (pdFat > 0) {
 				// doing physical activities will reduce weight faster
-				pdFat = std::max(pdFat - (1.0 + wlMulti) * VoreSettings::wg_loss_temp * delta, 0.0);
+				pdFat = std::max(pdFat - (1.0 + physicalActivities) * VoreSettings::wg_loss_temp * delta, 0.0);
 				doGoalUpdate = true;
 				stopSlow = false;
 			}
 			if (pdFatgrowth > 0) {
-				pdFatgrowth = std::max(pdFatgrowth - (1.0 + wlMulti / 2.0) * VoreSettings::wg_loss_long * delta, 0.0);
+				pdFatgrowth = std::max(pdFatgrowth - (1.0 + physicalActivities / 3.0) * VoreSettings::wg_loss_long * delta, 0.0);
 				doGoalUpdate = true;
 				stopSlow = false;
 			}
@@ -678,12 +706,13 @@ namespace Vore
 
 		if (prey.size() > 0) {
 			stopSlow = false;
+			if (get()->Is3DLoaded() && pdFullBurden > 0.0f) {
+				PlayBurpRandom();
+				PlayGurgleRandom();
+				pdXP += pdFullBurden * (float)delta * VoreSettings::gain_pd_endo * (1.0f + (float)physicalActivities);
+			}
 		}
 
-		if (get()->Is3DLoaded() && pdFullBurden > 0.0f) {
-			PlayBurpRandom();
-			PlayGurgleRandom();
-		}
 		if (doGoalUpdate) {
 			pdUpdateGoal = true;
 		}
@@ -1254,7 +1283,7 @@ namespace Vore
 					//this is necessary for long deltas to work
 					HandlePreyDeathImmidiate();
 				} else {
-					Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
+					Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll, false);
 				}
 			} else if (asActor->IsProtected()) {
 				if (VoreSettings::digest_protected) {
@@ -1263,7 +1292,7 @@ namespace Vore
 					//this is necessary for long deltas to work
 					HandlePreyDeathImmidiate();
 				} else {
-					Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll);
+					Regurgitate(predData->get()->As<RE::Actor>(), get()->GetFormID(), Core::RegType::rAll, false);
 				}
 			} else {
 				AV::DamageAV(asActor, RE::ActorValue::kHealth, AV::GetAV(asActor, RE::ActorValue::kHealth) + 1.0f);
@@ -1349,7 +1378,6 @@ namespace Vore
 		}
 		CalcFast();
 		CalcSlow();
-
 	}
 	void VoreDataEntry::UpdateStats(bool isPred)
 	{
@@ -1358,9 +1386,10 @@ namespace Vore
 		}
 		if (isPred) {
 			if (pdXP > 0) {
-				if (VoreCharStats* preyStats = VoreData::GetStatOrMake(get())) {
-					preyStats->AdvSkillAndSync(true, pdXP, get()->As<RE::Actor>());
+				if (VoreCharStats* predStats = VoreData::GetStatOrMake(get())) {
+					predStats->AdvSkillAndSync(true, pdXP, get()->As<RE::Actor>());
 					pdXP = 0.0f;
+					myStats.pdLvl = (int)predStats->predLevel;
 				}
 			}
 		} else {
@@ -1368,7 +1397,68 @@ namespace Vore
 				if (VoreCharStats* preyStats = VoreData::GetStatOrMake(get())) {
 					preyStats->AdvSkillAndSync(false, pyXP, get()->As<RE::Actor>());
 					pyXP = 0.0f;
+					myStats.pyLvl = (int)preyStats->preyLevel;
 				}
+			}
+		}
+	}
+	void VoreDataEntry::GetVStats()
+	{
+		if (!aIsChar) {
+			return;
+		}
+		// 1. Get vore level
+		if (VoreCharStats* theStats = VoreData::IsValidStatGet(get()->GetFormID())) {
+			myStats.pdLvl = (int)theStats->predLevel;
+			myStats.pyLvl = (int)theStats->preyLevel;
+		} else {
+			RE::Actor* asActor = get()->As<RE::Actor>();
+
+			switch (Dist::GetPRank(true, asActor)) {
+			case 1:
+				myStats.pdLvl = 10;
+				break;
+			case 2:
+				myStats.pdLvl = 25;
+				break;
+			case 3:
+				myStats.pdLvl = 40;
+				break;
+			case 4:
+				myStats.pdLvl = 60;
+				break;
+			case 5:
+				myStats.pdLvl = 80;
+				break;
+			case 6:
+				myStats.pdLvl = 100;
+				break;
+			default:
+				myStats.pdLvl = 0;
+				break;
+			}
+			switch (Dist::GetPRank(false, asActor)) {
+			case 1:
+				myStats.pyLvl = 10;
+				break;
+			case 2:
+				myStats.pyLvl = 25;
+				break;
+			case 3:
+				myStats.pyLvl = 40;
+				break;
+			case 4:
+				myStats.pyLvl = 60;
+				break;
+			case 5:
+				myStats.pyLvl = 80;
+				break;
+			case 6:
+				myStats.pyLvl = 100;
+				break;
+			default:
+				myStats.pyLvl = 0;
+				break;
 			}
 		}
 	}

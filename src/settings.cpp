@@ -148,8 +148,13 @@ namespace Vore
 		cini::get_value(ini, size_softcap_power, section2, "Size softcap power", ";Power for size softcap. The lower this is, the harder the softcap is. Set to 1 to disable\n;If this is disabled, the size of a dragon will be 300 times that of a human, which isn't good for the gameplay");
 		cini::get_value(ini, gain_stats_base, section2, "Stat gain", ";Gain stats when finishing digestion. You will get this amount of the highest pred's stat (compared to yours) that's higher than your stat.\n;Set to 0 to disable.");
 		cini::get_value(ini, gain_skill_base, section2, "Skill gain", ";Same as Stat gain but for skills");
-		cini::get_value(ini, gain_pd_multi, section2, "Pred leveling multiplier", ";Next level threshold is multiplied by this value. The larger the value, the more difficult leveling is");
-		cini::get_value(ini, gain_py_multi, section2, "Prey leveling multiplier", ";");
+		cini::get_value(ini, gain_pd_digestion_live, section2, "Pred XP 1", ";pred xp per 1 damage dealt to prey during digestion");
+		cini::get_value(ini, gain_pd_struggling, section2, "Pred XP 2", ";pred xp per 1 indigestion dealt by prey (multiplied by prey level / 10)");
+		cini::get_value(ini, gain_pd_digestion_dead, section2, "Pred XP 3", ";pred xp per 100 weight digested or reformed");
+		cini::get_value(ini, gain_pd_endo, section2, "Pred XP 4", ";pred xp per 1 second of having 1 size of prey in stomach (human prey is 100 in size), increased during physical activities");
+		cini::get_value(ini, gain_py_digestion, section2, "Prey XP 1", ";prey xp per 1 hp lost during digestion");
+		cini::get_value(ini, gain_py_struggling, section2, "Prey XP 2", ";prey xp per 1 stamina lost when struggling");
+		cini::get_value(ini, gain_py_release, section2, "Prey XP 3", ";prey xp when released. When prey is willing or pred is player and they released the prey the XP will be divided by 10.\n;If vore is non-lethal the XP will be divided by 2.5.\n;These XP reductions don't stack");
 
 		static const char* sectionS = "Sound";
 		cini::get_value(ini, enable_sound, sectionS, "Enable Sound", ";Enables sounds. Works only if you have devourment dummy plugin installed, otherwise does nothing");

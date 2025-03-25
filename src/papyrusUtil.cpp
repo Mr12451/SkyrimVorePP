@@ -75,7 +75,7 @@ namespace Vore
 	void PapyrusAPI::Regurgitate(RE::StaticFunctionTag*, RE::Actor* pred, RE::TESObjectREFR* prey)
 	{
 		flog::info("PPAPI Regurgitate");
-		Core::Regurgitate(pred, prey->GetFormID(), Core::rNormal);
+		Core::Regurgitate(pred, prey->GetFormID(), Core::rNormal, false);
 	}
 
 	void PapyrusAPI::RegurgitateAll(RE::StaticFunctionTag*, RE::Actor* pred, float locus)
@@ -83,7 +83,7 @@ namespace Vore
 		flog::info("PPAPI RegurgitateAll");
 		uint8_t intLoc = static_cast<uint8_t>(locus);
 		if (intLoc >= Locus::lStomach && intLoc < Locus::NUMOFLOCI || intLoc == Locus::lNone) {
-			Core::RegurgitateAll(pred, (Locus)intLoc, Core::rNormal);
+			Core::RegurgitateAll(pred, (Locus)intLoc, Core::rNormal, false);
 		}
 	}
 

@@ -48,9 +48,9 @@ namespace Vore
 		/// <param name="safeSwitch">Stop digestion if ldType is set to safe and it's already happening</param>
 		void Swallow(RE::Actor* pred, RE::TESObjectREFR* prey, Locus locus, VoreDataEntry::VoreState ldType, bool fullswallow, bool safeSwitch);
 		void SwallowTarget(RE::Actor* pred, Locus locus, VoreDataEntry::VoreState ldType, bool fullswallow = false);
-		void Regurgitate(RE::Actor* pred, std::vector<RE::FormID> preys, RegType rtype);
-		void Regurgitate(RE::Actor* pred, RE::FormID prey, RegType rtype);
-		void RegurgitateAll(RE::Actor* pred, Locus locus = Locus::lNone, RegType rtype = RegType::rNormal);
+		void Regurgitate(RE::Actor* pred, std::vector<RE::FormID> preys, RegType rtype, bool isEscape);
+		void Regurgitate(RE::Actor* pred, RE::FormID prey, RegType rtype, bool isEscape);
+		void RegurgitateAll(RE::Actor* pred, Locus locus, RegType rtype, bool isEscape);
 
 		void AutoRelease(VoreDataEntry* preyData, VoreDataEntry* predData);
 

@@ -16,9 +16,9 @@ namespace Vore
 		//calc threshold for level
 
 		if (isPred) {
-			predThreshold = VoreSettings::gain_pd_multi * std::pow(predLevel, 1.95f) + 100.0f;
+			predThreshold = 2.0f * std::pow(predLevel, 1.95f) + 100.0f;
 		} else {
-			preyThreshold = VoreSettings::gain_py_multi * std::pow(preyLevel, 1.95f) + 100.0f;
+			preyThreshold = 2.0f * std::pow(preyLevel, 1.95f) + 100.0f;
 		}
 	}
 
@@ -87,10 +87,9 @@ namespace Vore
 			Dist::SetPRank(isPred, actor, 2);
 		} else if (level >= 10) {
 			Dist::SetPRank(isPred, actor, 1);
-		} else if (level >= 0) {
+		} else {
 			Dist::SetPRank(isPred, actor, 0);
 		}
-
 	}
 
 	void VoreCharStats::AdvSkillAndSync(bool isPred, float xp, RE::Actor* actor)
@@ -182,6 +181,9 @@ namespace Vore
 			value.aSize = value.aSizeDefault;
 
 			value.me = character->GetHandle();
+			// get vore stats (level, perks, etc.)
+			// should be updated on each swallow and regurgitation
+			value.GetVStats();
 
 			for (auto& el : value.pdLoci) {
 				el = VoreDataEntry::VoreState::hSafe;

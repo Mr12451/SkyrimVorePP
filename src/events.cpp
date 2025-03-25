@@ -70,7 +70,7 @@ namespace Vore
 						Core::SwallowTarget(RE::PlayerCharacter::GetSingleton(), PlayerPrefs::voreLoc, PlayerPrefs::voreType);
 					}
 				} else if (keyCode == VoreSettings::k_regurg_key) {
-					Core::RegurgitateAll(RE::PlayerCharacter::GetSingleton(), PlayerPrefs::regLoc);
+					Core::RegurgitateAll(RE::PlayerCharacter::GetSingleton(), PlayerPrefs::regLoc, Core::rNormal, false);
 				}
 				// menu actions
 				else if (keyCode == VoreSettings::k_menu_1) {
@@ -140,7 +140,7 @@ namespace Vore
 				}
 
 				if (VoreData::IsPred(aId, true)) {
-					Core::RegurgitateAll(asActor, lNone, Core::rAll);
+					Core::RegurgitateAll(asActor, lNone, Core::rAll, true);
 				}
 
 				if (VoreGlobals::delete_queue.contains(aId)) {

@@ -49,8 +49,27 @@ namespace Vore
 		static inline float size_softcap_power = 0.45f;
 		static inline int gain_stats_base = 1;
 		static inline float gain_skill_base = 1;
-		static inline float gain_pd_multi = 2.0f;
-		static inline float gain_py_multi = 2.0f;
+		// pred xp per 1 hp damage or healing
+		static inline float gain_pd_digestion_live = 4.0f;
+		// pred xp per 1 indigestion dealt to pred (multiplied by preY level / 10)
+		static inline float gain_pd_struggling = 6.0f;
+		// pred xp per 1 weight digested or reformed
+		static inline float gain_pd_digestion_dead = 300.0f;
+		// pred xp per 1 second of endo per 1 weight, multiplied by physical activities
+		static inline float gain_pd_endo = 0.04f;
+		
+		// prey xp per 1 hp lost
+		static inline float gain_py_digestion = 12.0f;
+		// prey xp per 1 stamina lost
+		static inline float gain_py_struggling = 6.0f;
+		// prey xp on regurgitation, multiplied by pred level / 10
+		// reduced for willing release
+		static inline float gain_py_release = 800.0f;
+
+		//the idea for the pred is to eat more and more risky prey
+		// the idea for the prey is to get eaten by stronger preds and survive
+
+
 
 
 		// sound

@@ -70,6 +70,12 @@ namespace Vore
 		//RE::BSSoundHandle swallowHandle {};
 	};
 
+	struct VStats
+	{
+		int pdLvl = 0;
+		int pyLvl = 0;
+	};
+
 	class VoreDataEntry
 	{
 	public:
@@ -198,7 +204,8 @@ namespace Vore
 		//prey stats
 
 		bool pyStruggling = false;
-
+		//passives and stats
+		VStats myStats{};
 		// REF HANDLE !!!
 		RE::ObjectRefHandle me;
 		// PAPYRUS OBJECT FOR PERSISTENCY !!!
@@ -253,6 +260,7 @@ namespace Vore
 		// use this to set digestion if dType = hNone, pred's current digestion will be used
 		void SetMyDigestion(VoreDataEntry::VoreState dType, bool updateSounds);
 		void UpdateStats(bool isPred);
+		void GetVStats();
 
 	private:
 		void HandlePreyDeathImmidiate();

@@ -5,68 +5,65 @@
 
 namespace Vore::Log
 {
-	void PrintVoreDataSingle(RE::FormID voreNpc, VoreDataEntry& entry)
+	static void PrintVoreDataSingle(RE::FormID voreNpc, VoreDataEntry& entry)
 	{
-		flog::info("\n");
-		flog::info("Entry {}, Name {}, Type {}, Is Player {}, Alive {}, Size {}",
-			std::format("{:x}", voreNpc),
+		std::string s{};
+		s.reserve(500);
+		s += std::format("\n\nEntry {:x}, Name {}, Type {}, Is Player {}, Alive {}, Size {:.2f}",
+			voreNpc,
 			Name::GetName(voreNpc), (int)entry.aIsChar,
 			entry.aIsPlayer, entry.aAlive,
 			entry.aSize);
 		if (entry.aIsChar) {
 			RE::Actor* entryActor = entry.get()->As<RE::Actor>();
-			flog::info("Stats: H {}/{}, S {}/{}, M {}/{}",
+			s += std::format("\nStats: H {:.2f}/{:.2f}, S {:.2f}/{:.2f}, M {:.2f}/{:.2f}",
 				AV::GetAV(entryActor, RE::ActorValue::kHealth), AV::GetMaxAV(entryActor, RE::ActorValue::kHealth),
 				AV::GetAV(entryActor, RE::ActorValue::kStamina), AV::GetMaxAV(entryActor, RE::ActorValue::kStamina),
 				AV::GetAV(entryActor, RE::ActorValue::kMagicka), AV::GetMaxAV(entryActor, RE::ActorValue::kMagicka));
 		}
 
-		flog::info("Pred: {}", (entry.pred ? Name::GetName(entry.pred) : "None"));
-		flog::info("Pred Stats: Fat {}, Growth {}, Size {}, Prey Count {}, Update Goal {}, Update Slider {}, Burden {}",
+		s += std::format("\nPred: {}", (entry.pred ? Name::GetName(entry.pred) : "None"));
+		s += std::format("\nPred Stats: Fat {:.2f}, Growth {:.2f}, Size {:.2f}, Update Goal {}, Update Slider {}, Burden {:.2f}",
 			entry.pdFat, entry.pdFatgrowth,
-			entry.pdSizegrowth, entry.prey.size(),
+			entry.pdSizegrowth,
 			entry.pdUpdateGoal, entry.pdUpdateSlider, entry.pdFullBurden);
 
-		flog::info("Prey Stats: Locus {}, ElimLocus {}, Digestion {}, Struggle {} {} {}, Movement {}; Digestion P {}, Swallow P {}, Locus P {}",
+		s += std::format("\nPrey Stats: Locus {}, ElimLocus {}, Digestion {}, Struggle {} {} {}, Movement {}; Digestion P {:.2f}, Swallow P {:.2f}, Locus P {:.2f}",
 			(uint8_t)entry.pyLocus, (uint8_t)entry.pyElimLocus,
 			(uint8_t)entry.pyDigestion, entry.pyStruggling, entry.pyConsentEndo, entry.pyConsentLethal,
 			(uint8_t)entry.pyLocusMovement, entry.pyDigestProgress,
 			entry.pySwallowProcess, entry.pyLocusProcess);
-		std::string pr = "";
+		s += "\nPrey: ";
 		for (auto& el : entry.prey) {
-			pr += Name::GetName(el);
-			pr += "; ";
+			s += Name::GetName(el);
+			s += " ";
 		}
-		flog::info("Prey: {}", pr);
 
-		pr = "";
+		s += "\nLocus digestion: ";
 		for (uint8_t i = 0; i < Locus::NUMOFLOCI; i++) {
-			pr += std::to_string(entry.pdLoci[i]);
-			pr += " ";
+			s += std::format("{}", (uint8_t)entry.pdLoci[i]);
+			s += " ";
 		}
-		flog::info("Locus digestion: {}", pr);
 
-		pr = "";
+		s += "\nLocus indigestion: ";
 		for (uint8_t i = 0; i < Locus::NUMOFLOCI; i++) {
-			pr += std::to_string(entry.pdIndigestion[i]);
-			pr += " ";
+			s += std::format("{:.2f}", entry.pdIndigestion[i]);
+			s += " ";
 		}
-		flog::info("Locus indigestion: {}", pr);
 
-		pr = "";
+		s = "\nLocus growth: ";
 		for (uint8_t i = 0; i < 4; i++) {
-			pr += std::to_string(entry.pdGrowthLocus[i]);
-			pr += " ";
+			s += std::format("{:.2f}", entry.pdGrowthLocus[i]);
+			s += " ";
 		}
-		flog::info("Locus growth: {}", pr);
 
-		pr = "";
+		s = "\nLocus sliders: ";
 		for (uint8_t i = 0; i < LocusSliders::NUMOFSLIDERS; i++) {
-			pr += std::to_string(entry.pdSliders[i]);
-			pr += " ";
+			s += std::format("{:.2f}", entry.pdSliders[i]);
+			s += " ";
 		}
-		flog::info("Locus sliders: {}", pr);
-		flog::info("\n\n");
+		s += std::format("\nXP Pred {:.2f} Prey {:.2f}\n\n", entry.pdXP, entry.pyXP);
+		flog::info("{}", s);
 	}
 	void PrintVoreData(RE::FormID voreNpc)
 	{
