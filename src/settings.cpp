@@ -106,6 +106,19 @@ namespace Vore
 		}
 	}
 
+	static void ReadDistChance(std::array<int, 6>& dist, CSimpleIniA& ini, const char* aName, const char* desc = ";")
+	{
+		std::vector<std::string> vect{};
+		for (int i = 0; i < 6; i++) {
+			vect.push_back(std::format("{}", dist[i]));
+		}
+		cini::get_value(ini, vect, "Distribution", aName, desc);
+
+		for (int i = 0; i < 6; i++) {
+			dist[i] = std::stoi(vect[i]);
+		}
+	}
+
 	void VoreSettings::LoadIniSettings()
 	{
 		constexpr auto path = L"Data/SKSE/Plugins/SkyrimVorePP.ini";
@@ -254,25 +267,83 @@ namespace Vore
 
 		static const char* section6 = "Distribution";
 
-		cini::get_value(ini, dist_female, section6, "Female base", ";The base percentage of an NPC being chosen as pred");
-		cini::get_value(ini, dist_male, section6, "Male base", ";");
-		cini::get_value(ini, dist_creature, section6, "Creature base", ";For non-humanoids");
+		cini::get_value(ini, dist_version, section6, "D_Version", ";The version of distributed vore stats. Change this to a number between 0 and 127 to reset all vore stats for all npcs and player. Changing this to values outside of the range will break the game\n;Use this if you want to redistribute vore stats.\n;If you had version 0 and then changed to 1, and then back to 0, it will redistribute stats once again, it doesn't keep previous version info.");
+		cini::get_value(ini, dist_f_allow, section6, "D_FemalePreds", ";Allows females to be chosen as preds");
+		cini::get_value(ini, dist_m_allow, section6, "D_MalePreds", ";Allows males to be chosen as preds");
+		cini::get_value(ini, dist_c_allow, section6, "D_CreaturePreds", ";Allows non-humanoid npcs to be chosen as preds");
 
-		cini::get_value(ini, dist_size_influence, section6, "Size influence", ";If larger NPCs get a higher chance of becoming a pred. Only height is used");
+		ReadDistChance(dist_pd_f_arg, ini, "Argonian_Female_Pred", ";Below is a section for configuarting the probability of characters of a certain race and sex becoming a pred or a prey of a certain rank.\n;There are 7 ranks:\n;For preds:\n;rank 0 - can't do vore, can only swallow small items\n;rank 1 - can swallow small creatures\n;rank 2 - can swallow a single human-sized prey\n;rank 3 - can swallow 3 humans\n;rank 4 - 10 humans\n;rank 5 - 20 humans\n;rank 6 - no limit\n;These ranks correspond to leveling pred/prey skill from 0 to 100. When an npc recieves the rank, they will also get perks according to their rank/vore level.\n;The options below configurate how likely an npc is to get a certain rank, starting from rank 1 to rank 6. In other cases the npc will get rank 0.\n;So the chance to become a non-pred is 100 minus the sum of all the chances to become a pred\n;So, a string like 25|10|5|5|3|2 means that an npc has 25% chance to become a rank 1 pred, 10% chance to become a rank 2 pred, etc. And 100-(25+10+5+5+3+2) = 50% to not become a pred");
 
-		cini::get_value(ini, dist_dragon, section6, "Dragon probability", ";Probability modifier for certain NPC types, the base probability is multiplied by this");
-		cini::get_value(ini, dist_giant, section6, "Giant probability", ";Also for mammoths");
-		cini::get_value(ini, dist_creature_predator, section6, "Predator probability", ";Hostile animals");
-		cini::get_value(ini, dist_creature_prey, section6, "Prey probability", ";Neutral animals");
-		cini::get_value(ini, dist_vampire, section6, "Vampire probability", ";Also for hagraven");
-		cini::get_value(ini, dist_daedra, section6, "Daedra probability", ";");
-		cini::get_value(ini, dist_robot, section6, "Robot probability", ";Dwemer constructs mostly");
+		ReadDistChance(dist_py_f_arg, ini, "Argonian_Female_Prey");
+		ReadDistChance(dist_pd_f_bre, ini, "Breton_Female_Pred");
+		ReadDistChance(dist_py_f_bre, ini, "Breton_Female_Prey");
+		ReadDistChance(dist_pd_f_del, ini, "DarkElf_Female_Pred");
+		ReadDistChance(dist_py_f_del, ini, "DarkElf_Female_Prey");
+		ReadDistChance(dist_pd_f_hel, ini, "HighElf_Female_Pred");
+		ReadDistChance(dist_py_f_hel, ini, "HighElf_Female_Prey");
+		ReadDistChance(dist_pd_f_imp, ini, "Imperial_Female_Pred");
+		ReadDistChance(dist_py_f_imp, ini, "Imperial_Female_Prey");
+		ReadDistChance(dist_pd_f_kha, ini, "Khajiit_Female_Pred");
+		ReadDistChance(dist_py_f_kha, ini, "Khajiit_Female_Prey");
+		ReadDistChance(dist_pd_f_nor, ini, "Nord_Female_Pred");
+		ReadDistChance(dist_py_f_nor, ini, "Nord_Female_Prey");
+		ReadDistChance(dist_pd_f_orc, ini, "Orc_Female_Pred");
+		ReadDistChance(dist_py_f_orc, ini, "Orc_Female_Prey");
+		ReadDistChance(dist_pd_f_red, ini, "Redguard_Female_Pred");
+		ReadDistChance(dist_py_f_red, ini, "Redguard_Female_Prey");
+		ReadDistChance(dist_pd_f_wel, ini, "WoodElf_Female_Pred");
+		ReadDistChance(dist_py_f_wel, ini, "WoodElf_Female_Prey");
+		ReadDistChance(dist_pd_f_old, ini, "OldPeopleRace_Female_Pred");
+		ReadDistChance(dist_py_f_old, ini, "OldPeopleRace_Female_Prey");
+		ReadDistChance(dist_pd_f_vampire, ini, "Vampire_Female_Pred", ";Also for werewolves (companions)");
+		ReadDistChance(dist_py_f_vampire, ini, "Vampire_Female_Prey");
 
-		cini::get_value(ini, dist_skeleton, section6, "Skeleton probability", ";");
-		cini::get_value(ini, dist_ghost, section6, "Ghost probability", ";");
-		cini::get_value(ini, dist_undead, section6, "Undead probability", ";");
+		ReadDistChance(dist_pd_m_arg, ini, "Argonian_Male_Pred", ";Male Npcs\n;");
+		ReadDistChance(dist_py_m_arg, ini, "Argonian_Male_Prey");
+		ReadDistChance(dist_pd_m_bre, ini, "Breton_Male_Pred");
+		ReadDistChance(dist_py_m_bre, ini, "Breton_Male_Prey");
+		ReadDistChance(dist_pd_m_del, ini, "DarkElf_Male_Pred");
+		ReadDistChance(dist_py_m_del, ini, "DarkElf_Male_Prey");
+		ReadDistChance(dist_pd_m_hel, ini, "HighElf_Male_Pred");
+		ReadDistChance(dist_py_m_hel, ini, "HighElf_Male_Prey");
+		ReadDistChance(dist_pd_m_imp, ini, "Imperial_Male_Pred");
+		ReadDistChance(dist_py_m_imp, ini, "Imperial_Male_Prey");
+		ReadDistChance(dist_pd_m_kha, ini, "Khajiit_Male_Pred");
+		ReadDistChance(dist_py_m_kha, ini, "Khajiit_Male_Prey");
+		ReadDistChance(dist_pd_m_nor, ini, "Nord_Male_Pred");
+		ReadDistChance(dist_py_m_nor, ini, "Nord_Male_Prey");
+		ReadDistChance(dist_pd_m_orc, ini, "Orc_Male_Pred");
+		ReadDistChance(dist_py_m_orc, ini, "Orc_Male_Prey");
+		ReadDistChance(dist_pd_m_red, ini, "Redguard_Male_Pred");
+		ReadDistChance(dist_py_m_red, ini, "Redguard_Male_Prey");
+		ReadDistChance(dist_pd_m_wel, ini, "WoodElf_Male_Pred");
+		ReadDistChance(dist_py_m_wel, ini, "WoodElf_Male_Prey");
+		ReadDistChance(dist_pd_m_old, ini, "OldPeopleRace_Male_Pred");
+		ReadDistChance(dist_py_m_old, ini, "OldPeopleRace_Male_Prey");
+		ReadDistChance(dist_pd_m_vampire, ini, "Vampire_Male_Pred", ";Also for werewolves (companions)");
+		ReadDistChance(dist_py_m_vampire, ini, "Vampire_Male_Prey");
 
+		ReadDistChance(dist_pd_vampire, ini, "Vampire_Pred", ";The next section is for non-humanoid creatures\n;");
+		ReadDistChance(dist_py_vampire, ini, "Vampire_Prey");
+		ReadDistChance(dist_pd_daedra, ini, "Daedra_Pred");
+		ReadDistChance(dist_py_daedra, ini, "Daedra_Prey");
+		ReadDistChance(dist_pd_dragon, ini, "Dragon_Pred");
+		ReadDistChance(dist_py_dragon, ini, "Dragon_Prey");
+		ReadDistChance(dist_pd_skeleton, ini, "Skeleton_Pred", ";Also includes ghosts and whisps");
+		ReadDistChance(dist_py_skeleton, ini, "Skeleton_Prey");
+		ReadDistChance(dist_pd_robot, ini, "Robot_Pred", ";Dwarven constructs");
+		ReadDistChance(dist_py_robot, ini, "Robot_Prey");
 
+		ReadDistChance(dist_pd_c_0, ini, "Tiny_Pred", ";The next section is for every creature not included above.\n;It's not actually based on the size, but on the base race health, which is pretty close to creature's actual size/pred abilities according to logic\n;Tiny creatures are those with less than 12 starting health, like hares and chicken");
+		ReadDistChance(dist_py_c_0, ini, "Tiny_Prey");
+		ReadDistChance(dist_pd_c_1, ini, "Small_Pred", ";Small creatures are those with less than 40 starting health, like wolves");
+		ReadDistChance(dist_py_c_1, ini, "Small_Prey");
+		ReadDistChance(dist_pd_c_2, ini, "Medium_Pred", ";Medium creatures are those with less than 101 starting health, like humanoids");
+		ReadDistChance(dist_py_c_2, ini, "Medium_Prey");
+		ReadDistChance(dist_pd_c_3, ini, "Large_Pred", ";Large creatures are those with less than 300 starting health, like trolls and bears");
+		ReadDistChance(dist_py_c_3, ini, "Large_Prey");
+		ReadDistChance(dist_pd_c_4, ini, "Huge_Pred", ";Large creatures are those with more than 300 starting health, like dragons and mammoths");
+		ReadDistChance(dist_py_c_4, ini, "Huge_Prey");
 
 		(void)ini.SaveFile(path);
 	}

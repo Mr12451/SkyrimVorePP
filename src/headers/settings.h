@@ -57,7 +57,7 @@ namespace Vore
 		static inline float gain_pd_digestion_dead = 300.0f;
 		// pred xp per 1 second of endo per 1 weight, multiplied by physical activities
 		static inline float gain_pd_endo = 0.04f;
-		
+
 		// prey xp per 1 hp lost
 		static inline float gain_py_digestion = 12.0f;
 		// prey xp per 1 stamina lost
@@ -68,9 +68,6 @@ namespace Vore
 
 		//the idea for the pred is to eat more and more risky prey
 		// the idea for the prey is to get eaten by stronger preds and survive
-
-
-
 
 		// sound
 		static inline bool enable_sound = true;
@@ -106,7 +103,6 @@ namespace Vore
 		static inline double wg_locusgrowth = 1.0;
 		static inline double wg_sizegrowth = 0.8;
 
-
 		// 6 humans/hour
 		// 120
 		// 30/hour
@@ -129,7 +125,6 @@ namespace Vore
 
 		//max slider step per second
 		static inline float slider_maxstep = 150.0f;
-
 
 		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		//
@@ -232,27 +227,133 @@ namespace Vore
 			{ 0.0, 0.5, 0.5, 0.0 },
 			{ 0.0, 0.1, 0.1, 0.5 } } };
 
-		
 		//distr
 		//main toggles
-		static inline float dist_female = 40;
-		static inline float dist_male = 20;
-		static inline float dist_creature = 35;
+		//static inline float dist_female = 30;
+		//static inline float dist_male = 20;
+		//static inline float dist_creature = 35;
 
-		static inline bool dist_size_influence = true;
-		// specific things
-		// previous toggles are multiplied by this percentage
-		static inline float dist_dragon = 5.0f;
-		static inline float dist_giant = 3.0f;
-		static inline float dist_creature_predator = 2.0f;
-		static inline float dist_creature_prey = 0.5f;
-		static inline float dist_vampire = 3.0f;
-		static inline float dist_daedra = 3.0f;
-		static inline float dist_robot = 0.3f;
+		//static inline bool dist_size_influence = true;
+		//// specific things
+		//// previous toggles are multiplied by this percentage
+		//static inline float dist_dragon = 5.0f;
+		//static inline float dist_giant = 3.0f;
+		//static inline float dist_creature_predator = 2.0f;
+		//static inline float dist_creature_prey = 0.5f;
+		//static inline float dist_vampire = 3.0f;
+		//static inline float dist_daedra = 3.0f;
+		//static inline float dist_robot = 0.3f;
 
-		static inline float dist_skeleton = 0.0f;
-		static inline float dist_ghost = 0.2f;
-		static inline float dist_undead = 0.4f;
+		//static inline float dist_skeleton = 0.0f;
+		//static inline float dist_ghost = 0.2f;
+		//static inline float dist_undead = 0.4f;
+
+		static inline int32_t dist_version = 0;
+
+		static inline bool dist_f_allow = true;
+		static inline bool dist_m_allow = true;
+		static inline bool dist_c_allow = true;
+
+		//female
+		static inline std::array<int, 6> dist_pd_f_arg{ 10, 25, 15, 5, 3, 2 };
+		static inline std::array<int, 6> dist_py_f_arg{ 15, 25, 25, 5, 5, 5 };
+
+		static inline std::array<int, 6> dist_pd_f_bre{ 10, 15, 10, 5, 3, 2 };
+		static inline std::array<int, 6> dist_py_f_bre{ 20, 20, 15, 5, 3, 2 };
+
+		static inline std::array<int, 6> dist_pd_f_del{ 15, 25, 20, 5, 5, 5 };
+		static inline std::array<int, 6> dist_py_f_del{ 20, 20, 15, 5, 5, 5 };
+
+		static inline std::array<int, 6> dist_pd_f_hel{ 10, 25, 20, 5, 3, 2 };
+		static inline std::array<int, 6> dist_py_f_hel{ 20, 20, 15, 5, 5, 5 };
+
+		static inline std::array<int, 6> dist_pd_f_imp{ 10, 15, 10, 3, 3, 2 };
+		static inline std::array<int, 6> dist_py_f_imp{ 20, 20, 15, 5, 3, 2 };
+
+		static inline std::array<int, 6> dist_pd_f_kha{ 10, 25, 15, 5, 3, 2 };
+		static inline std::array<int, 6> dist_py_f_kha{ 15, 25, 25, 5, 5, 5 };
+
+		static inline std::array<int, 6> dist_pd_f_nor{ 10, 15, 15, 10, 3, 2 };
+		static inline std::array<int, 6> dist_py_f_nor{ 15, 25, 25, 3, 2, 2 };
+
+		static inline std::array<int, 6> dist_pd_f_orc{ 15, 25, 20, 5, 5, 5 };
+		static inline std::array<int, 6> dist_py_f_orc{ 15, 25, 25, 3, 2, 2 };
+
+		static inline std::array<int, 6> dist_pd_f_red{ 10, 15, 10, 5, 3, 2 };
+		static inline std::array<int, 6> dist_py_f_red{ 20, 20, 15, 5, 3, 2 };
+
+		static inline std::array<int, 6> dist_pd_f_wel{ 15, 25, 25, 10, 5, 5 };
+		static inline std::array<int, 6> dist_py_f_wel{ 20, 20, 15, 5, 3, 2 };
+
+		static inline std::array<int, 6> dist_pd_f_old{ 0, 0, 0, 0, 0, 0 };
+		static inline std::array<int, 6> dist_py_f_old{ 20, 20, 15, 5, 3, 2 };
+
+		static inline std::array<int, 6> dist_pd_f_vampire{ 0, 25, 25, 25, 15, 10 };
+		static inline std::array<int, 6> dist_py_f_vampire{ 15, 30, 30, 15, 5, 5 };
+
+		//male
+		static inline std::array<int, 6> dist_pd_m_arg{ 10, 10, 10, 2, 2, 1 };
+		static inline std::array<int, 6> dist_py_m_arg{ 15, 25, 25, 5, 5, 5 };
+
+		static inline std::array<int, 6> dist_pd_m_bre{ 10, 5, 5, 2, 2, 1 };
+		static inline std::array<int, 6> dist_py_m_bre{ 20, 20, 15, 5, 3, 2 };
+
+		static inline std::array<int, 6> dist_pd_m_del{ 10, 5, 5, 2, 2, 1 };
+		static inline std::array<int, 6> dist_py_m_del{ 20, 20, 15, 5, 5, 5 };
+
+		static inline std::array<int, 6> dist_pd_m_hel{ 10, 5, 5, 2, 2, 1 };
+		static inline std::array<int, 6> dist_py_m_hel{ 20, 20, 15, 5, 5, 5 };
+
+		static inline std::array<int, 6> dist_pd_m_imp{ 10, 5, 5, 2, 2, 1 };
+		static inline std::array<int, 6> dist_py_m_imp{ 20, 20, 15, 5, 3, 2 };
+
+		static inline std::array<int, 6> dist_pd_m_kha{ 10, 5, 5, 2, 2, 1 };
+		static inline std::array<int, 6> dist_py_m_kha{ 15, 25, 25, 5, 5, 5 };
+
+		static inline std::array<int, 6> dist_pd_m_nor{ 10, 10, 10, 2, 2, 1 };
+		static inline std::array<int, 6> dist_py_m_nor{ 15, 25, 25, 3, 2, 2 };
+
+		static inline std::array<int, 6> dist_pd_m_orc{ 10, 15, 15, 5, 3, 2 };
+		static inline std::array<int, 6> dist_py_m_orc{ 15, 25, 25, 3, 2, 2 };
+
+		static inline std::array<int, 6> dist_pd_m_red{ 10, 5, 5, 2, 2, 1 };
+		static inline std::array<int, 6> dist_py_m_red{ 20, 20, 15, 5, 3, 2 };
+
+		static inline std::array<int, 6> dist_pd_m_wel{ 10, 15, 15, 5, 3, 2 };
+		static inline std::array<int, 6> dist_py_m_wel{ 20, 20, 15, 5, 3, 2 };
+
+		static inline std::array<int, 6> dist_pd_m_old{ 0, 0, 0, 0, 0, 0 };
+		static inline std::array<int, 6> dist_py_m_old{ 20, 20, 15, 5, 3, 2 };
+
+		static inline std::array<int, 6> dist_pd_m_vampire{ 0, 25, 25, 25, 15, 10 };
+		static inline std::array<int, 6> dist_py_m_vampire{ 15, 30, 30, 15, 5, 5 };
+
+		// creatures
+		static inline std::array<int, 6> dist_pd_c_4{ 0, 10, 15, 25, 25, 25 };
+		static inline std::array<int, 6> dist_py_c_4{ 50, 25, 10, 5, 5, 3 };
+		static inline std::array<int, 6> dist_pd_c_3{ 5, 25, 20, 15, 10, 5 };
+		static inline std::array<int, 6> dist_py_c_3{ 15, 30, 30, 15, 5, 5 };
+		static inline std::array<int, 6> dist_pd_c_2{ 10, 15, 10, 5, 3, 2 };
+		static inline std::array<int, 6> dist_py_c_2{ 20, 20, 15, 5, 3, 2 };
+		static inline std::array<int, 6> dist_pd_c_1{ 10, 10, 5, 3, 2, 1 };
+		static inline std::array<int, 6> dist_py_c_1{ 10, 10, 5, 2, 2, 1 };
+		static inline std::array<int, 6> dist_pd_c_0{ 10, 5, 2, 1, 1, 1 };
+		static inline std::array<int, 6> dist_py_c_0{ 10, 10, 5, 2, 2, 1 };
+
+		static inline std::array<int, 6> dist_pd_vampire{ 0, 25, 25, 25, 15, 10 };
+		static inline std::array<int, 6> dist_py_vampire{ 15, 30, 30, 15, 5, 5 };
+
+		static inline std::array<int, 6> dist_pd_daedra{ 0, 25, 25, 25, 15, 10 };
+		static inline std::array<int, 6> dist_py_daedra{ 15, 30, 30, 15, 5, 5 };
+
+		static inline std::array<int, 6> dist_pd_dragon{ 0, 0, 0, 25, 30, 45 };
+		static inline std::array<int, 6> dist_py_dragon{ 50, 25, 10, 5, 5, 3 };
+
+		static inline std::array<int, 6> dist_pd_skeleton{ 0, 0, 0, 0, 0, 0 };
+		static inline std::array<int, 6> dist_py_skeleton{ 15, 30, 30, 15, 5, 5 };
+
+		static inline std::array<int, 6> dist_pd_robot{ 10, 5, 5, 0, 0, 0 };
+		static inline std::array<int, 6> dist_py_robot{ 15, 30, 30, 15, 5, 5 };
 
 
 		static void LoadIniSettings();
@@ -263,6 +364,7 @@ namespace Vore
 		//probably a shitty way to do this
 	public:
 		static constexpr float slider_one = 100.0f;
+
 		static constexpr const char* MORPH_KEY = "SkyrimVorePP.esp";
 		static const inline std::set<RE::FormType> allowed_pickup{
 			RE::FormType::Scroll,
@@ -324,7 +426,6 @@ namespace Vore
 
 		static inline RE::FormID player_camera_owner{};
 	};
-
 
 	class PlayerPrefs
 	{

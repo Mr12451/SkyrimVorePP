@@ -23,5 +23,18 @@ namespace Vore
 		f_skeleton = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESFaction>(0x2D1DF, "Skyrim.esm");
 		f_ghost = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESFaction>(0xD33A2, "Skyrim.esm");
 		f_whisp = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESFaction>(0x3E096, "Skyrim.esm");
+	
+		r_arg = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESRace>(0x13740, "Skyrim.esm");
+		r_bre = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESRace>(0x13741, "Skyrim.esm");
+		r_del = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESRace>(0x13742, "Skyrim.esm");
+		r_hel = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESRace>(0x13743, "Skyrim.esm");
+		r_imp = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESRace>(0x13744, "Skyrim.esm");
+		r_kha = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESRace>(0x13745, "Skyrim.esm");
+		r_nor = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESRace>(0x13746, "Skyrim.esm");
+		r_orc = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESRace>(0x13747, "Skyrim.esm");
+		r_red = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESRace>(0x13748, "Skyrim.esm");
+		r_wel = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESRace>(0x13749, "Skyrim.esm");
+		
+		r_old = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESRace>(0x67CD8, "Skyrim.esm");
 	}
 }

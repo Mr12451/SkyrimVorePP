@@ -118,6 +118,7 @@ Credits go to gherking on Discord for the original dialogue plugin
 * Become your killer - look into [this mod](https://www.nexusmods.com/skyrimspecialedition/mods/62934)
 * Compatibility with devourment world interactions
 * Reformation of skulls / something similar
+* Vampirism and becoming a werewolf should give pred abilities, devouring an npc will count as vampire feeding and werewolf soul absorbtion (config option)
 * Compatibility with ostim?
 * MCM
 #### Other

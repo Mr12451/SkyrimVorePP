@@ -28,6 +28,7 @@ namespace Vore
 	public:
 		static inline std::unordered_map<RE::FormID, Vore::VoreDataEntry> Data{};
 		static inline std::unordered_map<RE::FormID, Vore::VoreCharStats> Stats{};
+		static inline int32_t stats_dist_version = 0;
 
 		static bool IsValid(RE::FormID character);
 		static VoreDataEntry* IsValidGet(RE::FormID character);

@@ -383,9 +383,13 @@ namespace Vore
 				Data.erase(el);
 			}
 		}
+		bad.clear();
 
 		// clear vore stats for irrelevant or broken npcs
-		bad.clear();
+		if (VoreSettings::dist_version != stats_dist_version) {
+			stats_dist_version = VoreSettings::dist_version;
+			Stats.clear();
+		}
 		for (auto& [key, val] : Stats) {
 			RE::Actor* actor = RE::TESForm::LookupByID<RE::Actor>(key);
 			if (!actor) {
@@ -476,6 +480,8 @@ namespace Vore
 		s = s && a_intfc->WriteRecordData(&PlayerPrefs::voreLoc, sizeof(PlayerPrefs::voreLoc));
 		s = s && a_intfc->WriteRecordData(&PlayerPrefs::regLoc, sizeof(PlayerPrefs::regLoc));
 		s = s && a_intfc->WriteRecordData(&PlayerPrefs::voreType, sizeof(PlayerPrefs::voreType));
+
+		s = s && a_intfc->WriteRecordData(&stats_dist_version, sizeof(stats_dist_version));
 
 		size_t size = Stats.size();
 		flog::info("Vore Stats, size: {}", size);
@@ -673,6 +679,8 @@ namespace Vore
 				a_intfc->ReadRecordData(PlayerPrefs::voreLoc);
 				a_intfc->ReadRecordData(PlayerPrefs::regLoc);
 				a_intfc->ReadRecordData(PlayerPrefs::voreType);
+
+				a_intfc->ReadRecordData(stats_dist_version);
 
 				size_t size;
 				a_intfc->ReadRecordData(size);

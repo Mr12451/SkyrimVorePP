@@ -54,9 +54,6 @@ namespace Vore
 		Locus loc = lNone;
 		if (locus < 0) {
 			loc = Dialogue::GetLocusForSwallow(pred, prey);
-			if (loc >= NUMOFLOCI) {
-				loc = lStomach;
-			}
 		} else if (locus >= (float)Locus::lStomach && locus < (float)Locus::NUMOFLOCI) {
 			loc = (Locus)locus;
 		} else {
@@ -212,9 +209,6 @@ namespace Vore
 		}
 		scData->aSizeDefault = scData->aSize;
 		Locus loc = Dialogue::GetLocusForSwallow(pred, sc);
-		if (loc >= NUMOFLOCI) {
-			loc = lStomach;
-		}
 		Core::Swallow(pred, sc, loc, VoreDataEntry::hSafe, false, false);
 	}
 

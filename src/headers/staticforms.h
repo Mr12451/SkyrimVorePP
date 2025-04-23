@@ -26,5 +26,19 @@ namespace Vore
 		static inline RE::TESFaction* f_skeleton{ nullptr };
 		static inline RE::TESFaction* f_ghost{ nullptr };
 		static inline RE::TESFaction* f_whisp{ nullptr };
+
+		static inline RE::TESRace* r_arg{ nullptr };
+		static inline RE::TESRace* r_bre{ nullptr };
+		static inline RE::TESRace* r_del{ nullptr };
+		static inline RE::TESRace* r_hel{ nullptr };
+		static inline RE::TESRace* r_imp{ nullptr };
+		static inline RE::TESRace* r_kha{ nullptr };
+		static inline RE::TESRace* r_nor{ nullptr };
+		static inline RE::TESRace* r_orc{ nullptr };
+		static inline RE::TESRace* r_red{ nullptr };
+		static inline RE::TESRace* r_wel{ nullptr };
+
+		static inline RE::TESRace* r_old{ nullptr };
+
 	};
 }

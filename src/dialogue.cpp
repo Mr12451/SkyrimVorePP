@@ -257,17 +257,11 @@ namespace Vore
 
 	Vore::Locus Dialogue::GetLocusForSwallow(RE::Actor* pred, RE::TESObjectREFR* prey)
 	{
-		// placeholder
-		// placeholder
-		// placeholder
-		// placeholder
-		// placeholder
-		// placeholder
 		if (!plugin_loaded) {
-			return lNone;
+			return lStomach;
 		}
 		if (pred->IsPlayerRef()) {
-			if (prey->GetFormType() == RE::FormType::ActorCharacter && prey->As<RE::Actor>()->IsInFaction(f_locusPrey)) {
+			if (prey->GetFormType() == RE::FormType::ActorCharacter) {
 				int32_t fRank = prey->As<RE::Actor>()->GetFactionRank(f_locusPrey, false);
 				if (fRank >= (int32_t)lStomach && fRank < (int32_t)NUMOFLOCI) {
 					return (Locus)fRank;
@@ -278,14 +272,12 @@ namespace Vore
 				return PlayerPrefs::voreLoc;
 			}
 		} else {
-			if (pred->IsInFaction(f_locusPred)) {
-				int32_t fRank = pred->GetFactionRank(f_locusPred, false);
-				if (fRank >= (int32_t)lStomach && fRank < (int32_t)NUMOFLOCI) {
-					return (Locus)fRank;
-				}
+			int32_t fRank = pred->GetFactionRank(f_locusPred, false);
+			if (fRank >= (int32_t)lStomach && fRank < (int32_t)NUMOFLOCI) {
+				return (Locus)fRank;
 			}
 		}
-		return lNone;
+		return lStomach;
 	}
 
 	void Dialogue::SetConsent(RE::Actor* pred, RE::Actor* prey, bool willing, bool lethal)
