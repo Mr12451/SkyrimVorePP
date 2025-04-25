@@ -51,13 +51,13 @@ namespace Vore::Log
 			s += " ";
 		}
 
-		s = "\nLocus growth: ";
+		s += "\nLocus growth: ";
 		for (uint8_t i = 0; i < 4; i++) {
 			s += std::format("{:.2f}", entry.pdGrowthLocus[i]);
 			s += " ";
 		}
 
-		s = "\nLocus sliders: ";
+		s += "\nLocus sliders: ";
 		for (uint8_t i = 0; i < LocusSliders::NUMOFSLIDERS; i++) {
 			s += std::format("{:.2f}", entry.pdSliders[i]);
 			s += " ";

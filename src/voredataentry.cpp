@@ -625,13 +625,16 @@ namespace Vore
 		if (delta > 10) {
 			pySwallowProcess = 100;
 		}
-		if (VoreSettings::swallow_auto || !predData->aIsPlayer) {
+		if (predData->pred != 0 || !predData->get()->Is3DLoaded() || !predData->get()->IsHumanoid() || (VoreSettings::swallow_auto && predData->aIsPlayer)) {
 			pySwallowProcess += VoreSettings::swallow_auto_speed * 1 / std::max(std::pow(aSize / VoreGlobals::slider_one, 0.3), 0.7) * delta;
 			predData->PlaySwallow();
 			predData->pdUpdateGoal = true;
 		} else {
 			pySwallowProcess -= VoreSettings::swallow_decrease_speed * delta;
 			predData->pdUpdateGoal = true;
+			if (!predData->aIsPlayer) {
+				predData->AnimatedSwallow();
+			}
 		}
 
 		//finish swallow
@@ -1302,6 +1305,32 @@ namespace Vore
 		} else if (aAlive) {
 			HandlePreyDeathImmidiate();
 		}
+	}
+	void VoreDataEntry::AnimatedSwallow() const
+	{
+		if (aIsChar) {
+			if (RE::Actor* asActor = get()->As<RE::Actor>()) {
+				asActor->NotifyAnimationGraph("SVPP_Swallow");
+			}
+		}
+	}
+	void VoreDataEntry::DoSwallow()
+	{
+		for (auto preyId : prey) {
+			if (VoreDataEntry* preyData = VoreData::IsValidGet(preyId)) {
+				if (preyData->pySwallowProcess < 100.0) {
+					preyData->pySwallowProcess += VoreSettings::swallow_auto_speed * 2.5;
+					if (preyData->pySwallowProcess >= 100) {
+						preyData->pySwallowProcess = 100;
+						pdUpdateGoal = true;
+
+						preyData->CalcFast();
+						PlayStomachSounds();
+					}
+				}
+			}
+		}
+		PlaySwallow();
 	}
 	void VoreDataEntry::SetDigestionAsPred(const Locus locus, VoreDataEntry::VoreState dType, const bool forceStopDigestion, bool doDialogueUpd)
 	{

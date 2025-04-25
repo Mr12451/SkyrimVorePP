@@ -145,6 +145,7 @@ namespace Vore
 		cini::get_value(ini, k_menu_2, section1, "Menu key 2", ";Key used for navigating the menus");
 		cini::get_value(ini, k_menu_3, section1, "Menu key 3", ";Key used for navigating the menus");
 		cini::get_value(ini, k_menu_4, section1, "Menu key 4", ";Key used for navigating the menus (rarely used)");
+		cini::get_value(ini, k_swallow, section1, "Continue Swallowing Key", ";Continue swallowing if auto swallowing is turned off");
 		cini::get_value(ini, k_test, section1, "Debug info key", ";Prints Vore Data to the log file");
 		cini::get_value(ini, ui_show_struggle_sliders, section1, "Show struggle slider info", ";(Debug) Shows struggle slider values in info menu");
 		cini::get_value(ini, ui_show_wg, section1, "Show weight gain info", ";(Debug) Shows weight gain stats in info menu");

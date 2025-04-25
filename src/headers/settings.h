@@ -31,6 +31,7 @@ namespace Vore
 		static inline uint32_t k_menu_4 = 68;
 
 		static inline uint32_t k_test = 87;
+		static inline uint32_t k_swallow = 12;
 
 		// ui debug
 
@@ -43,7 +44,7 @@ namespace Vore
 		static inline bool dual_boobs = true;
 		static inline bool digest_protected = true;
 		static inline bool digest_essential = true;
-		static inline bool swallow_auto = true;
+		static inline bool swallow_auto = false;
 		static inline bool companion_disposal = true;
 		static inline float size_softcap = 700.0f;
 		static inline float size_softcap_power = 0.45f;
@@ -85,7 +86,7 @@ namespace Vore
 		static inline double acid_gain = 2;
 		static inline double acid_loss = 0.5;
 		static inline double swallow_auto_speed = 30;
-		static inline double swallow_decrease_speed = 20;
+		static inline double swallow_decrease_speed = 15;
 		//full tour speed
 		static inline double locus_process_speed = 1;
 

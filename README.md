@@ -19,6 +19,7 @@ However, you can build it from source yourself.
 * [CMake](https://cmake.org/download/)
 * vcpkg
 * (for Skyrim) [SKSE](https://skse.silverlock.org/), [RaceMenu](https://www.nexusmods.com/skyrimspecialedition/mods/19080), [Address Library](https://www.nexusmods.com/skyrimspecialedition/mods/32444)
+* [Pandora (recommened)](https://github.com/Monitor221hz/Pandora-Behaviour-Engine-Plus/releases/latest) or [Nemesis (untested)](https://www.nexusmods.com/skyrimspecialedition/mods/60033) for generating animations as you would for any other mod which requires them
 * (Recommended) [SSE display tweaks](https://www.nexusmods.com/skyrimspecialedition/mods/34705) and [SSE Engine Fixes](https://www.nexusmods.com/skyrimspecialedition/mods/17230), but read the Bugs section first
 
 (optional) This mod uses sliders for belly/wg visuals, same as Devourment. So, you need to build a body with sliders in [BodySlide and Outfit Studio](https://www.nexusmods.com/skyrimspecialedition/mods/201). You can use 3BA + converted body and outfits from Devourment.
@@ -96,6 +97,7 @@ Credits go to gherking on Discord for the original dialogue plugin
 * Vore gives stats/skill xp
 ### Plans
 #### Currently working on
+* Animations
 * Spells/Perks/Vore leveling
 * Vore personalities and preferences for NPCs (need a whole new dialogue plugin)
 * Capacity limits

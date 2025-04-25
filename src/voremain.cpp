@@ -533,7 +533,7 @@ namespace Vore::Core
 					preyData->pyConsentEndo = true;
 					preyData->pyConsentLethal = true;
 
-					preyData->pySwallowProcess = fullswallow || !preyData->aAlive ? 100 : 20;
+					preyData->pySwallowProcess = fullswallow || !preyData->aAlive ? 100 : 40;
 
 					//full tour related shit
 					preyData->pyLocusMovement = (preyData->pyLocus == Locus::lBowel) ? VoreDataEntry::mIncrease : VoreDataEntry::mStill;

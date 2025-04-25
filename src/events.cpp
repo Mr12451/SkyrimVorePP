@@ -81,6 +81,10 @@ namespace Vore
 					UI::VoreMenu::DoMenuAction(UI::MenuAction::kMenuA3);
 				} else if (keyCode == VoreSettings::k_menu_4) {
 					UI::VoreMenu::DoMenuAction(UI::MenuAction::kMenuA4);
+				} else if (keyCode == VoreSettings::k_swallow) {
+					if (VoreDataEntry* playaData = VoreData::IsValidGet(RE::PlayerCharacter::GetSingleton()->GetFormID())) {
+						playaData->AnimatedSwallow();
+					}
 				}
 				// menu switching
 				else if (keyCode == VoreSettings::k_i_menu) {
@@ -88,12 +92,15 @@ namespace Vore
 				} else if (keyCode == VoreSettings::k_sw_menu) {
 					UI::VoreMenu::SetMenuMode(UI::VoreMenuMode::kSwallow);
 				} else if (keyCode == VoreSettings::k_test) {
-					flog::info("pd lvl {}", VoreData::GetStatOrMake(RE::PlayerCharacter::GetSingleton())->predLevel);
+					flog::info("Test start");
+					auto* playa = RE::PlayerCharacter::GetSingleton();
+					//flog::info("{}", playa->NotifyAnimationGraph("SVPP_Swallow"));
+					/*flog::info("pd lvl {}", VoreData::GetStatOrMake(RE::PlayerCharacter::GetSingleton())->predLevel);
 					flog::info("pd xp {}", VoreData::GetStatOrMake(RE::PlayerCharacter::GetSingleton())->predXp);
 					flog::info("pd t {}", VoreData::GetStatOrMake(RE::PlayerCharacter::GetSingleton())->predThreshold);
 					flog::info("py lvl {}", VoreData::GetStatOrMake(RE::PlayerCharacter::GetSingleton())->preyLevel);
 					flog::info("py xp {}", VoreData::GetStatOrMake(RE::PlayerCharacter::GetSingleton())->preyXp);
-					flog::info("py t {}", VoreData::GetStatOrMake(RE::PlayerCharacter::GetSingleton())->preyThreshold);
+					flog::info("py t {}", VoreData::GetStatOrMake(RE::PlayerCharacter::GetSingleton())->preyThreshold);*/
 					//Log::PrintVoreData();
 					//Funcs::MoveTo(RE::PlayerCharacter::GetSingleton(), nullptr);
 					/*for (auto& i : RE::PlayerCharacter::GetSingleton()->addedSpells) {

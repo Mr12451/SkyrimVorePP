@@ -83,6 +83,7 @@ namespace Vore
 		}
 		int res = (int)Math::randInt(1, 100);
 		int acc = 100;
+		//flog::trace("Rolled {}", res);
 		for (int i = 5; i >= 0; i--) {
 			acc -= rankDist[i];
 			if (res > acc) {

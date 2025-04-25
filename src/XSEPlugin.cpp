@@ -11,6 +11,7 @@
 #include "headers/papyrusUtil.h"
 #include "headers/staticforms.h"
 #include "headers/distribute.h"
+#include "headers/animEvents.h"
 
 const SKSE::MessagingInterface* g_messaging;
 
@@ -89,6 +90,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 		Vore::PapyrusAPI::Register();
 		Vore::StaticForms::Initialize();
 		Vore::Dist::Initialize();
+		Vore::AnimEvenHandler::Initialize();
 		break;
 	}
 }

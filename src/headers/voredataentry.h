@@ -255,6 +255,8 @@ namespace Vore
 
 		void GetSize(double& size);
 		void DigestLive();
+		void AnimatedSwallow() const;
+		void DoSwallow();
 		// changes pred's digestion mode
 		void SetDigestionAsPred(const Locus locus, VoreDataEntry::VoreState dType, const bool forceStopDigestion, bool doDialogueUpd = true);
 		// use this to set digestion if dType = hNone, pred's current digestion will be used
