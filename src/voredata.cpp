@@ -697,7 +697,13 @@ namespace Vore
 						charStats = &statsEmpty;
 					}
 					RE::TESObjectREFR* reformer = GetObjectPtr(a_intfc);
-					charStats->reformer = reformer->GetFormID();
+					if (reformer) {
+						charStats->reformer = reformer->GetFormID();
+						flog::info("Reformer {}", Name::GetName(reformer));
+					} else {
+						charStats->reformer = 0U;
+						flog::info("No Reformer");
+					}
 					a_intfc->ReadRecordData(charStats->predLevel);
 					a_intfc->ReadRecordData(charStats->predXp);
 					a_intfc->ReadRecordData(charStats->predThreshold);
